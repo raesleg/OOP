@@ -1,4 +1,4 @@
-package io.github.raesleg.OOP.lwjgl3;
+package io.github.raesleg.OOP;
 
 import java.util.Set;
 

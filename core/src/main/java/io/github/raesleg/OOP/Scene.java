@@ -1,4 +1,4 @@
-package io.github.raesleg.OOP.lwjgl3;
+package io.github.raesleg.OOP;
 
 import java.util.List;
 
@@ -21,6 +21,6 @@ public class Scene {
 
     public void unload() {};
 
-    public void update(double deltaTime) {};
+    public void update(float deltaTime) {};
 
 }

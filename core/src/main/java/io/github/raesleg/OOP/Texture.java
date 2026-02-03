@@ -1,4 +1,4 @@
-package io.github.raesleg.OOP.lwjgl3;
+package io.github.raesleg.OOP;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
@@ -8,9 +8,9 @@ public abstract class Texture extends Entity{
     private Texture texture;
 
     /* Public Functions */
-    public void Texture(){};
+    public void Tex(){};
 
-    public void Texture(String filename, float x, float y, float speed) {};
+    public void Tex(String filename, float x, float y, float speed) {};
 
     public Texture getTexture() {return texture;};
 

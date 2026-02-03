@@ -1,9 +1,9 @@
-package io.github.raesleg.OOP.lwjgl3;
+package io.github.raesleg.OOP;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
-public abstract class Entity implements IMovable{
+public abstract class Entity{
 
     /* Private Variables */
     private float x;
@@ -19,7 +19,7 @@ public abstract class Entity implements IMovable{
         speed = curr_speed;
     }
 
-    public void update(double deltaTime) {};
+    public void update(float deltaTime) {};
 
     public float getX() {
         return x;
@@ -51,4 +51,8 @@ public abstract class Entity implements IMovable{
 
     public void dispose() {};
 
+    protected void translate(float dx, float dy) {
+        x += dx;
+        y += dy;
+    }
 }

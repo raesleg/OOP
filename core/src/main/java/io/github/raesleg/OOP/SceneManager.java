@@ -1,4 +1,4 @@
-package io.github.raesleg.OOP.lwjgl3;
+package io.github.raesleg.OOP;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,7 +12,7 @@ public class SceneManager {
     /* Public Functions */
     public void initialise(){};
 
-    public void update(double deltaTime) {};
+    public void update(float deltaTime) {};
 
     public void addScene(String name, Scene scene) {};
 
