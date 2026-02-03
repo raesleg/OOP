@@ -1,0 +1,445 @@
+================================================================================
+                    SCENE SYSTEM - QUICK TESTING GUIDE
+================================================================================
+                       For Teammates & Quick Reference
+                              February 3, 2026
+================================================================================
+
+================================================================================
+WHY SO MANY FILES? (READ THIS FIRST!)
+================================================================================
+
+You might be wondering: "Why are there 6 new files just for scenes?"
+
+The short answer: GOOD CODE ORGANIZATION (OOP Principles)
+
+Think of it like building a house:
+- You don't put the kitchen, bedroom, and bathroom all in ONE room
+- Each room has its own purpose
+- This makes it easier to change one room without breaking another
+
+Same idea here! Each file has ONE job. This is called the 
+"Single Responsibility Principle" - a core rule of good programming.
+
+--------------------------------------------------------------------------------
+THE BIG PICTURE - HOW IT ALL FITS TOGETHER
+--------------------------------------------------------------------------------
+
+Imagine a TV with a remote control:
+
+    YOUR GAME
+    =========
+    
+    ┌──────────────────────────────────────────────────────────────────┐
+    │  SceneMain.java  =  THE TV SET                                   │
+    │  (The device that runs everything)                               │
+    │                                                                  │
+    │      ┌──────────────────────────────────────────────────────┐   │
+    │      │  SceneManager.java  =  THE REMOTE CONTROL             │   │
+    │      │  (Switches between channels/scenes)                   │   │
+    │      │                                                       │   │
+    │      │   Channel 1: StartScene.java  = Main Menu             │   │
+    │      │   Channel 2: GameScene.java   = The Actual Game       │   │
+    │      │   Channel 3: PauseScene.java  = Pause Screen          │   │
+    │      │                                                       │   │
+    │      └──────────────────────────────────────────────────────┘   │
+    │                                                                  │
+    │      Scene.java = The "blueprint" that all channels follow      │
+    │                                                                  │
+    └──────────────────────────────────────────────────────────────────┘
+
+--------------------------------------------------------------------------------
+WHAT EACH FILE DOES (SIMPLE EXPLANATION)
+--------------------------------------------------------------------------------
+
+FILE 1: SceneMain.java
+----------------------
+WHAT IT IS:  The "power button" of your game
+WHAT IT DOES: 
+  - Starts the game
+  - Creates the SceneManager
+  - Runs 60 times per second (the game loop)
+  - Tells SceneManager: "Hey, update and draw the current scene!"
+
+WHY WE NEED IT:
+  - LibGDX (the game engine) REQUIRES a main class to run
+  - But we keep it SIMPLE - it only starts things, no game logic here
+
+ANALOGY: Like turning on a TV - it powers everything but doesn't decide 
+         what channel to show
+
+
+FILE 2: SceneManager.java
+-------------------------
+WHAT IT IS:  The "remote control" / "traffic controller"
+WHAT IT DOES:
+  - Keeps track of which scene is currently showing
+  - Switches between scenes (like changing TV channels)
+  - Can STACK scenes (pause menu ON TOP of game)
+
+KEY COMMANDS IT UNDERSTANDS:
+  - push(scene)  →  "Put this scene on top" (like opening pause menu)
+  - pop()        →  "Remove the top scene" (like closing pause menu)
+  - set(scene)   →  "Clear everything and show this scene" (like restarting)
+
+WHY WE NEED IT:
+  - Without this, you'd have messy code trying to track "what screen am I on?"
+  - It handles all the switching logic in ONE place
+
+ANALOGY: A TV remote - it knows what channel you're on and can switch channels
+
+
+FILE 3: Scene.java (Abstract)
+-----------------------------
+WHAT IT IS:  A "template" or "blueprint" for all scenes
+WHAT IT DOES:
+  - Defines what EVERY scene must have:
+    • show()        - "Set yourself up"
+    • update()      - "Do your logic every frame"
+    • render()      - "Draw yourself"
+    • handleInput() - "Check for key presses"
+    • dispose()     - "Clean up when you're done"
+
+WHY WE NEED IT:
+  - So all scenes work the same way
+  - SceneManager can treat ALL scenes the same (it doesn't care if it's 
+    a menu or gameplay - it just calls update() and render())
+
+ANALOGY: A blueprint for building houses - every house is different, but 
+         they all have doors, windows, and rooms
+
+NOTE: You CANNOT use Scene.java directly - it's "abstract" (a template).
+      You must CREATE a specific scene like StartScene, GameScene, etc.
+
+
+FILE 4: StartScene.java
+-----------------------
+WHAT IT IS:  The Main Menu screen
+WHAT IT DOES:
+  - Shows "GAME TITLE" and "Press ENTER to Start"
+  - Waits for you to press ENTER
+  - When ENTER pressed → switches to GameScene
+
+WHY IT'S SEPARATE:
+  - Menu logic is DIFFERENT from game logic
+  - If we put menu code inside game code, it would be messy
+  - Easy to change the menu without touching game code
+
+ANALOGY: The title screen of any video game
+
+
+FILE 5: GameScene.java
+----------------------
+WHAT IT IS:  The actual gameplay screen
+WHAT IT DOES:
+  - Shows the player (cyan circle)
+  - Handles WASD movement
+  - Tracks game time
+  - When ESC pressed → shows PauseScene ON TOP (doesn't close game!)
+
+WHY IT'S SEPARATE:
+  - Game logic is complex - movement, entities, collisions, etc.
+  - Keeping it in its own file makes it easier to work on
+  - Your friend's EntityManager, MovementManager go HERE
+
+ANALOGY: The actual gameplay of any video game
+
+
+FILE 6: PauseScene.java
+-----------------------
+WHAT IT IS:  The pause menu overlay
+WHAT IT DOES:
+  - Darkens the screen (you can still SEE the game behind it!)
+  - Shows "Resume" and "Exit to Main Menu" options
+  - Resume → goes back to game (game state PRESERVED)
+  - Exit → goes back to StartScene (game state LOST)
+
+WHY IT'S SEPARATE:
+  - Pause logic is different from game logic
+  - The game keeps running "underneath" - it's just paused
+  - Easy to add more pause menu options later
+
+ANALOGY: When you pause a video game - the game freezes but doesn't reset
+
+--------------------------------------------------------------------------------
+WHY NOT JUST ONE BIG FILE?
+--------------------------------------------------------------------------------
+
+BAD APPROACH (One giant file):
+```
+class Game {
+    // 2000 lines of code mixing:
+    // - Menu logic
+    // - Game logic  
+    // - Pause logic
+    // - Entity logic
+    // - Collision logic
+    // - Everything...
+    
+    // NIGHTMARE to read, change, or debug!
+}
+```
+
+GOOD APPROACH (Separate files):
+```
+SceneMain.java      →  50 lines   (just starts things)
+SceneManager.java   → 150 lines   (just switches scenes)
+Scene.java          → 100 lines   (just the template)
+StartScene.java     → 100 lines   (just the menu)
+GameScene.java      → 200 lines   (just the gameplay)
+PauseScene.java     → 180 lines   (just the pause menu)
+```
+
+BENEFITS:
+✓ Each file is small and easy to understand
+✓ You can work on GameScene without breaking StartScene
+✓ Easy to add new scenes (just create a new file!)
+✓ Follows professional coding standards (OOP)
+✓ Your professor will be happy :)
+
+================================================================================
+HOW TO RUN THE GAME
+================================================================================
+
+Open a terminal in the project folder and run:
+
+    .\gradlew lwjgl3:run
+
+This will launch the game with the scene system.
+
+NOTE: Do NOT use the VS Code "Run" button directly on Lwjgl3Launcher.java
+      unless your Java version is configured correctly. Use Gradle instead.
+
+================================================================================
+WHAT YOU'LL SEE
+================================================================================
+
+SCREEN 1: START MENU (StartScene)
+---------------------------------
+    ┌────────────────────────────────┐
+    │                                │
+    │         GAME TITLE             │
+    │                                │
+    │     Press ENTER to Start       │
+    │                                │
+    └────────────────────────────────┘
+
+    Controls:
+    • ENTER → Go to Game
+
+--------------------------------------------------------------------------------
+
+SCREEN 2: GAME (GameScene)
+--------------------------
+    ┌────────────────────────────────┐
+    │ Game Time: 5.2s                │
+    │ Use WASD/Arrows | ESC to pause │
+    │ Player: (320, 240)             │
+    │                                │
+    │         ◯ (cyan = you)         │
+    │                                │
+    │    ◯        ◯        ◯         │
+    │   (red obstacles)              │
+    └────────────────────────────────┘
+
+    Controls:
+    • W / UP ARROW    → Move up
+    • S / DOWN ARROW  → Move down
+    • A / LEFT ARROW  → Move left
+    • D / RIGHT ARROW → Move right
+    • ESC             → Open Pause Menu
+
+--------------------------------------------------------------------------------
+
+SCREEN 3: PAUSE MENU (PauseScene)
+---------------------------------
+    ┌────────────────────────────────┐
+    │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│ (dark overlay)
+    │▓▓┌────────────────────────┐▓▓▓▓│
+    │▓▓│        PAUSED          │▓▓▓▓│
+    │▓▓│                        │▓▓▓▓│
+    │▓▓│    > Resume <          │▓▓▓▓│ (selected = yellow)
+    │▓▓│    Exit to Main Menu   │▓▓▓▓│
+    │▓▓│                        │▓▓▓▓│
+    │▓▓│  W/S to navigate       │▓▓▓▓│
+    │▓▓│  ENTER to select       │▓▓▓▓│
+    │▓▓└────────────────────────┘▓▓▓▓│
+    │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│
+    └────────────────────────────────┘
+
+    The game is visible behind the dark overlay!
+
+    Controls:
+    • W / UP ARROW   → Select "Resume"
+    • S / DOWN ARROW → Select "Exit to Main Menu"
+    • ENTER          → Confirm selection
+    • ESC            → Resume game (same as selecting Resume)
+
+================================================================================
+TEST SCENARIOS
+================================================================================
+
+TEST 1: Basic Navigation
+------------------------
+1. Run the game                        → See Start Menu
+2. Press ENTER                         → Go to Game
+3. Move with WASD                      → Player moves
+4. Press ESC                           → Pause Menu appears
+5. Press ESC again                     → Resume game
+6. Verify player position is preserved → Success!
+
+TEST 2: Pause Menu Navigation
+-----------------------------
+1. From Game, press ESC               → Pause Menu
+2. Press S (down)                     → "Exit to Main Menu" selected
+3. Press W (up)                       → "Resume" selected
+4. Press ENTER                        → Resume game
+
+TEST 3: Exit to Main Menu
+-------------------------
+1. From Game, press ESC               → Pause Menu
+2. Press S to select "Exit to Main Menu"
+3. Press ENTER                        → Back to Start Menu
+4. Press ENTER                        → New game starts
+5. Verify game time reset to 0        → Success!
+
+TEST 4: Game State Preservation
+-------------------------------
+1. Start a new game
+2. Move player to a corner
+3. Wait for game time to reach 10+ seconds
+4. Press ESC to pause
+5. Press ESC to resume
+6. Verify:
+   - Player is still in the corner    → Success!
+   - Game time continues from where it was → Success!
+
+================================================================================
+SCENE FLOW DIAGRAM
+================================================================================
+
+    ┌─────────────┐     ENTER      ┌─────────────┐
+    │ StartScene  │ ─────────────► │  GameScene  │
+    │ (Main Menu) │                │ (Gameplay)  │
+    └─────────────┘                └──────┬──────┘
+          ▲                               │
+          │                              ESC
+          │                               │
+          │                               ▼
+          │                        ┌─────────────┐
+          │     "Exit to          │ PauseScene  │
+          └────── Main Menu" ◄─── │  (Overlay)  │
+                                  └──────┬──────┘
+                                         │
+                                    ESC or
+                                   "Resume"
+                                         │
+                                         ▼
+                                  ┌─────────────┐
+                                  │  GameScene  │
+                                  │  (Resumed)  │
+                                  └─────────────┘
+
+================================================================================
+WHAT'S HAPPENING BEHIND THE SCENES
+================================================================================
+
+When you press ESC in GameScene:
+1. GameScene.pause() is called     → isPaused = true
+2. PauseScene is pushed onto stack → Now on top
+3. GameScene stays in memory       → NOT destroyed!
+
+When you press ESC in PauseScene (Resume):
+1. PauseScene.dispose() is called  → Resources freed
+2. PauseScene removed from stack
+3. GameScene.resume() is called    → isPaused = false
+4. Game continues where you left off!
+
+When you select "Exit to Main Menu":
+1. PauseScene.dispose() is called
+2. GameScene.dispose() is called   → ALL game data lost
+3. Stack is cleared
+4. StartScene is created fresh
+
+================================================================================
+CONSOLE OUTPUT (FOR DEBUGGING)
+================================================================================
+
+When running, you'll see log messages in the console:
+
+    [SceneMain] Game initialized with Scene Management System
+    [StartScene] Scene shown - Press ENTER to start the game
+    [StartScene] Scene disposed
+    [GameScene] Scene shown - Game started. Press ESC to pause.
+    [GameScene] Scene paused - Game state preserved
+    [PauseScene] Pause menu shown - ESC/Enter to resume
+    [PauseScene] Pause scene disposed
+    [GameScene] Scene resumed - Continuing gameplay
+
+These help you understand what's happening with scene transitions!
+
+================================================================================
+FILES INVOLVED
+================================================================================
+
+Scene System Files (in core/src/main/java/io/github/raesleg/OOP/):
+
+    SceneMain.java      - Entry point (the game starts here)
+    SceneManager.java   - Manages the scene stack
+    Scene.java          - Abstract base class for scenes
+    StartScene.java     - Main menu implementation
+    GameScene.java      - Game screen implementation
+    PauseScene.java     - Pause overlay implementation
+
+Launcher (in lwjgl3/src/main/java/.../lwjgl3/):
+
+    Lwjgl3Launcher.java - Desktop launcher (uses SceneMain)
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+PROBLEM: "Class file version" error when running
+SOLUTION: Use .\gradlew lwjgl3:run instead of the Run button
+
+PROBLEM: Game doesn't start
+SOLUTION: Make sure you're in the project root folder when running gradle
+
+PROBLEM: ESC doesn't work in game
+SOLUTION: Click on the game window first to give it focus
+
+PROBLEM: Controls feel laggy
+SOLUTION: This is normal - we're using simple input checking, not a proper
+          input system. Your friend's IOManager can be integrated later.
+
+================================================================================
+QUICK REFERENCE - WHICH FILE DO I EDIT?
+================================================================================
+
+I want to...                              Edit this file:
+─────────────────────────────────────────────────────────────────────────────
+Change the main menu look/text            StartScene.java
+Add player movement/game logic            GameScene.java
+Change pause menu options                 PauseScene.java
+Add a NEW scene (like Settings)           Create NewScene.java, extend Scene
+Change how scenes switch                  SceneManager.java
+Change game window title/size             Lwjgl3Launcher.java
+
+================================================================================
+QUICK REFERENCE - FILE SUMMARY
+================================================================================
+
+┌─────────────────────┬────────────────────────────────────────────────────┐
+│ File                │ One-Line Description                               │
+├─────────────────────┼────────────────────────────────────────────────────┤
+│ SceneMain.java      │ Starts the game, runs the loop (DON'T TOUCH)      │
+│ SceneManager.java   │ Switches between scenes (DON'T TOUCH)             │
+│ Scene.java          │ Template for scenes (DON'T TOUCH)                 │
+│ StartScene.java     │ Main menu - EDIT to customize menu                │
+│ GameScene.java      │ Gameplay - EDIT to add game logic                 │
+│ PauseScene.java     │ Pause overlay - EDIT to add pause options         │
+└─────────────────────┴────────────────────────────────────────────────────┘
+
+================================================================================
+                              END OF TESTING GUIDE
+================================================================================
