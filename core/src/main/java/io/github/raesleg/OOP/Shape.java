@@ -13,9 +13,17 @@ public abstract class Shape extends Entity {
 
     /* Public Functions */
     public Shape() {
+        super();
+        this.width = 0;
+        this.height = 0;
+        this.color = null;
     };
 
     public Shape(float x, float y, float speed, float w, float h, Color c) {
+        this.width = w;
+        this.height = h;
+        this.color = c;
+
     };
 
     public float getWidth() {
