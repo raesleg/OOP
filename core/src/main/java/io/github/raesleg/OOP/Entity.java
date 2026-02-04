@@ -3,7 +3,7 @@ package io.github.raesleg.OOP;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
-public abstract class Entity{
+public abstract class Entity {
 
     /* Private Variables */
     private float x;
@@ -11,7 +11,8 @@ public abstract class Entity{
     private float speed;
 
     /* Public Functions */
-    public Entity() {};
+    public Entity() {
+    };
 
     public Entity(float curr_x, float curr_y, float curr_speed) {
         x = curr_x;
@@ -19,7 +20,8 @@ public abstract class Entity{
         speed = curr_speed;
     }
 
-    public void update(float deltaTime) {};
+    public void update(float deltaTime) {
+    };
 
     public float getX() {
         return x;
@@ -45,11 +47,13 @@ public abstract class Entity{
         speed = newSpeed;
     }
 
-    public void draw(SpriteBatch batch) {};
+    public abstract void draw(SpriteBatch batch);
 
-    public void draw(ShapeRenderer shape) {};
+    public void draw(ShapeRenderer shape) {
+    };
 
-    public void dispose() {};
+    public void dispose() {
+    };
 
     protected void translate(float dx, float dy) {
         x += dx;

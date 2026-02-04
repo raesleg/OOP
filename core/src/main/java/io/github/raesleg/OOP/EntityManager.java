@@ -1,5 +1,7 @@
 package io.github.raesleg.OOP;
 
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -9,9 +11,11 @@ public class EntityManager {
     private final List<Entity> entityList = new ArrayList<>();
     private final List<Entity> pendingEntities = new ArrayList<>();
 
-    public EntityManager() {}
+    public EntityManager() {
+    }
 
-    public void initialise() {}
+    public void initialise() {
+    }
 
     // Use float to match LibGDX + your MovementManager
     public void update(float deltaTime) {
@@ -47,6 +51,16 @@ public class EntityManager {
             if (type.isInstance(e)) {
                 action.accept(type.cast(e));
             }
+        }
+    }
+
+    /**
+     * Render all entities.
+     * Encapsulation: Entities draw themselves; GameScene just calls this.
+     */
+    public void render(SpriteBatch batch) {
+        for (Entity e : entityList) {
+            e.draw(batch);
         }
     }
 }

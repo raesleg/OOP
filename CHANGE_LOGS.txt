@@ -228,14 +228,39 @@ CREATED FILES:
 6. GameScene.java - Gameplay scene with full manager ownership
 7. PauseScene.java - Transparent pause overlay
 
-NOT MODIFIED (as requested - friend's work):
-- Main.java (preserved for entity testing)
-- EntityManager.java (documented concerns above)
-- MovementManager.java (documented concerns above)
-- CollisionManager.java (documented concerns above)
-- IOManager.java
-- Entity.java
-- All other non-scene files
+--------------------------------------------------------------------------------
+[RESOLVED] VIOLATION #6: ENTITIES RENDERED BY SCENES (ENCAPSULATION)
+--------------------------------------------------------------------------------
+Files: Entity.java, MovableEntity.java, Shape.java, EntityManager.java, GameScene.java
+Date: February 4, 2026
+Status: FIXED
+Principle: Encapsulation / Single Responsibility
+
+ISSUE:
+Game scenes were directly drawing entities (calling `batch.draw(...)`), which exposed
+entity internals to scene logic and violated encapsulation.
+
+RESOLUTION SUMMARY:
+- `Entity.java`: Converted `draw(SpriteBatch batch)` to an abstract method. (Enforces that
+  concrete entities implement their own rendering.)
+- `MovableEntity.java`: Added private rendering fields (`Texture texture; float width; float height;`),
+  updated the constructor to accept `Texture texture, float width, float height`, and implemented
+  `public void draw(SpriteBatch batch)` to draw the texture centered on the entity position.
+- `Shape.java`: Added an empty `public void draw(SpriteBatch batch) {}` override so vector
+  shapes (which use `ShapeRenderer`) compile after `Entity.draw` became abstract.
+- `EntityManager.java`: Added `public void render(SpriteBatch batch)` which iterates the
+  internal entity list and calls `e.draw(batch)` for each entity. The entity list remains private.
+- `GameScene.java`: Scene now loads `bucket.png` and `droplet.png` in `show()`, constructs
+  `MovableEntity` instances with their textures and sizes, and replaces manual `batch.draw(...)`
+  calls with `entityManager.render(batch)` (delegates entity drawing to the manager/entities).
+
+RATIONALE:
+- Encapsulation restored: `GameScene` no longer knows how entities render themselves.
+- Scene still owns scene-level HUD rendering; entities self-manage their visuals.
+- `CollisionManager` was intentionally left untouched per project constraints.
+
+IMPACT: Build fixed and encapsulation violation resolved. Changes committed on February 4, 2026.
+
 
 ================================================================================
                               END OF VIOLATIONS LOG

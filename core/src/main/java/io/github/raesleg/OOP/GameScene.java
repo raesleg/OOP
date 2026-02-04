@@ -62,12 +62,13 @@ public class GameScene extends Scene {
         font = new BitmapFont();
         font.setColor(Color.WHITE);
 
-        // game scene draws textures, optinally could make a separate irenderable method if entity gets overpopulated
-        bucketTexture = new Texture("bucket.png");  
+        // game scene draws textures, optinally could make a separate irenderable method
+        // if entity gets overpopulated
+        bucketTexture = new Texture("bucket.png");
         dropletTexture = new Texture("droplet.png");
 
         // out of bound walls
-        physicsWorld = new PhysicsWorld(new Vector2(0, 0)); 
+        physicsWorld = new PhysicsWorld(new Vector2(0, 0));
         physicsWorld.createBoundsPixels(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), 100f);
 
         // SCENE SOVEREIGNTY: Create and own all managers for this scene
@@ -77,9 +78,10 @@ public class GameScene extends Scene {
         ioManager = new IOManager();
 
         // Initialize entities through EntityManager
-        // Example: entityManager.addEntity(new Player(playerX, playerY, playerSpeed));
-        bucket = new MovableEntity(physicsWorld, 200, 200, new Controls.UserControlled(ioManager));
-        droplet = new MovableEntity(physicsWorld, 500, 300, new Controls.AIControlled());
+        // Entities now own their textures for proper encapsulation
+        bucket = new MovableEntity(physicsWorld, 200, 200, new Controls.UserControlled(ioManager), bucketTexture, 64f,
+                64f);
+        droplet = new MovableEntity(physicsWorld, 500, 300, new Controls.AIControlled(), dropletTexture, 64f, 64f);
         entityManager.addEntity(bucket);
         entityManager.addEntity(droplet);
 
@@ -124,29 +126,20 @@ public class GameScene extends Scene {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.begin();
-            // drawing userControlled
-            batch.draw(
-                bucketTexture,
-                bucket.getX() - bucketTexture.getWidth() / 2f,
-                bucket.getY() - bucketTexture.getHeight() / 2f
-            );
+        // ENCAPSULATION FIX: Delegate rendering to EntityManager
+        // Each entity draws itself via its own draw(batch) method
+        entityManager.render(batch);
 
-            // drawing AIcontrolled
-            batch.draw(
-                dropletTexture,
-                droplet.getX() - dropletTexture.getWidth() / 2f,
-                droplet.getY() - dropletTexture.getHeight() / 2f
-            );
+        // HUD rendering (still owned by scene)
         font.draw(batch, "Game Time: " + String.format("%.1f", gameTime) + "s", 10, Gdx.graphics.getHeight() - 10);
         font.draw(batch, "Use WASD/Arrows to move | ESC to pause", 10, Gdx.graphics.getHeight() - 30);
-        // font.draw(batch, "Player: (" + (int)  + ", " + (int) playerY + ")", 10, Gdx.graphics.getHeight() - 50);
         batch.end();
 
         // drawing entities hitbox
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line); 
-            shapeRenderer.setColor(Color.RED);
-            float hitboxRadius = 20f; 
-            shapeRenderer.circle(droplet.getX(), droplet.getY(), hitboxRadius);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(Color.RED);
+        float hitboxRadius = 20f;
+        shapeRenderer.circle(droplet.getX(), droplet.getY(), hitboxRadius);
         shapeRenderer.end();
     }
 
