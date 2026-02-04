@@ -45,7 +45,6 @@ public class EntityManager {
         return entityList.get(index);
     }
 
-    // Safe iteration (no list exposure) — matches your professor’s feedback
     public <T> void forEach(Class<T> type, Consumer<T> action) {
         for (Entity e : entityList) {
             if (type.isInstance(e)) {

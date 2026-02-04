@@ -39,8 +39,8 @@ public class GameScene extends Scene {
     private float gameTime;
 
     // Example entities (these would come from EntityManager)
-    private Texture bucketTexture;
-    private Texture dropletTexture;
+    // private Texture bucketTexture;
+    // private Texture dropletTexture;
 
     // movable entities implementing box2d physics engine
     private PhysicsWorld physicsWorld;
@@ -62,16 +62,10 @@ public class GameScene extends Scene {
         font = new BitmapFont();
         font.setColor(Color.WHITE);
 
-        // game scene draws textures, optinally could make a separate irenderable method
-        // if entity gets overpopulated
-        bucketTexture = new Texture("bucket.png");
-        dropletTexture = new Texture("droplet.png");
-
         // out of bound walls
         physicsWorld = new PhysicsWorld(new Vector2(0, 0));
         physicsWorld.createBoundsPixels(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), 100f);
 
-        // SCENE SOVEREIGNTY: Create and own all managers for this scene
         entityManager = new EntityManager();
         movementManager = new MovementManager(physicsWorld);
         // collisionManager = new ConcreteCollisionManager(); // When implemented
@@ -79,9 +73,9 @@ public class GameScene extends Scene {
 
         // Initialize entities through EntityManager
         // Entities now own their textures for proper encapsulation
-        bucket = new MovableEntity(physicsWorld, 200, 200, new Controls.UserControlled(ioManager), bucketTexture, 64f,
+        bucket = new MovableEntity(physicsWorld, 200, 200, new Controls.UserControlled(ioManager), "bucket.png", 64f,
                 64f);
-        droplet = new MovableEntity(physicsWorld, 500, 300, new Controls.AIControlled(), dropletTexture, 64f, 64f);
+        droplet = new MovableEntity(physicsWorld, 500, 300, new Controls.AIControlled(), "droplet.png", 64f, 64f);
         entityManager.addEntity(bucket);
         entityManager.addEntity(droplet);
 
@@ -186,14 +180,6 @@ public class GameScene extends Scene {
         if (physicsWorld != null) {
             physicsWorld.dispose();
             physicsWorld = null;
-        }
-        if (bucketTexture != null) {
-            bucketTexture.dispose();
-            bucketTexture = null;
-        }
-        if (dropletTexture != null) {
-            dropletTexture.dispose();
-            dropletTexture = null;
         }
         if (ioManager != null) {
             ioManager = null;
