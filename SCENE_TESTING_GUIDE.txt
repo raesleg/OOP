@@ -31,7 +31,7 @@ Imagine a TV with a remote control:
     =========
     
     ┌──────────────────────────────────────────────────────────────────┐
-    │  SceneMain.java  =  THE TV SET                                   │
+    │  Main.java  =  THE TV SET                                   │
     │  (The device that runs everything)                               │
     │                                                                  │
     │      ┌──────────────────────────────────────────────────────┐   │
@@ -52,7 +52,7 @@ Imagine a TV with a remote control:
 WHAT EACH FILE DOES (SIMPLE EXPLANATION)
 --------------------------------------------------------------------------------
 
-FILE 1: SceneMain.java
+FILE 1: Main.java
 ----------------------
 WHAT IT IS:  The "power button" of your game
 WHAT IT DOES: 
@@ -182,7 +182,7 @@ class Game {
 
 GOOD APPROACH (Separate files):
 ```
-SceneMain.java      →  50 lines   (just starts things)
+Main.java      →  50 lines   (just starts things)
 SceneManager.java   → 150 lines   (just switches scenes)
 Scene.java          → 100 lines   (just the template)
 StartScene.java     → 100 lines   (just the menu)
@@ -367,7 +367,7 @@ CONSOLE OUTPUT (FOR DEBUGGING)
 
 When running, you'll see log messages in the console:
 
-    [SceneMain] Game initialized with Scene Management System
+    [Main] Game initialized with Scene Management System
     [StartScene] Scene shown - Press ENTER to start the game
     [StartScene] Scene disposed
     [GameScene] Scene shown - Game started. Press ESC to pause.
@@ -384,7 +384,7 @@ FILES INVOLVED
 
 Scene System Files (in core/src/main/java/io/github/raesleg/OOP/):
 
-    SceneMain.java      - Entry point (the game starts here)
+    Main.java      - Entry point (the game starts here)
     SceneManager.java   - Manages the scene stack
     Scene.java          - Abstract base class for scenes
     StartScene.java     - Main menu implementation
@@ -393,7 +393,7 @@ Scene System Files (in core/src/main/java/io/github/raesleg/OOP/):
 
 Launcher (in lwjgl3/src/main/java/.../lwjgl3/):
 
-    Lwjgl3Launcher.java - Desktop launcher (uses SceneMain)
+    Lwjgl3Launcher.java - Desktop launcher (uses Main)
 
 ================================================================================
 TROUBLESHOOTING
@@ -432,12 +432,12 @@ QUICK REFERENCE - FILE SUMMARY
 ┌─────────────────────┬────────────────────────────────────────────────────┐
 │ File                │ One-Line Description                               │
 ├─────────────────────┼────────────────────────────────────────────────────┤
-│ SceneMain.java      │ Starts the game, runs the loop (DON'T TOUCH)      │
-│ SceneManager.java   │ Switches between scenes (DON'T TOUCH)             │
-│ Scene.java          │ Template for scenes (DON'T TOUCH)                 │
-│ StartScene.java     │ Main menu - EDIT to customize menu                │
-│ GameScene.java      │ Gameplay - EDIT to add game logic                 │
-│ PauseScene.java     │ Pause overlay - EDIT to add pause options         │
+│ Main.java           │ Starts the game, runs the loop (DON'T TOUCH)       │
+│ SceneManager.java   │ Switches between scenes (DON'T TOUCH)              │
+│ Scene.java          │ Template for scenes (DON'T TOUCH)                  │
+│ StartScene.java     │ Main menu - EDIT to customize menu                 │
+│ GameScene.java      │ Gameplay - EDIT to add game logic                  │
+│ PauseScene.java     │ Pause overlay - EDIT to add pause options          │
 └─────────────────────┴────────────────────────────────────────────────────┘
 
 ================================================================================
