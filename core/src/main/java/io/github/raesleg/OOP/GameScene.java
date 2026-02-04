@@ -7,6 +7,8 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.graphics.Texture;
 
 /**
  * GameScene - The main gameplay scene.
@@ -36,25 +38,23 @@ public class GameScene extends Scene {
     private boolean isPaused;
     private float gameTime;
 
-    // Example entities (these would come from EntityManager in a full
-    // implementation)
-    private float playerX, playerY;
-    private float playerSpeed;
+    // Example entities (these would come from EntityManager)
+    private Texture bucketTexture;
+    private Texture dropletTexture;
+
+    // movable entities implementing box2d physics engine
+    private PhysicsWorld physicsWorld;
+    private MovableEntity bucket;
+    private MovableEntity droplet;
 
     /* Constructor */
     public GameScene() {
         super();
         this.isPaused = false;
         this.gameTime = 0f;
-
-        // Initial player position
-        this.playerX = 400f;
-        this.playerY = 300f;
-        this.playerSpeed = 200f;
     }
 
     /* Scene Lifecycle Methods */
-
     @Override
     public void show() {
         // Initialize rendering resources
@@ -62,14 +62,26 @@ public class GameScene extends Scene {
         font = new BitmapFont();
         font.setColor(Color.WHITE);
 
+        // game scene draws textures, optinally could make a separate irenderable method if entity gets overpopulated
+        bucketTexture = new Texture("bucket.png");  
+        dropletTexture = new Texture("droplet.png");
+
+        // out of bound walls
+        physicsWorld = new PhysicsWorld(new Vector2(0, 0)); 
+        physicsWorld.createBoundsPixels(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), 100f);
+
         // SCENE SOVEREIGNTY: Create and own all managers for this scene
         entityManager = new EntityManager();
-        movementManager = new MovementManager();
+        movementManager = new MovementManager(physicsWorld);
         // collisionManager = new ConcreteCollisionManager(); // When implemented
         ioManager = new IOManager();
 
         // Initialize entities through EntityManager
         // Example: entityManager.addEntity(new Player(playerX, playerY, playerSpeed));
+        bucket = new MovableEntity(physicsWorld, 200, 200, new Controls.UserControlled(ioManager));
+        droplet = new MovableEntity(physicsWorld, 500, 300, new Controls.AIControlled());
+        entityManager.addEntity(bucket);
+        entityManager.addEntity(droplet);
 
         Gdx.app.log("GameScene", "Scene shown - Game started. Press ESC to pause.");
     }
@@ -77,47 +89,11 @@ public class GameScene extends Scene {
     @Override
     public void handleInput() {
         // Input Focus Rule: This only runs when GameScene is the top scene
-
         // ESC -> Push pause scene (this scene stays in memory)
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+        if (ioManager.isKeyJustPressed(Input.Keys.ESCAPE)) {
             sceneManager.push(new PauseScene());
             return; // Don't process other inputs when transitioning
         }
-
-        // Game input handling (WASD movement example)
-        // In a full implementation, IOManager would track pressed keys
-        // and the Scene would act on that information
-        float moveX = 0f;
-        float moveY = 0f;
-
-        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            moveY = 1f;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            moveY = -1f;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            moveX = -1f;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            moveX = 1f;
-        }
-
-        // Normalize diagonal movement
-        if (moveX != 0f && moveY != 0f) {
-            float factor = 0.7071f; // 1/sqrt(2)
-            moveX *= factor;
-            moveY *= factor;
-        }
-
-        // Apply movement (deltaTime handled in update)
-        float dt = Gdx.graphics.getDeltaTime();
-        playerX += moveX * playerSpeed * dt;
-        playerY += moveY * playerSpeed * dt;
-
-        // Keep player in bounds
-        playerX = Math.max(20f, Math.min(playerX, Gdx.graphics.getWidth() - 20f));
-        playerY = Math.max(20f, Math.min(playerY, Gdx.graphics.getHeight() - 20f));
     }
 
     @Override
@@ -126,7 +102,7 @@ public class GameScene extends Scene {
             return; // Don't update game logic when paused
         }
 
-        // Handle input first
+        ioManager.update();
         handleInput();
 
         // Update game time
@@ -136,6 +112,9 @@ public class GameScene extends Scene {
         // entityManager.update(deltaTime);
         // movementManager.update(entityManager.getSnapshot(), deltaTime);
         // collisionManager.collisionResolver(entityManager);
+        entityManager.update(deltaTime);
+        movementManager.update(entityManager, deltaTime);
+
     }
 
     @Override
@@ -144,27 +123,31 @@ public class GameScene extends Scene {
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Render entities using ShapeRenderer
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-        // Draw player
-        shapeRenderer.setColor(Color.CYAN);
-        shapeRenderer.circle(playerX, playerY, 20f);
-
-        // Draw some example obstacles/entities
-        shapeRenderer.setColor(Color.RED);
-        shapeRenderer.circle(200f, 200f, 15f);
-        shapeRenderer.circle(600f, 400f, 15f);
-        shapeRenderer.circle(300f, 500f, 15f);
-
-        shapeRenderer.end();
-
-        // Render UI text
         batch.begin();
+            // drawing userControlled
+            batch.draw(
+                bucketTexture,
+                bucket.getX() - bucketTexture.getWidth() / 2f,
+                bucket.getY() - bucketTexture.getHeight() / 2f
+            );
+
+            // drawing AIcontrolled
+            batch.draw(
+                dropletTexture,
+                droplet.getX() - dropletTexture.getWidth() / 2f,
+                droplet.getY() - dropletTexture.getHeight() / 2f
+            );
         font.draw(batch, "Game Time: " + String.format("%.1f", gameTime) + "s", 10, Gdx.graphics.getHeight() - 10);
         font.draw(batch, "Use WASD/Arrows to move | ESC to pause", 10, Gdx.graphics.getHeight() - 30);
-        font.draw(batch, "Player: (" + (int) playerX + ", " + (int) playerY + ")", 10, Gdx.graphics.getHeight() - 50);
+        // font.draw(batch, "Player: (" + (int)  + ", " + (int) playerY + ")", 10, Gdx.graphics.getHeight() - 50);
         batch.end();
+
+        // drawing entities hitbox
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line); 
+            shapeRenderer.setColor(Color.RED);
+            float hitboxRadius = 20f; 
+            shapeRenderer.circle(droplet.getX(), droplet.getY(), hitboxRadius);
+        shapeRenderer.end();
     }
 
     @Override
@@ -183,8 +166,8 @@ public class GameScene extends Scene {
     public void resize(int width, int height) {
         // Update viewports/cameras for new screen size
         // Keep player in bounds after resize
-        playerX = Math.min(playerX, width - 20f);
-        playerY = Math.min(playerY, height - 20f);
+        // playerX = Math.min(playerX, width - 20f);
+        // playerY = Math.min(playerY, height - 20f);
     }
 
     @Override
@@ -206,16 +189,25 @@ public class GameScene extends Scene {
             entityManager = null;
         }
 
-        if (movementManager != null) {
-            movementManager = null;
+        // abstract movement manager physics
+        if (physicsWorld != null) {
+            physicsWorld.dispose();
+            physicsWorld = null;
+        }
+        if (bucketTexture != null) {
+            bucketTexture.dispose();
+            bucketTexture = null;
+        }
+        if (dropletTexture != null) {
+            dropletTexture.dispose();
+            dropletTexture = null;
+        }
+        if (ioManager != null) {
+            ioManager = null;
         }
 
         if (collisionManager != null) {
             collisionManager = null;
-        }
-
-        if (ioManager != null) {
-            ioManager = null;
         }
 
         Gdx.app.log("GameScene", "Scene disposed - All managers and resources cleaned up");

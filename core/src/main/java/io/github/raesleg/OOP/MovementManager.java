@@ -1,7 +1,17 @@
 package io.github.raesleg.OOP;
 
 public class MovementManager {
-    public void update(EntityManager entityM, float deltaTime){
-        entityM.forEach(IMovable.class, movable -> movable.move(deltaTime));
-    };
+
+    private final PhysicsWorld physicsWorld;
+
+    public MovementManager(PhysicsWorld physicsWorld) {
+        this.physicsWorld = physicsWorld;
+    }
+
+    public void update(EntityManager entityM, float dt) {
+        // Let entities apply forces / velocities
+        entityM.forEach(IMovable.class, m -> m.move(dt));
+        // Step physics simulation
+        physicsWorld.step(dt);
+    }
 }

@@ -1,32 +1,53 @@
 package io.github.raesleg.OOP;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import java.util.HashSet;
 import java.util.Set;
 
 public class IOManager {
-
-    /* Private Variables */
     private boolean left_click;
     private boolean right_click;
-    private Set<Integer> pressedKeys;
+    private final Set<Integer> pressedKeys = new HashSet<>();
+    private final Set<Integer> keysDown = new HashSet<>();
 
-    /* Public Functions */
-    public void keyPressed(int key) {};
+    public void update() {
+        pressedKeys.clear();
+
+        trackKey(Input.Keys.W);
+        trackKey(Input.Keys.A);
+        trackKey(Input.Keys.S);
+        trackKey(Input.Keys.D);
+        trackKey(Input.Keys.UP);
+        trackKey(Input.Keys.LEFT);
+        trackKey(Input.Keys.DOWN);
+        trackKey(Input.Keys.RIGHT);
+        trackKey(Input.Keys.SPACE);
+        trackKey(Input.Keys.ESCAPE);
+
+        // mouse buttons
+        left_click = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
+        right_click = Gdx.input.isButtonPressed(Input.Buttons.RIGHT);
+    }
+
+    private void trackKey(int key) {
+        boolean pressedNow = Gdx.input.isKeyPressed(key);
+
+        if (pressedNow) {
+            if (!keysDown.contains(key)) {
+                pressedKeys.add(key); 
+            }
+            keysDown.add(key);
+        } else {
+            keysDown.remove(key);
+        }
+    }
+
+    public boolean isKeyDown(int key) { return keysDown.contains(key);}
     
-    public void keyReleased(int key) {};
-
-    public void mousePressed(int btn) {};
-
-    public void mouseReleased(int btn) {};
-
-    //public boolean isKeyDown(int key) {return ??}
+    public boolean isKeyJustPressed(int key) { return pressedKeys.contains(key);};
 
     public boolean isLeftClick() {return left_click;};
 
     public boolean isRightClick() {return right_click;};
-
-    /* takes logic params according to UML (Player car) */
-    public void handleInput() {};
-
-    //public boolean isEscPressedOnce() {};
-
 }
