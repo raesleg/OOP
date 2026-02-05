@@ -19,7 +19,7 @@ public class MovableEntity extends TextureObject implements IMovable {
             String filename,
             float width,
             float height) {
-        super(filename, startXPixels, startYPixels, 0f, width, height); // Entity speed not used; physics controls speed
+        super(filename, startXPixels, startYPixels, width, height); // Entity speed not used; physics controls speed
         this.controls = controls;
 
         // convert pixels -> meters for Box2D

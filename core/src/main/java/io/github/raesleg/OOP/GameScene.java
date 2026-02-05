@@ -6,9 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.graphics.Texture;
 
 /**
  * GameScene - The main gameplay scene.
@@ -31,7 +29,6 @@ import com.badlogic.gdx.graphics.Texture;
 public class GameScene extends Scene {
 
     /* Private Variables */
-    private ShapeRenderer shapeRenderer;
     private BitmapFont font;
 
     // Game state
@@ -58,7 +55,6 @@ public class GameScene extends Scene {
     @Override
     public void show() {
         // Initialize rendering resources
-        shapeRenderer = new ShapeRenderer();
         font = new BitmapFont();
         font.setColor(Color.WHITE);
 
@@ -128,13 +124,6 @@ public class GameScene extends Scene {
         font.draw(batch, "Game Time: " + String.format("%.1f", gameTime) + "s", 10, Gdx.graphics.getHeight() - 10);
         font.draw(batch, "Use WASD/Arrows to move | ESC to pause", 10, Gdx.graphics.getHeight() - 30);
         batch.end();
-
-        // drawing entities hitbox
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(Color.RED);
-        float hitboxRadius = 20f;
-        shapeRenderer.circle(droplet.getX(), droplet.getY(), hitboxRadius);
-        shapeRenderer.end();
     }
 
     @Override
@@ -160,10 +149,6 @@ public class GameScene extends Scene {
     @Override
     public void dispose() {
         // CRUCIAL: Dispose all resources owned by this scene
-        if (shapeRenderer != null) {
-            shapeRenderer.dispose();
-            shapeRenderer = null;
-        }
 
         if (font != null) {
             font.dispose();

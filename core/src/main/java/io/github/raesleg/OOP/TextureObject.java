@@ -9,8 +9,8 @@ public abstract class TextureObject extends Entity{
     private final float width;
     private final float height;
 
-    public TextureObject(String filename, float x, float y, float speed, float width, float height) {
-        super(x, y, speed);
+    public TextureObject(String filename, float x, float y, float width, float height) {
+        super(x, y);
         texture = new Texture(filename);
         this.width = width;
         this.height = height;
