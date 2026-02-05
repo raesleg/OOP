@@ -3,6 +3,7 @@ package io.github.raesleg.OOP;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -23,6 +24,28 @@ public class EntityManager {
         if (!pendingEntities.isEmpty()) {
             entityList.addAll(pendingEntities);
             pendingEntities.clear();
+        }
+
+        /* code for collision */
+
+        // update all entities
+        for (Entity e : entityList) {
+            e.update(deltaTime);
+        }
+
+        // remove dead particles after updating
+        int removed = 0;
+        Iterator<Entity> iterator = entityList.iterator();
+        while(iterator.hasNext()) {
+            Entity e = iterator.next();
+            if (e instanceof ExplosionParticle && ((ExplosionParticle) e).isDead()) {
+                iterator.remove();
+                removed++;
+            }
+        }
+
+        if (removed > 0) {
+            System.out.println("Removed " + removed + " dead particles"); // logging
         }
     }
 

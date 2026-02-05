@@ -20,6 +20,14 @@ public abstract class TextureObject extends Entity{
         return texture;
     }
 
+    public float getWidth(){
+        return width;
+    }
+
+    public float getHeight() {
+        return height;
+    }
+
     @Override
     public void draw(SpriteBatch batch) {
         if (texture != null) {

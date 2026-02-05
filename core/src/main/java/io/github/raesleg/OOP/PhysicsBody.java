@@ -15,7 +15,8 @@ public class PhysicsBody {
         body = physics.raw().createBody(def);
 
         CircleShape shape = new CircleShape();
-        shape.setRadius(0.5f); // meters
+        //this line affects hitbox
+        shape.setRadius(0.25f); // meters
 
         FixtureDef fix = new FixtureDef();
         fix.shape = shape;
@@ -44,5 +45,14 @@ public class PhysicsBody {
 
     public Vector2 getPosition() {
         return body.getPosition();
+    }
+
+    /* methods for collision */
+    public void setUserData(Object data) {
+        body.setUserData(data);
+    }
+    // explosion queries
+    public Body getBody() {
+        return body;
     }
 }

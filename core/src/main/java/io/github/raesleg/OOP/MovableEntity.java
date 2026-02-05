@@ -27,12 +27,22 @@ public class MovableEntity extends TextureObject implements IMovable {
         float ym = startYPixels / PPM;
 
         this.body = new PhysicsBody(physicsWorld, BodyDef.BodyType.DynamicBody, xm, ym);
+
+        this.body.setUserData(this); // link entity to physics body
+    }
+
+    /* getter functions for collision */
+    public PhysicsBody getPhysicsBody() {
+        return body;
+    }
+    public Controls.ControlSource getControlSource() {
+        return controls;
     }
 
     @Override
     public void move(float dt) {
         Controls.ControlState c = controls.get(dt);
-        System.out.println("move called dt=" + dt);
+        //System.out.println("move called dt=" + dt);
 
         // Use control direction to set velocity (simple top-down physics)
         float vx = c.xAxis() * MAX_SPEED;
@@ -40,6 +50,17 @@ public class MovableEntity extends TextureObject implements IMovable {
 
         body.setVelocity(vx, vy);
 
+        // sync position at all times
+        syncPosition();
+    }
+
+    @Override
+    public void update(float deltaTime) {
+        super.update(deltaTime);
+        syncPosition(); // sync even when not actively moving
+    }
+
+    private void syncPosition() {
         // Sync Entity position from physics body for drawing
         Vector2 p = body.getPosition();
         setX(p.x * PPM);

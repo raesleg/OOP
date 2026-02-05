@@ -44,6 +44,8 @@ public class GameScene extends Scene {
     private MovableEntity bucket;
     private MovableEntity droplet;
 
+    private CollisionManager collisionManager;
+
     /* Constructor */
     public GameScene() {
         super();
@@ -64,7 +66,9 @@ public class GameScene extends Scene {
 
         entityManager = new EntityManager();
         movementManager = new MovementManager(physicsWorld);
-        // collisionManager = new ConcreteCollisionManager(); // When implemented
+
+        collisionManager = new CollisionManager(physicsWorld, entityManager);
+
         ioManager = new IOManager();
 
         // Initialize entities through EntityManager
