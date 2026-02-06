@@ -12,29 +12,22 @@ public class EntityManager {
     private final List<Entity> entityList = new ArrayList<>();
     private final List<Entity> pendingEntities = new ArrayList<>();
 
-    public EntityManager() {
-    }
-
-    public void initialise() {
-    }
-
-    // Use float to match LibGDX + your MovementManager
     public void update(float deltaTime) {
-        // Merge pending entities safely (ownership stays inside EntityManager)
+
+        // Merge pending entities safely
         if (!pendingEntities.isEmpty()) {
             entityList.addAll(pendingEntities);
             pendingEntities.clear();
         }
 
-        /* code for collision */
-
-        // update all entities
-        for (Entity e : entityList) {
+        for (Entity e : getSnapshot()) {  //getSnapshot makes it saef
             e.update(deltaTime);
         }
-
         // remove dead particles after updating
         int removed = 0;
+
+
+        // Remove dead particles after updating
         Iterator<Entity> iterator = entityList.iterator();
         while(iterator.hasNext()) {
             Entity e = iterator.next();
@@ -43,7 +36,6 @@ public class EntityManager {
                 removed++;
             }
         }
-
         if (removed > 0) {
             System.out.println("Removed " + removed + " dead particles"); // logging
         }
@@ -60,26 +52,26 @@ public class EntityManager {
         pendingEntities.remove(entity);
     }
 
-    public int getEntityCount() {
-        return entityList.size();
-    }
+//    public int getEntityCount() {
+//        return entityList.size();
+//    }
 
-    public Entity getEntity(int index) {
-        return entityList.get(index);
+//    public Entity getEntity(int index) {
+//        return entityList.get(index);
+//    }
+
+    public List<Entity> getSnapshot() {  //new method for safe copying
+        return new ArrayList<>(entityList);
     }
 
     public <T> void forEach(Class<T> type, Consumer<T> action) {
-        for (Entity e : entityList) {
+        for (Entity e : getSnapshot()) { //getSnapshot
             if (type.isInstance(e)) {
                 action.accept(type.cast(e));
             }
         }
     }
 
-    /**
-     * Render all entities.
-     * Encapsulation: Entities draw themselves; GameScene just calls this.
-     */
     public void render(SpriteBatch batch) {
         for (Entity e : entityList) {
             e.draw(batch);
