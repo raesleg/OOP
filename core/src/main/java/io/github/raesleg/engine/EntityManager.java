@@ -1,7 +1,6 @@
-package io.github.raesleg.OOP;
+package io.github.raesleg.engine;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -9,35 +8,27 @@ import java.util.function.Consumer;
 
 public class EntityManager {
 
-    private final List<Entity> entityList = new ArrayList<>();
-    private final List<Entity> pendingEntities = new ArrayList<>();
+    private List<Entity> entityList = new ArrayList<>();
+    private List<Entity> pendingEntities = new ArrayList<>();
 
     public void update(float deltaTime) {
-
-        // Merge pending entities safely
         if (!pendingEntities.isEmpty()) {
             entityList.addAll(pendingEntities);
             pendingEntities.clear();
         }
 
-        for (Entity e : getSnapshot()) {  //getSnapshot makes it saef
+        List<Entity> snap = getSnapshot();
+        for (Entity e : snap) {
             e.update(deltaTime);
         }
-        // remove dead particles after updating
-        int removed = 0;
 
-
-        // Remove dead particles after updating
-        Iterator<Entity> iterator = entityList.iterator();
-        while(iterator.hasNext()) {
-            Entity e = iterator.next();
-            if (e instanceof ExplosionParticle && ((ExplosionParticle) e).isDead()) {
-                iterator.remove();
-                removed++;
+        // clear dead entities
+        Iterator<Entity> it = entityList.iterator();
+        while (it.hasNext()) {
+            Entity e = it.next();
+            if (e instanceof IExpirable exp && exp.isExpired()) {
+                it.remove();
             }
-        }
-        if (removed > 0) {
-            System.out.println("Removed " + removed + " dead particles"); // logging
         }
     }
 
@@ -51,14 +42,6 @@ public class EntityManager {
         entityList.remove(entity);
         pendingEntities.remove(entity);
     }
-
-//    public int getEntityCount() {
-//        return entityList.size();
-//    }
-
-//    public Entity getEntity(int index) {
-//        return entityList.get(index);
-//    }
 
     public List<Entity> getSnapshot() {  //new method for safe copying
         return new ArrayList<>(entityList);
@@ -76,5 +59,16 @@ public class EntityManager {
         for (Entity e : entityList) {
             e.draw(batch);
         }
+    }
+
+    public void dispose() {
+        for (Entity e : entityList) {
+            e.dispose();
+        }
+        for (Entity e : pendingEntities) {
+            e.dispose();
+        }
+        entityList.clear();
+        pendingEntities.clear();
     }
 }

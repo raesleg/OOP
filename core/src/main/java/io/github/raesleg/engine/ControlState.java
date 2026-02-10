@@ -1,19 +1,29 @@
-package io.github.raesleg.OOP;
+package io.github.raesleg.engine;
 
 import com.badlogic.gdx.Input;
 
-public final class Controls {
-    private Controls() {}
+public class ControlState {
 
-    public record ControlState(float xAxis, float yAxis, boolean action) {
+    private float xAxis;
+    private float yAxis;
+    private boolean action;
+
+    public ControlState(float xAxis, float yAxis, boolean action) {
+        this.xAxis = xAxis;
+        this.yAxis = yAxis;
+        this.action = action;
     }
+
+    public float xAxis() { return xAxis; }
+    public float yAxis() { return yAxis; }
+    public boolean action() { return action; }
 
     public interface ControlSource {
         ControlState get(float dt);
     }
 
-    public static final class UserControlled implements ControlSource {
-        private final IOManager io;
+    public static class UserControlled implements ControlSource {
+        private IOManager io;
 
         public UserControlled(IOManager io) {
             this.io = io;
@@ -36,14 +46,16 @@ public final class Controls {
         }
     }
 
-    public static final class AIControlled implements ControlSource {
+    public static class AIControlled implements ControlSource {
         private float t = 0f;
 
         @Override
         public ControlState get(float dt) {
             t += dt;
-            float x = (float)Math.cos(t * 0.9f);
-            float y = (float)Math.sin(t * 0.7f);
+
+            float x = 0f; 
+            float y = (float) Math.sin(t); 
+
             return new ControlState(x, y, false);
         }
     }

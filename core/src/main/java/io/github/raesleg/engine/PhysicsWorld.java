@@ -1,15 +1,16 @@
-package io.github.raesleg.OOP;
+package io.github.raesleg.engine;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 
 public class PhysicsWorld {
 
-    private final World world;
+    private World world;
 
     public PhysicsWorld(Vector2 gravity) {
         world = new World(gravity, true);
@@ -27,9 +28,6 @@ public class PhysicsWorld {
         world.dispose();
     }
 
-    // -----------------------------
-    // NEW: create 4 static walls
-    // -----------------------------
     public void createBoundsPixels(float screenWidthPx, float screenHeightPx, float ppm) {
         float w = screenWidthPx / ppm;   // meters
         float h = screenHeightPx / ppm;  // meters
@@ -62,6 +60,26 @@ public class PhysicsWorld {
 
         b.createFixture(fd);
         box.dispose();
+    }
+
+    public void createMotionZone(float centerX, float centerY, float halfW, float halfH, MotionProfile profile) {
+        BodyDef bd = new BodyDef();
+        bd.type = BodyDef.BodyType.StaticBody;
+        bd.position.set(centerX, centerY);
+
+        Body zoneBody = raw().createBody(bd);
+
+        PolygonShape shape = new PolygonShape();
+        shape.setAsBox(halfW, halfH);
+
+        FixtureDef fd = new FixtureDef();
+        fd.shape = shape;
+        fd.isSensor = true;
+
+        Fixture f = zoneBody.createFixture(fd);
+        f.setUserData(profile); 
+
+        shape.dispose();
     }
 }
 

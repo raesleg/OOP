@@ -1,4 +1,4 @@
-package io.github.raesleg.OOP;
+package io.github.raesleg.demo;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -7,6 +7,9 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+
+import io.github.raesleg.engine.IOManager;
+import io.github.raesleg.engine.Scene;
 
 /**
  * PauseScene - The pause menu overlay.
@@ -63,8 +66,8 @@ public class PauseScene extends Scene {
         font = new BitmapFont();
         layout = new GlyphLayout();
 
-        // SCENE SOVEREIGNTY: Own IOManager for this scene
         ioManager = new IOManager();
+        ioManager.update();
 
         Gdx.app.log("PauseScene", "Pause menu shown - ESC/Enter to resume, navigate with W/S or Up/Down");
     }
@@ -74,20 +77,20 @@ public class PauseScene extends Scene {
         // Input Focus Rule: Only PauseScene receives input when it's on top
 
         // ESC -> Resume game (pop this scene)
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+        if (ioManager.isKeyJustPressed(Input.Keys.ESCAPE)) {
             sceneManager.pop();
             return;
         }
 
         // Navigate menu with W/S or Up/Down arrows
-        if (Gdx.input.isKeyJustPressed(Input.Keys.W) || Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+        if (ioManager.isKeyJustPressed(Input.Keys.W) || ioManager.isKeyJustPressed(Input.Keys.UP)) {
             selectedOption--;
             if (selectedOption < 0) {
                 selectedOption = menuOptions.length - 1;
             }
         }
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.S) || Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
+        if (ioManager.isKeyJustPressed(Input.Keys.S) || ioManager.isKeyJustPressed(Input.Keys.DOWN)) {
             selectedOption++;
             if (selectedOption >= menuOptions.length) {
                 selectedOption = 0;
@@ -95,7 +98,7 @@ public class PauseScene extends Scene {
         }
 
         // ENTER -> Select current option
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+        if (ioManager.isKeyJustPressed(Input.Keys.ENTER)) {
             executeSelectedOption();
         }
     }
@@ -122,10 +125,8 @@ public class PauseScene extends Scene {
 
     @Override
     public void update(float deltaTime) {
-        // Handle input
+        ioManager.update();
         handleInput();
-
-        // No game logic updates in pause menu
     }
 
     @Override
@@ -216,21 +217,9 @@ public class PauseScene extends Scene {
 
     @Override
     public void dispose() {
-        // CRUCIAL: Dispose all resources owned by this scene
-        if (shapeRenderer != null) {
-            shapeRenderer.dispose();
-            shapeRenderer = null;
-        }
-
-        if (font != null) {
-            font.dispose();
-            font = null;
-        }
-
-        // Dispose scene-owned managers
-        if (ioManager != null) {
-            ioManager = null;
-        }
+        shapeRenderer.dispose();
+        font.dispose();
+        ioManager = null;
 
         Gdx.app.log("PauseScene", "Pause scene disposed");
     }

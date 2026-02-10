@@ -1,18 +1,19 @@
-package io.github.raesleg.OOP;
+package io.github.raesleg.engine;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
 public class PhysicsBody {
 
-    private final Body body;
+    private PhysicsWorld physicsWorld;
+    private Body body;
 
-    public PhysicsBody(PhysicsWorld physics, BodyDef.BodyType type, float x, float y) {
+    public PhysicsBody(PhysicsWorld physicsWorld, BodyDef.BodyType type, float x, float y) {
         BodyDef def = new BodyDef();
         def.type = type;
         def.position.set(x, y);
 
-        body = physics.raw().createBody(def);
+        body = physicsWorld.raw().createBody(def);
 
         CircleShape shape = new CircleShape();
         //this line affects hitbox
@@ -27,24 +28,36 @@ public class PhysicsBody {
         shape.dispose();
     }
 
-    public Vector2 getVelocity() {
-        return body.getLinearVelocity();
+    public void destroy() {
+        if (body != null) {
+            physicsWorld.raw().destroyBody(body);
+            body = null;
+        }
     }
 
+    /* setters and getters for movement */
     public void setLinearDamping(float d) {
         body.setLinearDamping(d);
     }
-
     public void setVelocity(float vx, float vy) {
         body.setLinearVelocity(vx, vy);
     }
 
-    public void applyForce(float fx, float fy) {
-        body.applyForceToCenter(fx, fy, true);
+    public Vector2 getVelocity() {
+        return body.getLinearVelocity();
     }
-
     public Vector2 getPosition() {
         return body.getPosition();
+    }
+    public float getMass() {
+        return body.getMass();
+    }
+    public Vector2 getWorldVector(Vector2 localVector) {
+        return body.getWorldVector(localVector);
+    }
+
+    public void applyLinearImpulse(Vector2 impulse) {
+        body.applyLinearImpulse(impulse, body.getWorldCenter(), true);
     }
 
     /* methods for collision */

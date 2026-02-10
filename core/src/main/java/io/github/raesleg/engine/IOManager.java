@@ -1,4 +1,4 @@
-package io.github.raesleg.OOP;
+package io.github.raesleg.engine;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -24,6 +24,8 @@ public class IOManager {
         trackKey(Input.Keys.RIGHT);
         trackKey(Input.Keys.SPACE);
         trackKey(Input.Keys.ESCAPE);
+        trackKey(Input.Keys.ENTER);
+        trackKey(Input.Keys.NUMPAD_ENTER);
 
         // mouse buttons
         left_click = Gdx.input.isButtonPressed(Input.Buttons.LEFT);

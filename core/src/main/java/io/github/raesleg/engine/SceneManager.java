@@ -1,4 +1,4 @@
-package io.github.raesleg.OOP;
+package io.github.raesleg.engine;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import java.util.Stack;

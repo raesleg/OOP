@@ -1,4 +1,4 @@
-package io.github.raesleg.OOP;
+package io.github.raesleg.demo;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -7,6 +7,9 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+
+import io.github.raesleg.engine.IOManager;
+import io.github.raesleg.engine.Scene;
 
 /**
  * StartScene - The initial menu scene (Stack Base).
@@ -43,8 +46,8 @@ public class StartScene extends Scene {
         font.setColor(Color.WHITE);
         layout = new GlyphLayout();
 
-        // Initialize scene-owned managers (IOManager for input handling)
         ioManager = new IOManager();
+        ioManager.update();
 
         Gdx.app.log("StartScene", "Scene shown - Press ENTER to start the game");
     }
@@ -52,7 +55,7 @@ public class StartScene extends Scene {
     @Override
     public void handleInput() {
         // Input Focus Rule: This only runs when StartScene is the top scene
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+        if (ioManager.isKeyJustPressed(Input.Keys.ENTER)) {
             // Transition to GameScene using set() - clears stack and starts fresh
             sceneManager.set(new GameScene());
         }
@@ -60,13 +63,8 @@ public class StartScene extends Scene {
 
     @Override
     public void update(float deltaTime) {
-        // Handle input first
+        ioManager.update();
         handleInput();
-
-        // No entities or physics in this simple menu scene
-        // If needed, managers would be updated here:
-        // entityManager.update(deltaTime);
-        // movementManager.update(entityManager.getSnapshot(), deltaTime);
     }
 
     @Override
@@ -105,17 +103,8 @@ public class StartScene extends Scene {
 
     @Override
     public void dispose() {
-        // CRUCIAL: Dispose all resources owned by this scene
-        if (font != null) {
-            font.dispose();
-            font = null;
-        }
-
-        // Dispose scene-owned managers
-        if (ioManager != null) {
-            // ioManager.dispose(); // If IOManager has dispose method
-            ioManager = null;
-        }
+        font.dispose();
+        ioManager = null;
 
         Gdx.app.log("StartScene", "Scene disposed");
     }

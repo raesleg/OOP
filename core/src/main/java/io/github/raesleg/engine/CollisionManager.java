@@ -1,4 +1,4 @@
-package io.github.raesleg.OOP;
+package io.github.raesleg.engine;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
@@ -9,6 +9,8 @@ import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.QueryCallback;
 import com.badlogic.gdx.physics.box2d.WorldManifold;
+
+import io.github.raesleg.demo.ExplosionParticle;
 
 public class CollisionManager implements ContactListener {
 
@@ -27,9 +29,12 @@ public class CollisionManager implements ContactListener {
     @Override
     public void beginContact(Contact contact) {
         // called when 2 fixtures touch
-        
         Object objectA = contact.getFixtureA().getBody().getUserData();
         Object objectB = contact.getFixtureB().getBody().getUserData();
+
+        if (handleMotionZone(contact.getFixtureA(), contact.getFixtureB(), true)) return;
+        if (handleMotionZone(contact.getFixtureB(), contact.getFixtureA(), true)) return;
+
 
         if (objectA instanceof Entity && objectB instanceof Entity) {
             handleCollision((Entity) objectA, (Entity) objectB, contact);
@@ -38,7 +43,10 @@ public class CollisionManager implements ContactListener {
 
     /* Empty functions required by ContactListener interface, TBC */
     @Override
-    public void endContact(Contact contact) {} // Called when contact stops
+    public void endContact(Contact contact) { 
+        if (handleMotionZone(contact.getFixtureA(), contact.getFixtureB(), false)) return;
+        if (handleMotionZone(contact.getFixtureB(), contact.getFixtureA(), false)) return;
+    } // Called when contact stops
 
     @Override
     public void preSolve(Contact contact, Manifold oldManifold) {} // called before physics resolution
@@ -47,6 +55,8 @@ public class CollisionManager implements ContactListener {
     public void postSolve(Contact contact, ContactImpulse impulse) {
         // called after physics resolution - used for impact detection
 
+        if (contact.getFixtureA().isSensor() || contact.getFixtureB().isSensor()) return;
+
         Object objectA = contact.getFixtureA().getBody().getUserData();
         Object objectB = contact.getFixtureB().getBody().getUserData();
 
@@ -54,6 +64,21 @@ public class CollisionManager implements ContactListener {
             float impactForce = impulse.getNormalImpulses()[0];
             handleImpact((Entity) objectA, (Entity) objectB, impactForce, contact);
         } 
+    }
+
+    private boolean handleMotionZone(Fixture entityFix, Fixture zoneFix, boolean begin) {
+        Object entityObj = entityFix.getBody().getUserData();
+        Object zoneObj = zoneFix.getUserData();
+
+        if (entityObj instanceof MovableEntity me && zoneObj instanceof MotionProfile mp) {
+            if (begin) {
+                me.onEnterZone(mp);   
+            } else {
+                me.onExitZone();     
+            }
+            return true; // handled as zone, not a normal collision
+        }
+        return false;
     }
 
     private void handleCollision(Entity a, Entity b, Contact contact) {
@@ -100,7 +125,7 @@ public class CollisionManager implements ContactListener {
 
     private boolean isAIControlled(MovableEntity entity) {
         // check if entity uses AIControlled
-        return entity.getControlSource() instanceof Controls.AIControlled;
+        return entity.getControlSource() instanceof ControlState.AIControlled;
     }
 
     private void createExplosion(Vector2 center, float force) {

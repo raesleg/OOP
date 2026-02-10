@@ -1,10 +1,13 @@
-package io.github.raesleg.OOP;
+package io.github.raesleg.demo;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 
-public class ExplosionParticle extends TextureObject {
+import io.github.raesleg.engine.IExpirable;
+import io.github.raesleg.engine.TextureObject;
+
+public class ExplosionParticle extends TextureObject implements IExpirable {
     private float lifetime;
     private float maxLifetime;
     private Vector2 velocity;
@@ -58,6 +61,12 @@ public class ExplosionParticle extends TextureObject {
 
     public boolean isDead() {
         return lifetime <= 0;
+    }
+
+    // added this for generic removal of dead entities
+    @Override
+    public boolean isExpired() {
+        return isDead(); 
     }
 
     @Override

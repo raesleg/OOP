@@ -1,13 +1,13 @@
-package io.github.raesleg.OOP;
+package io.github.raesleg.engine;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public abstract class TextureObject extends Entity{
 
-    private final Texture texture;
-    private final float width;
-    private final float height;
+    private Texture texture;
+    private float width;
+    private float height;
 
     public TextureObject(String filename, float x, float y, float width, float height) {
         super(x, y);
@@ -43,8 +43,6 @@ public abstract class TextureObject extends Entity{
 
     @Override
     public void dispose() {
-        if (texture != null) {
-            texture.dispose();
-        }
+        texture.dispose();
     }
 }
