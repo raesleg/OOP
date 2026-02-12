@@ -1,5 +1,6 @@
 package io.github.raesleg.engine;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import java.util.Stack;
 
@@ -51,6 +52,7 @@ public class SceneManager {
         scene.setSceneManager(this);
         sceneStack.push(scene);
         scene.show();
+        scene.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
     /**
@@ -89,6 +91,7 @@ public class SceneManager {
         scene.setSceneManager(this);
         sceneStack.push(scene);
         scene.show();
+        scene.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
     /**

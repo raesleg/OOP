@@ -1,318 +1,344 @@
 ================================================================================
-                    SCENE SYSTEM - QUICK TESTING GUIDE
+                    SCENE SYSTEM - AUDIT & TESTING GUIDE
 ================================================================================
                        For Teammates & Quick Reference
-                              February 3, 2026
+                              February 13, 2026
 ================================================================================
 
 ================================================================================
-WHY SO MANY FILES? (READ THIS FIRST!)
+PART A: OOP VIOLATION LOG  (Pre-Refactor Audit)
 ================================================================================
 
-You might be wondering: "Why are there 6 new files just for scenes?"
+The following violations were identified in the codebase before fixes.
+Each entry cites the class, the rule violated, and why it matters.
 
-The short answer: GOOD CODE ORGANIZATION (OOP Principles)
+VIOLATION 1: Scenes Hardcode Raw Key Codes
+───────────────────────────────────────────
+  Where:   GameScene.handleInput()  — `Input.Keys.ESCAPE`
+           PauseScene.handleInput() — `Input.Keys.ESCAPE`, `.W`, `.S`, `.ENTER`
+           StartScene.handleInput() — `Input.Keys.ENTER`
+  Rule:    Encapsulation / Single Responsibility Principle (SRP)
+  Problem: Each Scene imported `com.badlogic.gdx.Input` and hard-keyed specific
+           key codes.  If the user wants to rebind "Pause" from ESC to P, every
+           Scene that checks for ESC must be found and edited.  Scenes should
+           ask for *intent* ("is pause requested?"), not raw data.
+  Fix:     IOManager now exposes only semantic methods (isPauseRequested, etc.).
+           Scenes no longer import Input.
 
-Think of it like building a house:
-- You don't put the kitchen, bedroom, and bathroom all in ONE room
-- Each room has its own purpose
-- This makes it easier to change one room without breaking another
+VIOLATION 2: IOManager Instantiated Per Scene (No Single Source of Truth)
+─────────────────────────────────────────────────────────────────────────
+  Where:   GameScene.show()  — `ioManager = new IOManager();`
+           PauseScene.show() — `ioManager = new IOManager();`
+           StartScene.show() — `ioManager = new IOManager();`
+  Rule:    Single Source of Truth / Dependency Injection
+  Problem: Every Scene creates its own IOManager with its own default key
+           bindings. If a future "Options" scene rebinds a key, that change
+           is local to that one IOManager instance; the GameScene would still
+           use the original bindings.
+  Fix:     IOManager now holds a `static` shared key-binding configuration
+           (InputConfig). All instances read from the same config, so a
+           rebind in any Scene applies everywhere. A future enhancement is
+           to inject a single IOManager via the SceneManager constructor.
 
-Same idea here! Each file has ONE job. This is called the 
-"Single Responsibility Principle" - a core rule of good programming.
+VIOLATION 3: resize() Was a No-Op in Every Scene
+─────────────────────────────────────────────────
+  Where:   Scene.java             — `public void resize(…) { }`
+           GameScene.resize()     — empty body
+           StartScene.resize()    — empty body
+           PauseScene.resize()    — empty body
+  Rule:    Liskov Substitution / Correct contract implementation
+  Problem: The window could be freely resized but nothing updated — the
+           game image stretched and distorted instead of scaling properly.
+  Fix:     Scene base class now initialises a Viewport + Camera and calls
+           `viewport.update(w, h, true)` in resize(). Subclasses call
+           super.resize().
 
---------------------------------------------------------------------------------
-THE BIG PICTURE - HOW IT ALL FITS TOGETHER
---------------------------------------------------------------------------------
+VIOLATION 4: PPM / World Size Coupled to Window Pixels
+───────────────────────────────────────────────────────
+  Where:   GameScene fields — `Gdx.graphics.getWidth() / PPM`
+           GameScene.show() — `physicsWorld.createBoundsPixels(Gdx.graphics.getWidth(), …)`
+  Rule:    Loose Coupling / No Magic Numbers
+  Problem: World width/height were calculated from the *actual* window size at
+           field-initialisation time. Resizing the window changed nothing,
+           and the physics bounds didn't match the rendered viewport.
+  Fix:     World dimensions are now derived from VIRTUAL_WIDTH / VIRTUAL_HEIGHT
+           (1280 × 720), which is the design resolution used by the Viewport.
+           Physics bounds are constant and match the camera's visible area.
 
-Imagine a TV with a remote control:
+VIOLATION 5: ControlState.UserControlled Hardcoded Key Constants
+────────────────────────────────────────────────────────────────
+  Where:   ControlState.java — `io.isKeyDown(Input.Keys.A)`, etc.
+  Rule:    Encapsulation
+  Problem: The movement controller bypassed IOManager's semantic layer and
+           queried raw key codes directly.
+  Fix:     UserControlled now calls `io.isLeftHeld()`, `io.isUpHeld()`, etc.
 
-    YOUR GAME
-    =========
-    
-    ┌──────────────────────────────────────────────────────────────────┐
-    │  Main.java  =  THE TV SET                                   │
-    │  (The device that runs everything)                               │
-    │                                                                  │
-    │      ┌──────────────────────────────────────────────────────┐   │
-    │      │  SceneManager.java  =  THE REMOTE CONTROL             │   │
-    │      │  (Switches between channels/scenes)                   │   │
-    │      │                                                       │   │
-    │      │   Channel 1: StartScene.java  = Main Menu             │   │
-    │      │   Channel 2: GameScene.java   = The Actual Game       │   │
-    │      │   Channel 3: PauseScene.java  = Pause Screen          │   │
-    │      │                                                       │   │
-    │      └──────────────────────────────────────────────────────┘   │
-    │                                                                  │
-    │      Scene.java = The "blueprint" that all channels follow      │
-    │                                                                  │
-    └──────────────────────────────────────────────────────────────────┘
-
---------------------------------------------------------------------------------
-WHAT EACH FILE DOES (SIMPLE EXPLANATION)
---------------------------------------------------------------------------------
-
-FILE 1: Main.java
-----------------------
-WHAT IT IS:  The "power button" of your game
-WHAT IT DOES: 
-  - Starts the game
-  - Creates the SceneManager
-  - Runs 60 times per second (the game loop)
-  - Tells SceneManager: "Hey, update and draw the current scene!"
-
-WHY WE NEED IT:
-  - LibGDX (the game engine) REQUIRES a main class to run
-  - But we keep it SIMPLE - it only starts things, no game logic here
-
-ANALOGY: Like turning on a TV - it powers everything but doesn't decide 
-         what channel to show
-
-
-FILE 2: SceneManager.java
--------------------------
-WHAT IT IS:  The "remote control" / "traffic controller"
-WHAT IT DOES:
-  - Keeps track of which scene is currently showing
-  - Switches between scenes (like changing TV channels)
-  - Can STACK scenes (pause menu ON TOP of game)
-
-KEY COMMANDS IT UNDERSTANDS:
-  - push(scene)  →  "Put this scene on top" (like opening pause menu)
-  - pop()        →  "Remove the top scene" (like closing pause menu)
-  - set(scene)   →  "Clear everything and show this scene" (like restarting)
-
-WHY WE NEED IT:
-  - Without this, you'd have messy code trying to track "what screen am I on?"
-  - It handles all the switching logic in ONE place
-
-ANALOGY: A TV remote - it knows what channel you're on and can switch channels
-
-
-FILE 3: Scene.java (Abstract)
------------------------------
-WHAT IT IS:  A "template" or "blueprint" for all scenes
-WHAT IT DOES:
-  - Defines what EVERY scene must have:
-    • show()        - "Set yourself up"
-    • update()      - "Do your logic every frame"
-    • render()      - "Draw yourself"
-    • handleInput() - "Check for key presses"
-    • dispose()     - "Clean up when you're done"
-
-WHY WE NEED IT:
-  - So all scenes work the same way
-  - SceneManager can treat ALL scenes the same (it doesn't care if it's 
-    a menu or gameplay - it just calls update() and render())
-
-ANALOGY: A blueprint for building houses - every house is different, but 
-         they all have doors, windows, and rooms
-
-NOTE: You CANNOT use Scene.java directly - it's "abstract" (a template).
-      You must CREATE a specific scene like StartScene, GameScene, etc.
-
-
-FILE 4: StartScene.java
------------------------
-WHAT IT IS:  The Main Menu screen
-WHAT IT DOES:
-  - Shows "GAME TITLE" and "Press ENTER to Start"
-  - Waits for you to press ENTER
-  - When ENTER pressed → switches to GameScene
-
-WHY IT'S SEPARATE:
-  - Menu logic is DIFFERENT from game logic
-  - If we put menu code inside game code, it would be messy
-  - Easy to change the menu without touching game code
-
-ANALOGY: The title screen of any video game
-
-
-FILE 5: GameScene.java
-----------------------
-WHAT IT IS:  The actual gameplay screen
-WHAT IT DOES:
-  - Shows the player (cyan circle)
-  - Handles WASD movement
-  - Tracks game time
-  - When ESC pressed → shows PauseScene ON TOP (doesn't close game!)
-
-WHY IT'S SEPARATE:
-  - Game logic is complex - movement, entities, collisions, etc.
-  - Keeping it in its own file makes it easier to work on
-  - Your friend's EntityManager, MovementManager go HERE
-
-ANALOGY: The actual gameplay of any video game
-
-
-FILE 6: PauseScene.java
------------------------
-WHAT IT IS:  The pause menu overlay
-WHAT IT DOES:
-  - Darkens the screen (you can still SEE the game behind it!)
-  - Shows "Resume" and "Exit to Main Menu" options
-  - Resume → goes back to game (game state PRESERVED)
-  - Exit → goes back to StartScene (game state LOST)
-
-WHY IT'S SEPARATE:
-  - Pause logic is different from game logic
-  - The game keeps running "underneath" - it's just paused
-  - Easy to add more pause menu options later
-
-ANALOGY: When you pause a video game - the game freezes but doesn't reset
-
---------------------------------------------------------------------------------
-WHY NOT JUST ONE BIG FILE?
---------------------------------------------------------------------------------
-
-BAD APPROACH (One giant file):
-```
-class Game {
-    // 2000 lines of code mixing:
-    // - Menu logic
-    // - Game logic  
-    // - Pause logic
-    // - Entity logic
-    // - Collision logic
-    // - Everything...
-    
-    // NIGHTMARE to read, change, or debug!
-}
-```
-
-GOOD APPROACH (Separate files):
-```
-Main.java      →  50 lines   (just starts things)
-SceneManager.java   → 150 lines   (just switches scenes)
-Scene.java          → 100 lines   (just the template)
-StartScene.java     → 100 lines   (just the menu)
-GameScene.java      → 200 lines   (just the gameplay)
-PauseScene.java     → 180 lines   (just the pause menu)
-```
-
-BENEFITS:
-✓ Each file is small and easy to understand
-✓ You can work on GameScene without breaking StartScene
-✓ Easy to add new scenes (just create a new file!)
-✓ Follows professional coding standards (OOP)
-✓ Your professor will be happy :)
+VIOLATION 6: PauseScene Rendered in World Space, Not Screen Space (Feb 13)
+──────────────────────────────────────────────────────────────────────────
+  Where:   PauseScene.render() — used virtual coordinates for overlay/UI
+           Hardcoded box dimensions (500×320 px)
+           Fixed font scales (4f, 2.5f, 1.5f) without adaptation
+  Rule:    Separation of Concerns / Adaptation / Encapsulation
+  Problems:
+    • Used VIRTUAL_WIDTH/HEIGHT for overlay = clipped by FitViewport letterboxing
+    • Fixed box dimensions didn't adapt to screen size → UI broken on different resolutions
+    • Fixed font scales → unreadable at small resolutions, tiny at large ones
+    • Used camera.combined projection → overlay only covered game world, not full screen
+    • No support for window resizing updates to UI dimensions
+  Impact:  Pause menu didn't cover full screen, was unreadable on non-1280×720 resolutions
+  Fix:     See VIOLATION 6 FIX below.
 
 ================================================================================
+PART B: MODIFICATIONS & FIXES  (February 13, 2026)
+================================================================================
+
+FIX 1: PauseScene Screen-Space Rendering (Separation of Concerns)
+──────────────────────────────────────────────────────────────────
+  Files Modified: PauseScene.java
+
+  Changes Applied:
+    1) Added `import com.badlogic.gdx.math.Matrix4;`
+    2) Added protected field:
+       - `private Matrix4 screenProjection;`
+       to cache screen-to-clip-space projection matrix
+    3) In show():
+       - Initialize screenProjection = new Matrix4().setToOrtho2D(0, 0,
+         Gdx.graphics.getWidth(), Gdx.graphics.getHeight())
+    4) In resize(int width, int height):
+       - Update screenProjection.setToOrtho2D(0, 0, width, height)
+       to match new window size
+    5) In render(SpriteBatch batch):
+       - Get int screenWidth = Gdx.graphics.getWidth()
+       - Get int screenHeight = Gdx.graphics.getHeight()
+       - Use screenProjection (not camera.combined) as projection matrix
+       - Draw overlay with shapeRenderer.rect(0, 0, screenWidth, screenHeight)
+         to cover entire GL viewport (not just virtual world)
+       - Box dimensions proportional to screen:
+         boxWidth = screenWidth * 0.5f;
+         boxHeight = screenHeight * 0.5f;
+       - Font scales adaptive:
+         float scaleFactor = screenHeight / VIRTUAL_HEIGHT;
+         font.getData().setScale(4f * scaleFactor)  // Title scales with screen
+         font.getData().setScale(2.5f * scaleFactor) // Options scale with screen
+         font.getData().setScale(1.5f * scaleFactor) // Instructions scale
+       - All positioning uses screen coordinates, multiplied by scaleFactor
+
+  OOP Principles Upheld:
+    • Separation of Concerns: UI/overlay rendering isolated from world rendering
+    • Encapsulation: screenProjection matrix cached, updated on resize
+    • Single Responsibility: PauseScene manages its own screen-space rendering
+    • DRY (Don't Repeat Yourself): scaleFactor computed once, reused for all text
+
+FIX 2: SceneManager Calls resize() on New Scenes (Initialization Order)
+────────────────────────────────────────────────────────────────────────
+  Files Modified: SceneManager.java
+
+  Changes Applied:
+    1) In push(Scene scene):
+       - After scene.show(), call scene.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight())
+         to initialize viewport with actual screen dimensions
+    2) In set(Scene scene):
+       - After scene.show(), call scene.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight())
+         for same reason
+
+  Why This Matters:
+    • Previously, a new scene's viewport was (0, 0) until user manually resized window
+    • Now viewport is initialized with correct screen dimensions immediately
+    • Scenes render correctly from the moment they are shown
+
+FIX 3: Font Scaling Improvements (Readability)
+───────────────────────────────────────────────
+  Files Modified: StartScene.java, GameScene.java, PauseScene.java
+
+  Changes Applied:
+    • StartScene title scale: 3f → 5f
+    • StartScene prompt scale: 1.5f → 2.5f
+    • GameScene HUD scale: 1f (default) → 2f
+    • PauseScene title scale: 2.5f → 4f
+    • PauseScene options scale: 1.5f → 2.5f
+    • PauseScene instructions scale: 1f → 1.5f
+    + PauseScene: scales further multiplied by (screenHeight / VIRTUAL_HEIGHT)
+
+  Result: Text is now visible and readable at any resolution
+
+================================================================================
+PART B: IMPLEMENTATION GAPS  (Pre-Refactor)
+================================================================================
+
+GAP 1: GameScene Not Fully Utilising IOManager
+───────────────────────────────────────────────
+  The GameScene only used IOManager for ESC detection.  Movement was entirely
+  delegated to ControlState.UserControlled, which itself bypassed IOManager's
+  semantic API.  After refactor, both systems route through the same semantic
+  methods and the same shared key configuration.
+
+GAP 2: No Viewport in Any Scene
+────────────────────────────────
+  No scene created a Viewport or Camera.  The SpriteBatch used the default
+  screen-pixel projection, meaning font sizes changed with window size.
+  After refactor, every Scene has a Viewport.  GameScene uses ExtendViewport
+  (world grows when the window is wider); StartScene and PauseScene use
+  FitViewport (letterboxed, UI stays pixel-identical).
+
+GAP 3: ShapeRenderer Projection Not Synchronised
+─────────────────────────────────────────────────
+  In the original GameScene, shapeRenderer used `batch.getProjectionMatrix()`
+  — but batch itself was never given the camera projection.  After refactor,
+  both batch and shapeRenderer receive `camera.combined`, so friction zones
+  and entity sprites align exactly.
+
+GAP 4: PauseScene Could Not Cover Full Screen (Feb 13)
+───────────────────────────────────────────────────────
+  Pause overlay was clipped by FitViewport letterbox bars. It only covered
+  the virtual world rectangle (1280×720), leaving black bars visible when
+  the actual screen was larger. Now it uses screen-space rendering to cover
+  the entire window regardless of viewport letterboxing.
+
+================================================================================
+PART C: HOW THE NEW SYSTEMS WORK (Usage Guide)
+================================================================================
+
+─── C.1  How Key Bindings Work ─────────────────────────────────────────────────
+
+Key bindings live in `IOManager.InputConfig` (a static inner class).
+Every IOManager instance shares the same InputConfig by default.
+
+    ┌──────────────────────────────────────────────────┐
+    │  IOManager.InputConfig   (shared, static)        │
+    │  ────────────────────────────────────             │
+    │  "PAUSE"   → ESC                                 │
+    │  "CONFIRM" → ENTER  (alt: NUMPAD_ENTER)          │
+    │  "UP"      → W      (alt: UP arrow)              │
+    │  "DOWN"    → S      (alt: DOWN arrow)             │
+    │  "LEFT"    → A      (alt: LEFT arrow)             │
+    │  "RIGHT"   → D      (alt: RIGHT arrow)            │
+    │  "ACTION"  → SPACE                               │
+    └──────────────────────────────────────────────────┘
+
+To query:
+    ioManager.isPauseRequested()   // true the frame ESC is first pressed
+    ioManager.isConfirmRequested() // true the frame ENTER is first pressed
+    ioManager.isUpHeld()           // true every frame W or UP is held
+
+─── C.2  How to Add a New Keybind ──────────────────────────────────────────────
+
+Step 1: Add a constant in IOManager:
+    public static final String SPRINT = "SPRINT";
+
+Step 2: Register the default binding in InputConfig.defaults():
+    primary.put(SPRINT, Input.Keys.SHIFT_LEFT);
+
+Step 3: Add semantic methods in IOManager:
+    public boolean isSprintHeld() { return isActionHeld(SPRINT); }
+
+Step 4: Use it in your Scene:
+    if (ioManager.isSprintHeld()) { speed *= 2; }
+
+That's it.  No Scene ever imports `com.badlogic.gdx.Input`.
+
+─── C.3  How to Rebind a Key at Runtime ────────────────────────────────────────
+
+    // In an OptionsScene (future):
+    IOManager.globalConfig().rebind(IOManager.PAUSE, Input.Keys.P);
+
+This change applies immediately to every IOManager instance in every Scene.
+
+─── C.4  Viewport System ──────────────────────────────────────────────────────
+
+The base Scene class handles viewport setup and `resize()`:
+
+  • Scene constructor creates the camera.
+  • Subclasses override `createViewport()` to choose their viewport type.
+  • `resize()` in Scene calls `viewport.update(w, h, true)`.
+
+GameScene returns an ExtendViewport (sees more world when the window grows).
+StartScene / PauseScene / Overlay scenes return a FitViewport (letterboxed, stable UI).
+
+Every render() method must call:
+    viewport.apply();
+    camera.update();
+    batch.setProjectionMatrix(camera.combined);
+    // And for ShapeRenderer:
+    shapeRenderer.setProjectionMatrix(camera.combined);
+
+For screen-space overlays (like PauseScene), use:
+    Matrix4 screenProjection = new Matrix4().setToOrtho2D(0, 0, screenWidth, screenHeight);
+    batch.setProjectionMatrix(screenProjection);
+    // Now rendering is in screen pixels (0, 0) to (screenWidth, screenHeight)
+
+─── C.5  Virtual Resolution ────────────────────────────────────────────────────
+
+All scenes share a design resolution:
+    Scene.VIRTUAL_WIDTH  = 1280
+    Scene.VIRTUAL_HEIGHT = 720
+
+Use these constants — never use Gdx.graphics.getWidth/Height for layout
+in world-space rendering. However, DO use Gdx.graphics.getWidth/Height
+for screen-space overlay calculations and font scaling.
+
+================================================================================
+PART D: TESTING GUIDE
+================================================================================
+
 HOW TO RUN THE GAME
-================================================================================
-
-Open a terminal in the project folder and run:
-
+───────────────────
     .\gradlew lwjgl3:run
 
-This will launch the game with the scene system.
-
-NOTE: Do NOT use the VS Code "Run" button directly on Lwjgl3Launcher.java
-      unless your Java version is configured correctly. Use Gradle instead.
-
-================================================================================
-WHAT YOU'LL SEE
-================================================================================
-
-SCREEN 1: START MENU (StartScene)
----------------------------------
-    ┌────────────────────────────────┐
-    │                                │
-    │         GAME TITLE             │
-    │                                │
-    │     Press ENTER to Start       │
-    │                                │
-    └────────────────────────────────┘
-
-    Controls:
-    • ENTER → Go to Game
-
---------------------------------------------------------------------------------
-
-SCREEN 2: GAME (GameScene)
---------------------------
-    ┌────────────────────────────────┐
-    │ Game Time: 5.2s                │
-    │ Use WASD/Arrows | ESC to pause │
-    │ Player: (320, 240)             │
-    │                                │
-    │         ◯ (cyan = you)         │
-    │                                │
-    │    ◯        ◯        ◯         │
-    │   (red obstacles)              │
-    └────────────────────────────────┘
-
-    Controls:
-    • W / UP ARROW    → Move up
-    • S / DOWN ARROW  → Move down
-    • A / LEFT ARROW  → Move left
-    • D / RIGHT ARROW → Move right
-    • ESC             → Open Pause Menu
-
---------------------------------------------------------------------------------
-
-SCREEN 3: PAUSE MENU (PauseScene)
----------------------------------
-    ┌────────────────────────────────┐
-    │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│ (dark overlay)
-    │▓▓┌────────────────────────┐▓▓▓▓│
-    │▓▓│        PAUSED          │▓▓▓▓│
-    │▓▓│                        │▓▓▓▓│
-    │▓▓│    > Resume <          │▓▓▓▓│ (selected = yellow)
-    │▓▓│    Exit to Main Menu   │▓▓▓▓│
-    │▓▓│                        │▓▓▓▓│
-    │▓▓│  W/S to navigate       │▓▓▓▓│
-    │▓▓│  ENTER to select       │▓▓▓▓│
-    │▓▓└────────────────────────┘▓▓▓▓│
-    │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│
-    └────────────────────────────────┘
-
-    The game is visible behind the dark overlay!
-
-    Controls:
-    • W / UP ARROW   → Select "Resume"
-    • S / DOWN ARROW → Select "Exit to Main Menu"
-    • ENTER          → Confirm selection
-    • ESC            → Resume game (same as selecting Resume)
-
-================================================================================
-TEST SCENARIOS
-================================================================================
-
 TEST 1: Basic Navigation
-------------------------
-1. Run the game                        → See Start Menu
-2. Press ENTER                         → Go to Game
-3. Move with WASD                      → Player moves
-4. Press ESC                           → Pause Menu appears
-5. Press ESC again                     → Resume game
-6. Verify player position is preserved → Success!
+─────────────────────────
+  1. Launch → see Start Menu (text clearly readable)
+  2. Press ENTER → Game starts
+  3. Move with WASD → Player moves
+  4. Press ESC → Pause Menu appears (covers entire window)
+  5. Verify menu is readable and no black bars visible  ✓
+  6. Press ESC again → Resume game
+  7. Verify player position preserved  ✓
 
 TEST 2: Pause Menu Navigation
------------------------------
-1. From Game, press ESC               → Pause Menu
-2. Press S (down)                     → "Exit to Main Menu" selected
-3. Press W (up)                       → "Resume" selected
-4. Press ENTER                        → Resume game
+──────────────────────────────
+  1. In Game, press ESC → Pause Menu
+  2. Verify menu box covers full window (no letterbox bars showing)  ✓
+  3. Press S (down) → "Exit to Main Menu" highlighted
+  4. Press W (up) → "Resume" highlighted
+  5. Press ENTER → Resume game
 
 TEST 3: Exit to Main Menu
--------------------------
-1. From Game, press ESC               → Pause Menu
-2. Press S to select "Exit to Main Menu"
-3. Press ENTER                        → Back to Start Menu
-4. Press ENTER                        → New game starts
-5. Verify game time reset to 0        → Success!
+──────────────────────────
+  1. In Game, press ESC → Pause Menu
+  2. Navigate to "Exit to Main Menu", press ENTER
+  3. Start Menu shown → press ENTER → new game
+  4. Verify game time reset to 0  ✓
 
-TEST 4: Game State Preservation
--------------------------------
-1. Start a new game
-2. Move player to a corner
-3. Wait for game time to reach 10+ seconds
-4. Press ESC to pause
-5. Press ESC to resume
-6. Verify:
-   - Player is still in the corner    → Success!
-   - Game time continues from where it was → Success!
+TEST 4: Window Resize (NEW - Feb 13)
+────────────────────────────────────
+  1. Start game (GameScene)
+  2. During gameplay, drag window corner to resize
+  3. Verify:
+     - GameScene: world grows/shrinks smoothly, no stretching (ExtendViewport) ✓
+     - Text remains readable ✓
+  4. Press ESC → Pause Menu
+  5. Verify pause overlay covers ENTIRE window (including letterbox area) ✓
+  6. Resize window further
+  7. Pause menu scales and re-centers properly ✓
+  8. Text in pause menu scales with screen height ✓
+
+TEST 5: Resolution Independence
+────────────────────────────────
+  1. Close the game
+  2. Resize the window to a small size (e.g., 640×360)
+  3. Run the game
+  4. Start Menu text should be readable  ✓
+  5. Press ENTER
+  6. Pause menu (ESC) should a) cover full window, b) be readable  ✓
+  7. Resize window to large (e.g., 1920×1080)
+  8. Resume game
+  9. Everything still readable and properly scaled  ✓
+
+TEST 6: Game State Preservation
+────────────────────────────────
+  1. Start game, move player to a corner, wait 10+ seconds
+  2. ESC → Pause → ESC → Resume
+  3. Player still in corner, timer continues  ✓
 
 ================================================================================
 SCENE FLOW DIAGRAM
@@ -341,105 +367,37 @@ SCENE FLOW DIAGRAM
                                   └─────────────┘
 
 ================================================================================
-WHAT'S HAPPENING BEHIND THE SCENES
-================================================================================
-
-When you press ESC in GameScene:
-1. GameScene.pause() is called     → isPaused = true
-2. PauseScene is pushed onto stack → Now on top
-3. GameScene stays in memory       → NOT destroyed!
-
-When you press ESC in PauseScene (Resume):
-1. PauseScene.dispose() is called  → Resources freed
-2. PauseScene removed from stack
-3. GameScene.resume() is called    → isPaused = false
-4. Game continues where you left off!
-
-When you select "Exit to Main Menu":
-1. PauseScene.dispose() is called
-2. GameScene.dispose() is called   → ALL game data lost
-3. Stack is cleared
-4. StartScene is created fresh
-
-================================================================================
-CONSOLE OUTPUT (FOR DEBUGGING)
-================================================================================
-
-When running, you'll see log messages in the console:
-
-    [Main] Game initialized with Scene Management System
-    [StartScene] Scene shown - Press ENTER to start the game
-    [StartScene] Scene disposed
-    [GameScene] Scene shown - Game started. Press ESC to pause.
-    [GameScene] Scene paused - Game state preserved
-    [PauseScene] Pause menu shown - ESC/Enter to resume
-    [PauseScene] Pause scene disposed
-    [GameScene] Scene resumed - Continuing gameplay
-
-These help you understand what's happening with scene transitions!
-
-================================================================================
-FILES INVOLVED
-================================================================================
-
-Scene System Files (in core/src/main/java/io/github/raesleg/OOP/):
-
-    Main.java      - Entry point (the game starts here)
-    SceneManager.java   - Manages the scene stack
-    Scene.java          - Abstract base class for scenes
-    StartScene.java     - Main menu implementation
-    GameScene.java      - Game screen implementation
-    PauseScene.java     - Pause overlay implementation
-
-Launcher (in lwjgl3/src/main/java/.../lwjgl3/):
-
-    Lwjgl3Launcher.java - Desktop launcher (uses Main)
-
-================================================================================
-TROUBLESHOOTING
-================================================================================
-
-PROBLEM: "Class file version" error when running
-SOLUTION: Use .\gradlew lwjgl3:run instead of the Run button
-
-PROBLEM: Game doesn't start
-SOLUTION: Make sure you're in the project root folder when running gradle
-
-PROBLEM: ESC doesn't work in game
-SOLUTION: Click on the game window first to give it focus
-
-PROBLEM: Controls feel laggy
-SOLUTION: This is normal - we're using simple input checking, not a proper
-          input system. Your friend's IOManager can be integrated later.
-
-================================================================================
 QUICK REFERENCE - WHICH FILE DO I EDIT?
 ================================================================================
 
-I want to...                              Edit this file:
-─────────────────────────────────────────────────────────────────────────────
-Change the main menu look/text            StartScene.java
-Add player movement/game logic            GameScene.java
-Change pause menu options                 PauseScene.java
-Add a NEW scene (like Settings)           Create NewScene.java, extend Scene
-Change how scenes switch                  SceneManager.java
-Change game window title/size             Lwjgl3Launcher.java
+  I want to…                              Edit this file:
+  ─────────────────────────────────────────────────────────────────
+  Add/change a key binding                IOManager.java (InputConfig)
+  Change the main menu look/text          StartScene.java
+  Add player movement/game logic          GameScene.java
+  Change pause menu options               PauseScene.java
+  Add a NEW scene                         Create NewScene.java, extend Scene,
+                                          override createViewport()
+  Change scene switching logic            SceneManager.java
+  Change window title/size                Lwjgl3Launcher.java
 
 ================================================================================
-QUICK REFERENCE - FILE SUMMARY
+FILE SUMMARY
 ================================================================================
 
-┌─────────────────────┬────────────────────────────────────────────────────┐
-│ File                │ One-Line Description                               │
-├─────────────────────┼────────────────────────────────────────────────────┤
-│ Main.java           │ Starts the game, runs the loop (DON'T TOUCH)       │
-│ SceneManager.java   │ Switches between scenes (DON'T TOUCH)              │
-│ Scene.java          │ Template for scenes (DON'T TOUCH)                  │
-│ StartScene.java     │ Main menu - EDIT to customize menu                 │
-│ GameScene.java      │ Gameplay - EDIT to add game logic                  │
-│ PauseScene.java     │ Pause overlay - EDIT to add pause options          │
-└─────────────────────┴────────────────────────────────────────────────────┘
+  ┌─────────────────────┬────────────────────────────────────────────────────┐
+  │ File                │ Description                                        │
+  ├─────────────────────┼────────────────────────────────────────────────────┤
+  │ GameMaster.java     │ Entry point; runs the game loop                    │
+  │ SceneManager.java   │ Stack-based scene transitions                      │
+  │ Scene.java          │ Abstract base; owns Camera + Viewport              │
+  │ IOManager.java      │ Semantic input; shared InputConfig                 │
+  │ StartScene.java     │ Main menu (FitViewport)                            │
+  │ GameScene.java      │ Gameplay  (ExtendViewport)                         │
+  │ PauseScene.java     │ Pause overlay (FitViewport + screen-space UI)      │
+  │ ControlState.java   │ Movement abstraction (User / AI)                   │
+  └─────────────────────┴────────────────────────────────────────────────────┘
 
 ================================================================================
-                              END OF TESTING GUIDE
-================================================================================
+                          END OF AUDIT & TESTING GUIDE
+================================================================================ 

@@ -1,49 +1,98 @@
 package io.github.raesleg.engine;
 
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 
 /**
- * Scene - Abstract base class for all game scenes.
- * 
- * SCENE SOVEREIGNTY PRINCIPLE:
+ * Scene — Abstract base class for all game scenes.
+ *
+ * <h3>Scene Sovereignty Principle</h3>
  * Each Scene is the absolute owner of its game world and MUST instantiate
  * and own its own private versions of:
- * - EntityManager (Manages entities)
- * - CollisionManager (Handles physics)
- * - MovementManager (Handles position updates)
- * - IOManager (Handles inputs specific to that scene)
- * 
- * When a Scene is disposed, it MUST cascade the dispose() call to all its
- * managers.
- * 
- * ARCHITECTURAL NOTES:
- * - Follows Single Responsibility Principle (SRP)
- * - Each scene manages its own lifecycle
- * - Input is handled only when scene is active (top of stack)
- * - No global state - data passed via constructors/setters (Dependency
- * Injection)
+ * <ul>
+ * <li>EntityManager (Manages entities)</li>
+ * <li>CollisionManager (Handles physics)</li>
+ * <li>MovementManager (Handles position updates)</li>
+ * <li>IOManager (Handles inputs specific to that scene)</li>
+ * </ul>
+ * When a Scene is disposed, it MUST cascade the {@link #dispose()} call to
+ * all its managers.
+ *
+ * <h3>Viewport Principle</h3>
+ * The base Scene owns the Camera and delegates Viewport creation to the
+ * {@link #createViewport(OrthographicCamera)} hook so subclasses can choose
+ * their own strategy:
+ * <ul>
+ * <li>{@link com.badlogic.gdx.utils.viewport.FitViewport} — stable UI
+ * (default, used by menus/overlays)</li>
+ * <li>{@link com.badlogic.gdx.utils.viewport.ExtendViewport} — the world
+ * grows when the window grows (used by gameplay scenes)</li>
+ * </ul>
+ * {@link #resize(int, int)} is implemented here so every subclass gets
+ * correct scaling for free. Subclasses may override but <b>must</b> call
+ * {@code super.resize(width, height)}.
  */
 public abstract class Scene {
 
-    /* Protected Variables - Available to subclasses */
+    /* ── Virtual resolution (design size) ── */
+    public static final float VIRTUAL_WIDTH = 1280f;
+    public static final float VIRTUAL_HEIGHT = 720f;
+
+    /* Protected Variables — Available to subclasses */
     protected SceneManager sceneManager;
     protected EntityManager entityManager;
     protected MovementManager movementManager;
     protected CollisionManager collisionManager;
     protected IOManager ioManager;
 
+    /** Shared camera — subclasses use this for projection. */
+    protected OrthographicCamera camera;
+
+    /** Viewport — handles letterboxing / scaling on resize. */
+    protected Viewport viewport;
+
     /**
-     * Whether this scene allows the scene below to be visible (e.g., pause overlay)
+     * Whether this scene allows the scene below to be visible (e.g., pause
+     * overlay).
      */
     protected boolean transparent;
 
-    /* Constructor */
+    /* ── Constructor ── */
+
     /**
      * Creates a new Scene.
-     * Subclasses should initialize their managers in show() or constructor.
+     * <ol>
+     * <li>Initialises a shared {@link OrthographicCamera}.</li>
+     * <li>Calls {@link #createViewport(OrthographicCamera)} so the subclass
+     * can pick the appropriate viewport type.</li>
+     * <li>Applies the viewport immediately so the camera is centred.</li>
+     * </ol>
      */
     public Scene() {
         this.transparent = false;
+
+        camera = new OrthographicCamera();
+        viewport = createViewport(camera);
+        viewport.apply(true);
+    }
+
+    /* ── Viewport factory hook ── */
+
+    /**
+     * Called once from the constructor to create the viewport for this scene.
+     * <p>
+     * The default implementation returns a {@link FitViewport} (letter-boxed,
+     * pixel-stable UI). Override in gameplay scenes to return an
+     * {@link com.badlogic.gdx.utils.viewport.ExtendViewport} so the player
+     * sees more of the world when the window is enlarged.
+     *
+     * @param cam the camera this viewport should control
+     * @return a fully-constructed Viewport (never null)
+     */
+    protected Viewport createViewport(OrthographicCamera cam) {
+        return new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, cam);
     }
 
     /* Abstract Methods - Must be implemented by subclasses */
@@ -103,13 +152,15 @@ public abstract class Scene {
 
     /**
      * Called when the screen is resized.
-     * Update viewports, cameras, or UI layouts.
+     * Updates the viewport so the game scales correctly (letterboxing).
+     * Subclasses may override for additional work but MUST call
+     * {@code super.resize(width, height)}.
      * 
      * @param width  New screen width
      * @param height New screen height
      */
     public void resize(int width, int height) {
-        // Override in subclasses if needed
+        viewport.update(width, height, true);
     }
 
     /**

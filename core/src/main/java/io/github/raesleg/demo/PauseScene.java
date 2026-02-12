@@ -1,12 +1,13 @@
 package io.github.raesleg.demo;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Matrix4;
 
 import io.github.raesleg.engine.IOManager;
 import io.github.raesleg.engine.Scene;
@@ -16,6 +17,9 @@ import io.github.raesleg.engine.Scene;
  * 
  * This scene overlays on top of GameScene (which remains in memory).
  * The scene is marked as TRANSPARENT so GameScene is rendered behind it.
+ * 
+ * Renders in SCREEN SPACE (not world space) so the overlay covers the entire
+ * window regardless of viewport letterboxing or screen resolution.
  * 
  * TRIGGERS:
  * - Press ESC or "Resume" -> Calls sceneManager.pop() (Returns to GameScene)
@@ -41,6 +45,9 @@ public class PauseScene extends Scene {
     private Color overlayColor;
     private Color selectedColor;
     private Color unselectedColor;
+
+    /* Screen-space projection — updated on resize */
+    private Matrix4 screenProjection;
 
     /* Constructor */
     public PauseScene() {
@@ -69,6 +76,10 @@ public class PauseScene extends Scene {
         ioManager = new IOManager();
         ioManager.update();
 
+        // Initialize screen-space projection matrix
+        screenProjection = new Matrix4().setToOrtho2D(0, 0,
+                Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
         Gdx.app.log("PauseScene", "Pause menu shown - ESC/Enter to resume, navigate with W/S or Up/Down");
     }
 
@@ -77,20 +88,20 @@ public class PauseScene extends Scene {
         // Input Focus Rule: Only PauseScene receives input when it's on top
 
         // ESC -> Resume game (pop this scene)
-        if (ioManager.isKeyJustPressed(Input.Keys.ESCAPE)) {
+        if (ioManager.isPauseRequested()) {
             sceneManager.pop();
             return;
         }
 
         // Navigate menu with W/S or Up/Down arrows
-        if (ioManager.isKeyJustPressed(Input.Keys.W) || ioManager.isKeyJustPressed(Input.Keys.UP)) {
+        if (ioManager.isUpJustPressed()) {
             selectedOption--;
             if (selectedOption < 0) {
                 selectedOption = menuOptions.length - 1;
             }
         }
 
-        if (ioManager.isKeyJustPressed(Input.Keys.S) || ioManager.isKeyJustPressed(Input.Keys.DOWN)) {
+        if (ioManager.isDownJustPressed()) {
             selectedOption++;
             if (selectedOption >= menuOptions.length) {
                 selectedOption = 0;
@@ -98,7 +109,7 @@ public class PauseScene extends Scene {
         }
 
         // ENTER -> Select current option
-        if (ioManager.isKeyJustPressed(Input.Keys.ENTER)) {
+        if (ioManager.isConfirmRequested()) {
             executeSelectedOption();
         }
     }
@@ -131,25 +142,31 @@ public class PauseScene extends Scene {
 
     @Override
     public void render(SpriteBatch batch) {
-        // NOTE: GameScene is rendered first because this scene is transparent
-        // We only draw the overlay on top
+        // Get actual screen dimensions (cached by LibGDX)
+        int screenWidth = Gdx.graphics.getWidth();
+        int screenHeight = Gdx.graphics.getHeight();
 
-        float screenWidth = Gdx.graphics.getWidth();
-        float screenHeight = Gdx.graphics.getHeight();
+        // Apply viewport (for consistency with GameScene rendering behind us)
+        viewport.apply();
+        camera.update();
+
+        // Switch to screen-space projection so overlay covers entire window
+        batch.setProjectionMatrix(screenProjection);
+        shapeRenderer.setProjectionMatrix(screenProjection);
 
         // Enable blending for transparency
-        Gdx.gl.glEnable(Gdx.gl.GL_BLEND);
-        Gdx.gl.glBlendFunc(Gdx.gl.GL_SRC_ALPHA, Gdx.gl.GL_ONE_MINUS_SRC_ALPHA);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
-        // Draw semi-transparent overlay
+        // Draw semi-transparent overlay covering ENTIRE screen
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(overlayColor);
         shapeRenderer.rect(0, 0, screenWidth, screenHeight);
         shapeRenderer.end();
 
-        // Draw pause menu box
-        float boxWidth = 400f;
-        float boxHeight = 250f;
+        // Draw pause menu box — dimensions proportional to screen size
+        float boxWidth = screenWidth * 0.5f; // 50% of screen width
+        float boxHeight = screenHeight * 0.5f; // 50% of screen height
         float boxX = (screenWidth - boxWidth) / 2;
         float boxY = (screenHeight - boxHeight) / 2;
 
@@ -164,23 +181,26 @@ public class PauseScene extends Scene {
         shapeRenderer.rect(boxX, boxY, boxWidth, boxHeight);
         shapeRenderer.end();
 
-        Gdx.gl.glDisable(Gdx.gl.GL_BLEND);
+        Gdx.gl.glDisable(GL20.GL_BLEND);
 
-        // Draw text
+        // Draw text with screen-aware font scaling
         batch.begin();
 
+        // Scale fonts relative to screen height (base scale for 720p virtual height)
+        float scaleFactor = screenHeight / VIRTUAL_HEIGHT;
+
         // Draw "PAUSED" title
-        font.getData().setScale(2.5f);
+        font.getData().setScale(4f * scaleFactor);
         font.setColor(Color.WHITE);
         layout.setText(font, "PAUSED");
         float titleX = (screenWidth - layout.width) / 2;
-        float titleY = boxY + boxHeight - 30f;
+        float titleY = boxY + boxHeight - (30f * scaleFactor);
         font.draw(batch, "PAUSED", titleX, titleY);
 
         // Draw menu options
-        font.getData().setScale(1.5f);
-        float optionY = boxY + boxHeight - 100f;
-        float optionSpacing = 50f;
+        font.getData().setScale(2.5f * scaleFactor);
+        float optionY = boxY + boxHeight - (110f * scaleFactor);
+        float optionSpacing = 60f * scaleFactor;
 
         for (int i = 0; i < menuOptions.length; i++) {
             // Highlight selected option
@@ -199,12 +219,12 @@ public class PauseScene extends Scene {
         }
 
         // Draw instructions
-        font.getData().setScale(1f);
+        font.getData().setScale(1.5f * scaleFactor);
         font.setColor(Color.GRAY);
         String instructions = "W/S or Up/Down to navigate | ENTER to select | ESC to resume";
         layout.setText(font, instructions);
         float instrX = (screenWidth - layout.width) / 2;
-        float instrY = boxY + 30f;
+        float instrY = boxY + (30f * scaleFactor);
         font.draw(batch, instructions, instrX, instrY);
 
         batch.end();
@@ -212,7 +232,9 @@ public class PauseScene extends Scene {
 
     @Override
     public void resize(int width, int height) {
-        // Overlay adjusts automatically based on screen size
+        super.resize(width, height);
+        // Update screen-space projection matrix for new window size
+        screenProjection.setToOrtho2D(0, 0, width, height);
     }
 
     @Override
