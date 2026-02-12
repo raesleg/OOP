@@ -5,8 +5,9 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.Box2D;
 
-import io.github.raesleg.demo.StartScene;
 import io.github.raesleg.engine.movement.IOManager;
+import io.github.raesleg.engine.scene.SceneManager;
+import io.github.raesleg.engine.scene.StartScene;
 
 public class GameMaster extends ApplicationAdapter {
 

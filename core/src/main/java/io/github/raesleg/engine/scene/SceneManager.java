@@ -1,4 +1,4 @@
-package io.github.raesleg.engine;
+package io.github.raesleg.engine.scene;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;

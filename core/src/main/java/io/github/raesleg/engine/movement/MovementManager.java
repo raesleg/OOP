@@ -1,7 +1,7 @@
 package io.github.raesleg.engine.movement;
 
-import io.github.raesleg.engine.Entity;
-import io.github.raesleg.engine.EntityManager;
+import io.github.raesleg.engine.entity.Entity;
+import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 
 public class MovementManager {

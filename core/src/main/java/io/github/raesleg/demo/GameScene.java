@@ -12,17 +12,19 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
-import io.github.raesleg.engine.CollisionManager;
 import io.github.raesleg.engine.Constants;
-import io.github.raesleg.engine.movement.ControlState;
+import io.github.raesleg.engine.movement.AIControlled;
 import io.github.raesleg.engine.movement.IOManager;
 import io.github.raesleg.engine.movement.MovementManager;
-import io.github.raesleg.engine.EntityManager;
-import io.github.raesleg.engine.Scene;
-import io.github.raesleg.engine.Shape;
-import io.github.raesleg.engine.Surfaces;
+import io.github.raesleg.engine.movement.UserControlled;
+import io.github.raesleg.engine.collision.CollisionManager;
+import io.github.raesleg.engine.entity.EntityManager;
+import io.github.raesleg.engine.entity.Shape;
+import io.github.raesleg.engine.entity.Surfaces;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.PhysicsWorld;
+import io.github.raesleg.engine.scene.PauseScene;
+import io.github.raesleg.engine.scene.Scene;
 
 public class GameScene extends Scene {
 
@@ -110,7 +112,7 @@ public class GameScene extends Scene {
                 200,
                 64f,
                 64f,
-                new ControlState.UserControlled(ioManager),
+                new UserControlled(ioManager),
                 MotionTuning.DEFAULT);
 
         droplet = new MovableEntity(
@@ -120,7 +122,7 @@ public class GameScene extends Scene {
                 300,
                 64f,
                 64f,
-                new ControlState.AIControlled(),
+                new AIControlled(),
                 MotionTuning.DEFAULT);
 
         entityManager.addEntity(bucket);

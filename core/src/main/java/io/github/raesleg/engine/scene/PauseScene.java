@@ -1,4 +1,4 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.engine.scene;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -8,8 +8,6 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
-
-import io.github.raesleg.engine.Scene;
 /**
  * PauseScene - The pause menu overlay.
  * 

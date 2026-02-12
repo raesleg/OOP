@@ -5,17 +5,6 @@ import com.badlogic.gdx.physics.box2d.*;
 
 import io.github.raesleg.engine.Constants;
 
-/**
- * PhysicsBody \u2014 Wraps a Box2D {@link Body} with convenience helpers.
- *
- * <h3>Fix: Ghost Shapes (Data Integrity)</h3>
- * The constructor now accepts {@code widthPx} and {@code heightPx}
- * (in render-pixels) and converts them to Box2D meters using
- * {@link Constants#PPM}. A {@link PolygonShape} sized with
- * {@code setAsBox(halfW, halfH)} replaces the old hard-coded
- * {@code CircleShape.setRadius(0.25f)}, so the physics hitbox
- * actually matches the entity\u2019s sprite dimensions.
- */
 public class PhysicsBody {
 
     private final PhysicsWorld physicsWorld;

@@ -1,5 +1,5 @@
 package io.github.raesleg.engine.movement;
 
-public class IControllable {
-    
+public interface IControllable {
+    ControlState get(float dt);
 }

@@ -3,7 +3,7 @@ package io.github.raesleg.engine.physics;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
 
-import io.github.raesleg.engine.MotionProfile;
+import io.github.raesleg.engine.movement.MotionProfile;
 
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;

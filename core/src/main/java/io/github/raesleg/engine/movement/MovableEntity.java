@@ -4,18 +4,17 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 
 import io.github.raesleg.engine.Constants;
-import io.github.raesleg.engine.MotionProfile;
-import io.github.raesleg.engine.TextureObject;
+import io.github.raesleg.engine.entity.TextureObject;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 
 public class MovableEntity extends TextureObject implements IMovable {
 
-    private final ControlState.ControlSource controls;
-    private final PhysicsBody body;
+    private IControllable controls;
+    private PhysicsBody body;
 
-    private final Vector2 v1 = new Vector2();
-    private final Vector2 v2 = new Vector2();
+    private Vector2 v1 = new Vector2();
+    private Vector2 v2 = new Vector2();
 
     private MotionProfile base;
     private MotionProfile profile;
@@ -29,7 +28,7 @@ public class MovableEntity extends TextureObject implements IMovable {
             float y,
             float width,
             float height,
-            ControlState.ControlSource controls,
+            IControllable controls,
             MotionProfile base) {
         super(filename, x, y, width, height);
         this.controls = controls;
@@ -49,7 +48,7 @@ public class MovableEntity extends TextureObject implements IMovable {
         return body;
     }
 
-    public ControlState.ControlSource getControlSource() {
+    public IControllable getControls() {    
         return controls;
     }
 

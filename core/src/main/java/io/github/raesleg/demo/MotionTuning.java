@@ -1,6 +1,6 @@
 package io.github.raesleg.demo;
 
-import io.github.raesleg.engine.MotionProfile;
+import io.github.raesleg.engine.movement.MotionProfile;
 
 public final class MotionTuning {
 

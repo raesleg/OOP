@@ -1,6 +1,7 @@
-package io.github.raesleg.engine;
+package io.github.raesleg.engine.entity;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

@@ -5,8 +5,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 
 import io.github.raesleg.engine.Constants;
-import io.github.raesleg.engine.IExpirable;
-import io.github.raesleg.engine.TextureObject;
+import io.github.raesleg.engine.entity.IExpirable;
+import io.github.raesleg.engine.entity.TextureObject;
 
 public class ExplosionParticle extends TextureObject implements IExpirable {
     private float lifetime;

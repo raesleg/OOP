@@ -1,10 +1,13 @@
-package io.github.raesleg.engine;
+package io.github.raesleg.engine.scene;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import io.github.raesleg.engine.GameMaster;
+import io.github.raesleg.engine.collision.CollisionManager;
+import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.movement.IOManager;
 import io.github.raesleg.engine.movement.MovementManager;
 

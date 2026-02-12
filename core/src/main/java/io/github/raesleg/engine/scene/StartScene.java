@@ -1,4 +1,4 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.engine.scene;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -7,7 +7,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import io.github.raesleg.engine.Scene;
+import io.github.raesleg.demo.GameScene;
 /**
  * StartScene - The initial menu scene (Stack Base).
  * 

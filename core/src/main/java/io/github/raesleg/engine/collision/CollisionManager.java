@@ -1,4 +1,4 @@
-package io.github.raesleg.engine;
+package io.github.raesleg.engine.collision;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Contact;
@@ -9,7 +9,11 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.WorldManifold;
 
 import io.github.raesleg.demo.ExplosionParticle;
-import io.github.raesleg.engine.movement.ControlState;
+import io.github.raesleg.engine.Constants;
+import io.github.raesleg.engine.entity.Entity;
+import io.github.raesleg.engine.entity.EntityManager;
+import io.github.raesleg.engine.movement.AIControlled;
+import io.github.raesleg.engine.movement.MotionProfile;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
@@ -131,7 +135,7 @@ public class CollisionManager implements ContactListener {
 
     private boolean isAIControlled(MovableEntity entity) {
         // check if entity uses AIControlled
-        return entity.getControlSource() instanceof ControlState.AIControlled;
+        return entity.getControls() instanceof AIControlled;
     }
 
     private void createExplosion(Vector2 center, float force) {
