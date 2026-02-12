@@ -7,22 +7,25 @@ import com.badlogic.gdx.physics.box2d.ContactImpulse;
 import com.badlogic.gdx.physics.box2d.ContactListener;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.Manifold;
-import com.badlogic.gdx.physics.box2d.QueryCallback;
 import com.badlogic.gdx.physics.box2d.WorldManifold;
 
 import io.github.raesleg.demo.ExplosionParticle;
+import io.github.raesleg.engine.movement.ControlState;
+import io.github.raesleg.engine.movement.MovableEntity;
+import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.engine.physics.PhysicsWorld;
 
 public class CollisionManager implements ContactListener {
 
-    private final EntityManager entityManager;
-    private final PhysicsWorld physicsWorld;
+    private EntityManager entityManager;
+    private PhysicsWorld physicsWorld;
     private static final float PPM = 100f;
 
     public CollisionManager(PhysicsWorld physicsWorld, EntityManager entityManager) {
         this.entityManager = entityManager;
         this.physicsWorld = physicsWorld;
         // contact listener for Box2D lib world
-        physicsWorld.raw().setContactListener(this);
+        physicsWorld.setContactListener(this);
     }
 
     // Box2D ContactListener interface methods
@@ -129,33 +132,65 @@ public class CollisionManager implements ContactListener {
     }
 
     private void createExplosion(Vector2 center, float force) {
-        // apply radial force to nearby bodies
         float radius = 5f;
+        float radius2 = radius * radius;
 
-        // use QueryAABB to get object body methods
-        physicsWorld.raw().QueryAABB(new QueryCallback() {
-            @Override
-            public boolean reportFixture(Fixture fixture) {
-                Body body = fixture.getBody();
-                Vector2 bodyPos = body.getPosition();
-                Vector2 direction = bodyPos.cpy().sub(center);
-                float distance = direction.len();
+        for (Entity e : entityManager.getSnapshot()) {
+            if (e instanceof MovableEntity m) { // or any entity type that has a PhysicsBody
+                PhysicsBody pb = m.getPhysicsBody();
 
-                if (distance < radius && distance > 0) {
-                    direction.nor();
-                    float falloff = 1f - (distance / radius);
+                Vector2 bodyPos = pb.getPosition();
+
+                float dx = bodyPos.x - center.x;
+                float dy = bodyPos.y - center.y;
+                float dist2 = dx * dx + dy * dy;
+
+                if (dist2 < radius2 && dist2 > 0.000001f) {
+                    float dist = (float) Math.sqrt(dist2);
+
+                    // direction normalized
+                    float nx = dx / dist;
+                    float ny = dy / dist;
+
+                    float falloff = 1f - (dist / radius);
                     float explosionForce = force * falloff * 5000f;
 
-                    body.applyLinearImpulse(
-                        direction.scl(explosionForce),
-                        body.getWorldCenter(),
-                        true
-                    );
+                    // impulse vector (re-use a temp vector if you want to reduce allocations)
+                    pb.applyLinearImpulse(new Vector2(nx * explosionForce, ny * explosionForce));
                 }
-                return true; // continue querying
             }
-        }, center.x - radius, center.y - radius, center.x + radius, center.y + radius);
+        }
     }
+
+
+    // private void createExplosion(Vector2 center, float force) {
+    //     // apply radial force to nearby bodies
+    //     float radius = 5f;
+
+    //     // use QueryAABB to get object body methods
+    //     physicsWorld.raw().QueryAABB(new QueryCallback() {
+    //         @Override
+    //         public boolean reportFixture(Fixture fixture) {
+    //             Body body = fixture.getBody();
+    //             Vector2 bodyPos = body.getPosition();
+    //             Vector2 direction = bodyPos.cpy().sub(center);
+    //             float distance = direction.len();
+
+    //             if (distance < radius && distance > 0) {
+    //                 direction.nor();
+    //                 float falloff = 1f - (distance / radius);
+    //                 float explosionForce = force * falloff * 5000f;
+
+    //                 body.applyLinearImpulse(
+    //                     direction.scl(explosionForce),
+    //                     body.getWorldCenter(),
+    //                     true
+    //                 );
+    //             }
+    //             return true; // continue querying
+    //         }
+    //     }, center.x - radius, center.y - radius, center.x + radius, center.y + radius);
+    // }
 
     private void createParticleExplosion(Entity aiEntity, Vector2 impactPoint, float force) {
         int numParticles = 12;

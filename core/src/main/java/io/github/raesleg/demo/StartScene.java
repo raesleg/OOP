@@ -8,8 +8,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import io.github.raesleg.engine.IOManager;
 import io.github.raesleg.engine.Scene;
+import io.github.raesleg.engine.movement.IOManager;
 
 /**
  * StartScene - The initial menu scene (Stack Base).

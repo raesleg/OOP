@@ -2,6 +2,9 @@ package io.github.raesleg.engine;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+import io.github.raesleg.engine.movement.IOManager;
+import io.github.raesleg.engine.movement.MovementManager;
+
 /**
  * Scene - Abstract base class for all game scenes.
  * 

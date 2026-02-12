@@ -3,6 +3,7 @@ package io.github.raesleg.engine;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.physics.box2d.Box2D;
 
 import io.github.raesleg.demo.StartScene;
 
@@ -13,6 +14,7 @@ public class GameMaster extends ApplicationAdapter {
 
     @Override
     public void create() {
+        Box2D.init();
         batch = new SpriteBatch();
         sceneManager = new SceneManager(batch);
 

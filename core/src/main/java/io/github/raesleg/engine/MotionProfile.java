@@ -1,6 +1,6 @@
 package io.github.raesleg.engine;
 
-public final class MotionProfile {
+public class MotionProfile {
     public float maxSpeed; 
     public float maxForce;
     public float lateralGrip;

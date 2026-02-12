@@ -8,8 +8,8 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
-import io.github.raesleg.engine.IOManager;
 import io.github.raesleg.engine.Scene;
+import io.github.raesleg.engine.movement.IOManager;
 
 /**
  * PauseScene - The pause menu overlay.

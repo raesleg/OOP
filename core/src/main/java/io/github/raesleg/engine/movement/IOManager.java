@@ -1,4 +1,4 @@
-package io.github.raesleg.engine;
+package io.github.raesleg.engine.movement;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -8,8 +8,8 @@ import java.util.Set;
 public class IOManager {
     private boolean left_click;
     private boolean right_click;
-    private final Set<Integer> pressedKeys = new HashSet<>();
-    private final Set<Integer> keysDown = new HashSet<>();
+    private Set<Integer> pressedKeys = new HashSet<>();
+    private Set<Integer> keysDown = new HashSet<>();
 
     public void update() {
         pressedKeys.clear();

@@ -1,7 +1,12 @@
-package io.github.raesleg.engine;
+package io.github.raesleg.engine.movement;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
+
+import io.github.raesleg.engine.MotionProfile;
+import io.github.raesleg.engine.TextureObject;
+import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.engine.physics.PhysicsWorld;
 
 public class MovableEntity extends TextureObject implements IMovable {
 
@@ -70,7 +75,7 @@ public class MovableEntity extends TextureObject implements IMovable {
         ControlState s = controls.get(dt);
 
         // input direction
-        v1.set(s.xAxis(), s.yAxis());
+        v1.set(s.getxAxis(), s.getyAxis());
         if (v1.len2() > 1f) v1.nor();
 
         // target velocity (m/s)
@@ -100,8 +105,8 @@ public class MovableEntity extends TextureObject implements IMovable {
 
     private void syncPosition() {
         Vector2 p = body.getPosition();
-        setX(p.x * PPM - getWidth() / 2f);
-        setY(p.y * PPM - getHeight() / 2f);
+        setX(p.x * PPM - getW() / 2f);
+        setY(p.y * PPM - getH() / 2f);
     }
 
     private void applyLateralGrip() {

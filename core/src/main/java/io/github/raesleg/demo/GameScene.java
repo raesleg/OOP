@@ -11,15 +11,15 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 
 import io.github.raesleg.engine.CollisionManager;
-import io.github.raesleg.engine.ControlState;
 import io.github.raesleg.engine.EntityManager;
-import io.github.raesleg.engine.IOManager;
-import io.github.raesleg.engine.MovableEntity;
-import io.github.raesleg.engine.MovementManager;
-import io.github.raesleg.engine.PhysicsWorld;
 import io.github.raesleg.engine.Scene;
 import io.github.raesleg.engine.Shape;
 import io.github.raesleg.engine.Surfaces;
+import io.github.raesleg.engine.movement.ControlState;
+import io.github.raesleg.engine.movement.IOManager;
+import io.github.raesleg.engine.movement.MovableEntity;
+import io.github.raesleg.engine.movement.MovementManager;
+import io.github.raesleg.engine.physics.PhysicsWorld;
 
 public class GameScene extends Scene {
 
@@ -87,7 +87,7 @@ public class GameScene extends Scene {
         ));
 
         entityManager = new EntityManager();
-        movementManager = new MovementManager(physicsWorld);
+        movementManager = new MovementManager(physicsWorld, entityManager);
         collisionManager = new CollisionManager(physicsWorld, entityManager);
         ioManager = new IOManager();
 
@@ -136,7 +136,7 @@ public class GameScene extends Scene {
         ioManager.update();
         handleInput();
         entityManager.update(deltaTime);
-        movementManager.update(entityManager, deltaTime);
+        movementManager.update(deltaTime);
     }
 
     @Override

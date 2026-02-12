@@ -1,4 +1,4 @@
-package io.github.raesleg.engine;
+package io.github.raesleg.engine.movement;
 
 import com.badlogic.gdx.Input;
 
@@ -14,9 +14,9 @@ public class ControlState {
         this.action = action;
     }
 
-    public float xAxis() { return xAxis; }
-    public float yAxis() { return yAxis; }
-    public boolean action() { return action; }
+    public float getxAxis() { return xAxis; }
+    public float getyAxis() { return yAxis; }
+    public boolean getAction() { return action; }
 
     public interface ControlSource {
         ControlState get(float dt);

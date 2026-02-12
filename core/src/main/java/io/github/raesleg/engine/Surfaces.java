@@ -12,6 +12,6 @@ public class Surfaces extends Shape {
     @Override
     public void draw(ShapeRenderer sr) {
         sr.setColor(getColor());
-        sr.rect(getX(),getY(),getWidth(),getHeight());
+        sr.rect(getX(),getY(),getW(),getH());
     }
 }

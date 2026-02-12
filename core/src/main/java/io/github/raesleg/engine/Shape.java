@@ -6,31 +6,16 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 public abstract class Shape extends Entity {
 
-    private float width;
-    private float height;
     private Color color;
 
     public Shape() {
-        super(0,0);
-        this.width = 0;
-        this.height = 0;
+        super(0,0,0,0);
         this.color = null;
     };
 
     public Shape(float x, float y, float w, float h, Color c) {
-        super(x,y);
-        this.width = w;
-        this.height = h;
+        super(x,y,w,h);
         this.color = c;
-
-    };
-
-    public float getWidth() {
-        return width;
-    };
-
-    public float getHeight() {
-        return height;
     };
 
     public Color getColor() {
@@ -38,8 +23,8 @@ public abstract class Shape extends Entity {
     };
 
     public void setSize(float w, float h) { 
-        this.width = w; 
-        this.height = h; 
+        w = getW(); 
+        h = getH();
     }
 
     public void setColor(Color c) { 
