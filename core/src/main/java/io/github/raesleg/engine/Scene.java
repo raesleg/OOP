@@ -1,52 +1,116 @@
 package io.github.raesleg.engine;
 
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 
 import io.github.raesleg.engine.movement.IOManager;
 import io.github.raesleg.engine.movement.MovementManager;
 
 /**
- * Scene - Abstract base class for all game scenes.
- * 
- * SCENE SOVEREIGNTY PRINCIPLE:
+ * Scene — Abstract base class for all game scenes.
+ *
+ * <h3>Dependency Injection</h3>
+ * A single {@link IOManager} instance is created by {@link GameMaster} and
+ * injected into every Scene via {@link #setIOManager(IOManager)}, called
+ * automatically by {@link SceneManager}. Scenes must <b>never</b> create
+ * their own {@code IOManager}.
+ *
+ * <h3>Scene Sovereignty Principle</h3>
  * Each Scene is the absolute owner of its game world and MUST instantiate
  * and own its own private versions of:
- * - EntityManager (Manages entities)
- * - CollisionManager (Handles physics)
- * - MovementManager (Handles position updates)
- * - IOManager (Handles inputs specific to that scene)
- * 
- * When a Scene is disposed, it MUST cascade the dispose() call to all its
- * managers.
- * 
- * ARCHITECTURAL NOTES:
- * - Follows Single Responsibility Principle (SRP)
- * - Each scene manages its own lifecycle
- * - Input is handled only when scene is active (top of stack)
- * - No global state - data passed via constructors/setters (Dependency
- * Injection)
+ * <ul>
+ * <li>EntityManager (Manages entities)</li>
+ * <li>CollisionManager (Handles physics)</li>
+ * <li>MovementManager (Handles position updates)</li>
+ * </ul>
+ * When a Scene is disposed, it MUST cascade the {@link #dispose()} call to
+ * all its managers.
+ *
+ * <h3>Viewport Principle</h3>
+ * The base Scene owns <b>two</b> viewport/camera pairs:
+ * <ol>
+ * <li><b>World viewport</b> ({@link #viewport} / {@link #camera}) —
+ * created by the {@link #createViewport(OrthographicCamera)} hook.
+ * Default is {@link FitViewport}; gameplay scenes override to
+ * {@link com.badlogic.gdx.utils.viewport.ExtendViewport}.</li>
+ * <li><b>UI viewport</b> ({@link #uiViewport} / {@link #uiCamera}) —
+ * always a {@link FitViewport} so HUD text is pixel-stable and
+ * never distorted by the world viewport.</li>
+ * </ol>
+ * {@link #resize(int, int)} updates <b>both</b> viewports.
  */
 public abstract class Scene {
 
-    /* Protected Variables - Available to subclasses */
+    /* ── Virtual resolution (design size) ── */
+    public static final float VIRTUAL_WIDTH = 1280f;
+    public static final float VIRTUAL_HEIGHT = 720f;
+
+    /* Protected Variables — Available to subclasses */
     protected SceneManager sceneManager;
     protected EntityManager entityManager;
     protected MovementManager movementManager;
     protected CollisionManager collisionManager;
     protected IOManager ioManager;
 
+    /** Shared camera — subclasses use this for projection. */
+    protected OrthographicCamera camera;
+
+    /** Viewport — handles letterboxing / scaling on resize. */
+    protected Viewport viewport;
+
+    /** UI camera — always uses a stable FitViewport for HUD elements. */
+    protected OrthographicCamera uiCamera;
+
+    /** UI viewport — FitViewport for pixel-stable HUD rendering. */
+    protected Viewport uiViewport;
+
     /**
-     * Whether this scene allows the scene below to be visible (e.g., pause overlay)
+     * Whether this scene allows the scene below to be visible (e.g., pause
+     * overlay).
      */
     protected boolean transparent;
 
-    /* Constructor */
+    /* ── Constructor ── */
+
     /**
      * Creates a new Scene.
-     * Subclasses should initialize their managers in show() or constructor.
+     * <ol>
+     * <li>Initialises a shared {@link OrthographicCamera}.</li>
+     * <li>Calls {@link #createViewport(OrthographicCamera)} so the subclass
+     * can pick the appropriate viewport type.</li>
+     * <li>Creates a second camera/viewport pair for UI rendering.</li>
+     * <li>Applies both viewports immediately so cameras are centred.</li>
+     * </ol>
      */
     public Scene() {
         this.transparent = false;
+
+        camera = new OrthographicCamera();
+        viewport = createViewport(camera);
+        viewport.apply(true);
+
+        uiCamera = new OrthographicCamera();
+        uiViewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, uiCamera);
+        uiViewport.apply(true);
+    }
+
+    /* ── Viewport factory hook ── */
+
+    /**
+     * Called once from the constructor to create the viewport for this scene.
+     * <p>
+     * The default implementation returns a {@link FitViewport} (letter-boxed,
+     * pixel-stable UI). Override in gameplay scenes to return an
+     * {@link com.badlogic.gdx.utils.viewport.ExtendViewport} so the player
+     * sees more of the world when the window is enlarged.
+     *
+     * @param cam the camera this viewport should control
+     * @return a fully-constructed Viewport (never null)
+     */
+    protected Viewport createViewport(OrthographicCamera cam) {
+        return new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, cam);
     }
 
     /* Abstract Methods - Must be implemented by subclasses */
@@ -106,13 +170,16 @@ public abstract class Scene {
 
     /**
      * Called when the screen is resized.
-     * Update viewports, cameras, or UI layouts.
+     * Updates the viewport so the game scales correctly (letterboxing).
+     * Subclasses may override for additional work but MUST call
+     * {@code super.resize(width, height)}.
      * 
      * @param width  New screen width
      * @param height New screen height
      */
     public void resize(int width, int height) {
-        // Override in subclasses if needed
+        viewport.update(width, height, true);
+        uiViewport.update(width, height, true);
     }
 
     /**
@@ -137,6 +204,16 @@ public abstract class Scene {
      */
     public void setSceneManager(SceneManager sceneManager) {
         this.sceneManager = sceneManager;
+    }
+
+    /**
+     * Receives the shared IOManager instance (injected by SceneManager).
+     * Scenes must <b>never</b> create their own IOManager.
+     *
+     * @param ioManager The shared IOManager instance
+     */
+    public void setIOManager(IOManager ioManager) {
+        this.ioManager = ioManager;
     }
 
     /**

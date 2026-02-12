@@ -1,7 +1,6 @@
 package io.github.raesleg.demo;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -9,8 +8,6 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import io.github.raesleg.engine.Scene;
-import io.github.raesleg.engine.movement.IOManager;
-
 /**
  * StartScene - The initial menu scene (Stack Base).
  * 
@@ -19,8 +16,7 @@ import io.github.raesleg.engine.movement.IOManager;
  * 
  * TRIGGER: Press ENTER -> Calls sceneManager.set(new GameScene())
  * 
- * SCENE SOVEREIGNTY: This scene owns its own managers.
- * Since this is a simple menu, it only needs IOManager for input.
+ * IOManager is injected by SceneManager (never created here).
  */
 public class StartScene extends Scene {
 
@@ -46,16 +42,13 @@ public class StartScene extends Scene {
         font.setColor(Color.WHITE);
         layout = new GlyphLayout();
 
-        ioManager = new IOManager();
-        ioManager.update();
-
         Gdx.app.log("StartScene", "Scene shown - Press ENTER to start the game");
     }
 
     @Override
     public void handleInput() {
         // Input Focus Rule: This only runs when StartScene is the top scene
-        if (ioManager.isKeyJustPressed(Input.Keys.ENTER)) {
+        if (ioManager.isConfirmRequested()) {
             // Transition to GameScene using set() - clears stack and starts fresh
             sceneManager.set(new GameScene());
         }
@@ -63,7 +56,6 @@ public class StartScene extends Scene {
 
     @Override
     public void update(float deltaTime) {
-        ioManager.update();
         handleInput();
     }
 
@@ -73,24 +65,29 @@ public class StartScene extends Scene {
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.15f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Get screen dimensions
-        float screenWidth = Gdx.graphics.getWidth();
-        float screenHeight = Gdx.graphics.getHeight();
+        // Apply viewport and camera
+        viewport.apply();
+        camera.update();
+        batch.setProjectionMatrix(camera.combined);
+
+        // Use virtual dimensions for consistent layout
+        float screenWidth = VIRTUAL_WIDTH;
+        float screenHeight = VIRTUAL_HEIGHT;
 
         batch.begin();
 
-        // Draw title centered
-        font.getData().setScale(3f);
+        // Draw title centered (scale relative to 720-unit virtual height)
+        font.getData().setScale(5f);
         layout.setText(font, titleText);
         float titleX = (screenWidth - layout.width) / 2;
         float titleY = screenHeight * 0.6f + layout.height / 2;
         font.draw(batch, titleText, titleX, titleY);
 
         // Draw prompt centered below title
-        font.getData().setScale(1.5f);
+        font.getData().setScale(2.5f);
         layout.setText(font, promptText);
         float promptX = (screenWidth - layout.width) / 2;
-        float promptY = screenHeight * 0.4f + layout.height / 2;
+        float promptY = screenHeight * 0.35f + layout.height / 2;
         font.draw(batch, promptText, promptX, promptY);
 
         batch.end();
@@ -98,13 +95,12 @@ public class StartScene extends Scene {
 
     @Override
     public void resize(int width, int height) {
-        // Update any viewports or cameras here if needed
+        super.resize(width, height);
     }
 
     @Override
     public void dispose() {
         font.dispose();
-        ioManager = null;
 
         Gdx.app.log("StartScene", "Scene disposed");
     }

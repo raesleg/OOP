@@ -6,17 +6,21 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.Box2D;
 
 import io.github.raesleg.demo.StartScene;
+import io.github.raesleg.engine.movement.IOManager;
 
 public class GameMaster extends ApplicationAdapter {
 
     private SpriteBatch batch;
     private SceneManager sceneManager;
+    private IOManager ioManager;
 
     @Override
     public void create() {
         Box2D.init();
         batch = new SpriteBatch();
-        sceneManager = new SceneManager(batch);
+        // Single IOManager instance — injected into every Scene by SceneManager
+        ioManager = new IOManager();
+        sceneManager = new SceneManager(batch, ioManager);
 
         // Start with the StartScene (main menu)
         sceneManager.push(new StartScene());
@@ -26,6 +30,10 @@ public class GameMaster extends ApplicationAdapter {
     @Override
     public void render() {
         float deltaTime = Gdx.graphics.getDeltaTime();
+
+        // Update input state ONCE per frame before any scene logic
+        ioManager.update();
+
         // SceneManager routes to the correct scene (top of stack)
         sceneManager.update(deltaTime);
         sceneManager.render();

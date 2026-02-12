@@ -1,0 +1,75 @@
+CHANGE LOG (Feb 13, 2026)
+
+High-level summary
+- Fixed scene input state so keybinds persist across scenes.
+- Improved UI rendering so HUD and pause menu scale correctly.
+- Removed duplicated PPM values and centralized them.
+- Fixed physics hitboxes to match sprite sizes.
+
+File-by-file changes
+
+core/src/main/java/io/github/raesleg/engine/Constants.java
+- Added a single global PPM constant (100f) for physics/render scale.
+
+core/src/main/java/io/github/raesleg/engine/GameMaster.java
+- Creates the single shared IOManager.
+- Calls ioManager.update() once per frame.
+
+core/src/main/java/io/github/raesleg/engine/SceneManager.java
+- Accepts the shared IOManager in the constructor.
+- Injects IOManager into every Scene before show().
+
+core/src/main/java/io/github/raesleg/engine/Scene.java
+- Added UI camera + UI viewport (FitViewport) for HUD rendering.
+- resize() updates both world viewport and UI viewport.
+- Added setIOManager() for dependency injection.
+
+core/src/main/java/io/github/raesleg/engine/IOManager.java
+- Added getKeyName(action) so UI shows the current key binding.
+
+core/src/main/java/io/github/raesleg/demo/GameScene.java
+- Uses Constants.PPM everywhere (removed local PPM).
+- HUD now rendered with uiViewport (stable size on resize).
+- HUD pause text now uses IOManager.getKeyName().
+- Removed per-scene IOManager creation.
+
+core/src/main/java/io/github/raesleg/demo/StartScene.java
+- Removed per-scene IOManager creation.
+
+core/src/main/java/io/github/raesleg/demo/PauseScene.java
+- Removed per-scene IOManager creation.
+- Overlay uses screen-space projection so it covers the whole window.
+- UI scales with screen height for readability.
+
+lwjgl3/src/main/java/io/github/raesleg/OOP/lwjgl3/Lwjgl3Launcher.java
+- Changed default windowed mode from 640×480 to 1280×720 to match the
+	engine's virtual resolution so the initial window is correctly sized.
+
+core/src/main/java/io/github/raesleg/demo/PauseScene.java (additional details)
+- Overlay now explicitly resets the GL viewport to the full window
+	(`Gdx.gl.glViewport(0,0,width,height)`) before drawing the semi-transparent
+	background so the darkening overlay covers letterbox bars and any area
+	outside the game's FitViewport. This fixes clipping when users resize or
+	stretch the window.
+- Menu box and text are rendered through the base-class `uiViewport` (1280×720
+	FitViewport) rather than raw screen pixels; removed manual `scaleFactor` math.
+	This ensures consistent, readable UI at any window size while preserving
+	proper letterboxing for the game view.
+
+Build
+- Project compiles after these changes (Gradle `compileJava` exit code 0).
+
+core/src/main/java/io/github/raesleg/engine/MovableEntity.java
+- Uses Constants.PPM for all physics/sprite conversions.
+- Passes width/height to PhysicsBody so hitbox matches sprite size.
+
+core/src/main/java/io/github/raesleg/engine/PhysicsBody.java
+- Constructor now takes width/height and builds a box shape of that size.
+- Fixes hitboxes not matching sprite sizes.
+
+core/src/main/java/io/github/raesleg/engine/CollisionManager.java
+- Uses Constants.PPM instead of a local PPM constant.
+
+core/src/main/java/io/github/raesleg/demo/ExplosionParticle.java
+- Uses Constants.PPM instead of hardcoded 100f.
+
