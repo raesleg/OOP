@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 
-import io.github.raesleg.engine.IOManager;
 import io.github.raesleg.engine.Scene;
 
 /**
@@ -26,9 +25,7 @@ import io.github.raesleg.engine.Scene;
  * - Press "Exit" -> Calls sceneManager.set(new StartScene()) (Returns to main
  * menu)
  * 
- * SCENE SOVEREIGNTY: This scene owns its own IOManager for input handling.
- * Since it's just a menu overlay, it doesn't need EntityManager or physics
- * managers.
+ * IOManager is injected by SceneManager (never created here).
  */
 public class PauseScene extends Scene {
 
@@ -72,9 +69,6 @@ public class PauseScene extends Scene {
         shapeRenderer = new ShapeRenderer();
         font = new BitmapFont();
         layout = new GlyphLayout();
-
-        ioManager = new IOManager();
-        ioManager.update();
 
         // Initialize screen-space projection matrix
         screenProjection = new Matrix4().setToOrtho2D(0, 0,
@@ -136,46 +130,53 @@ public class PauseScene extends Scene {
 
     @Override
     public void update(float deltaTime) {
-        ioManager.update();
         handleInput();
     }
 
     @Override
     public void render(SpriteBatch batch) {
-        // Get actual screen dimensions (cached by LibGDX)
+        /*
+         * Rendering strategy (Liskov-safe — uses the base-class uiViewport):
+         * 1. Screen-space overlay → covers the ENTIRE window (incl. letterbox bars)
+         * 2. UI-viewport box+text → all layout in 1280×720 virtual coords;
+         * FitViewport scales automatically so the menu always fits any window.
+         */
         int screenWidth = Gdx.graphics.getWidth();
         int screenHeight = Gdx.graphics.getHeight();
 
-        // Apply viewport (for consistency with GameScene rendering behind us)
-        viewport.apply();
-        camera.update();
+        // ── 1. Full-screen darkening overlay (screen-space) ──
+        // Reset GL viewport to the FULL window so the overlay is not clipped
+        // to the FitViewport's letterboxed region left over from GameScene.
+        Gdx.gl.glViewport(0, 0, screenWidth, screenHeight);
 
-        // Switch to screen-space projection so overlay covers entire window
-        batch.setProjectionMatrix(screenProjection);
-        shapeRenderer.setProjectionMatrix(screenProjection);
-
-        // Enable blending for transparency
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
-        // Draw semi-transparent overlay covering ENTIRE screen
+        screenProjection.setToOrtho2D(0, 0, screenWidth, screenHeight);
+        shapeRenderer.setProjectionMatrix(screenProjection);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(overlayColor);
         shapeRenderer.rect(0, 0, screenWidth, screenHeight);
         shapeRenderer.end();
 
-        // Draw pause menu box — dimensions proportional to screen size
-        float boxWidth = screenWidth * 0.5f; // 50% of screen width
-        float boxHeight = screenHeight * 0.5f; // 50% of screen height
-        float boxX = (screenWidth - boxWidth) / 2;
-        float boxY = (screenHeight - boxHeight) / 2;
+        // ── 2. Switch to UI viewport (1280×720 virtual coords) ──
+        uiViewport.apply();
+        uiCamera.update();
+        shapeRenderer.setProjectionMatrix(uiCamera.combined);
 
+        // Menu box — proportional to virtual resolution, always centred
+        float boxWidth = VIRTUAL_WIDTH * 0.5f; // 640
+        float boxHeight = VIRTUAL_HEIGHT * 0.55f; // 396
+        float boxX = (VIRTUAL_WIDTH - boxWidth) / 2f;
+        float boxY = (VIRTUAL_HEIGHT - boxHeight) / 2f;
+
+        // Filled background
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(new Color(0.2f, 0.2f, 0.3f, 0.95f));
         shapeRenderer.rect(boxX, boxY, boxWidth, boxHeight);
         shapeRenderer.end();
 
-        // Draw border
+        // Border
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.WHITE);
         shapeRenderer.rect(boxX, boxY, boxWidth, boxHeight);
@@ -183,48 +184,44 @@ public class PauseScene extends Scene {
 
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
-        // Draw text with screen-aware font scaling
+        // ── 3. Text — all in virtual coords (no manual scaleFactor) ──
+        batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();
 
-        // Scale fonts relative to screen height (base scale for 720p virtual height)
-        float scaleFactor = screenHeight / VIRTUAL_HEIGHT;
-
-        // Draw "PAUSED" title
-        font.getData().setScale(4f * scaleFactor);
+        // Title
+        font.getData().setScale(3f);
         font.setColor(Color.WHITE);
         layout.setText(font, "PAUSED");
-        float titleX = (screenWidth - layout.width) / 2;
-        float titleY = boxY + boxHeight - (30f * scaleFactor);
+        float titleX = (VIRTUAL_WIDTH - layout.width) / 2f;
+        float titleY = boxY + boxHeight - 40f;
         font.draw(batch, "PAUSED", titleX, titleY);
 
-        // Draw menu options
-        font.getData().setScale(2.5f * scaleFactor);
-        float optionY = boxY + boxHeight - (110f * scaleFactor);
-        float optionSpacing = 60f * scaleFactor;
+        // Menu options
+        font.getData().setScale(2f);
+        float optionStartY = boxY + boxHeight - 140f;
+        float optionSpacing = 60f;
 
         for (int i = 0; i < menuOptions.length; i++) {
-            // Highlight selected option
+            String text;
             if (i == selectedOption) {
                 font.setColor(selectedColor);
-                String optionText = "> " + menuOptions[i] + " <";
-                layout.setText(font, optionText);
-                float optionX = (screenWidth - layout.width) / 2;
-                font.draw(batch, optionText, optionX, optionY - i * optionSpacing);
+                text = "> " + menuOptions[i] + " <";
             } else {
                 font.setColor(unselectedColor);
-                layout.setText(font, menuOptions[i]);
-                float optionX = (screenWidth - layout.width) / 2;
-                font.draw(batch, menuOptions[i], optionX, optionY - i * optionSpacing);
+                text = menuOptions[i];
             }
+            layout.setText(font, text);
+            float optionX = (VIRTUAL_WIDTH - layout.width) / 2f;
+            font.draw(batch, text, optionX, optionStartY - i * optionSpacing);
         }
 
-        // Draw instructions
-        font.getData().setScale(1.5f * scaleFactor);
+        // Instructions
+        font.getData().setScale(1.2f);
         font.setColor(Color.GRAY);
-        String instructions = "W/S or Up/Down to navigate | ENTER to select | ESC to resume";
+        String instructions = "W/S to navigate  |  Enter to select  |  Esc to resume";
         layout.setText(font, instructions);
-        float instrX = (screenWidth - layout.width) / 2;
-        float instrY = boxY + (30f * scaleFactor);
+        float instrX = (VIRTUAL_WIDTH - layout.width) / 2f;
+        float instrY = boxY + 40f;
         font.draw(batch, instructions, instrX, instrY);
 
         batch.end();
@@ -233,15 +230,13 @@ public class PauseScene extends Scene {
     @Override
     public void resize(int width, int height) {
         super.resize(width, height);
-        // Update screen-space projection matrix for new window size
-        screenProjection.setToOrtho2D(0, 0, width, height);
+        // screenProjection is updated each frame in render() to match current window
     }
 
     @Override
     public void dispose() {
         shapeRenderer.dispose();
         font.dispose();
-        ioManager = null;
 
         Gdx.app.log("PauseScene", "Pause scene disposed");
     }

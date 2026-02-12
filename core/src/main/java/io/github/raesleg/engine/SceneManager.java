@@ -15,6 +15,9 @@ import java.util.Stack;
  * 
  * ARCHITECTURAL NOTES (Following SOLID Principles):
  * - Single Responsibility: Only manages scene lifecycle and transitions
+ * - Dependency Injection: Holds the shared IOManager and injects it into
+ * every scene via {@link Scene#setIOManager(IOManager)} so no scene
+ * ever creates its own instance.
  * - Does NOT hold references to EntityManager, CollisionManager, or
  * MovementManager
  * - Each Scene owns its own managers (Scene Sovereignty principle)
@@ -24,16 +27,20 @@ public class SceneManager {
     /* Private Variables */
     private final Stack<Scene> sceneStack;
     private final SpriteBatch batch;
+    private final IOManager ioManager;
 
     /* Constructor */
     /**
-     * Creates a new SceneManager with the provided SpriteBatch.
-     * 
-     * @param batch The SpriteBatch used for rendering (owned by CoreEngine/Main)
+     * Creates a new SceneManager with the provided SpriteBatch and shared
+     * IOManager.
+     *
+     * @param batch     The SpriteBatch used for rendering (owned by GameMaster)
+     * @param ioManager The single shared IOManager (owned by GameMaster)
      */
-    public SceneManager(SpriteBatch batch) {
+    public SceneManager(SpriteBatch batch, IOManager ioManager) {
         this.sceneStack = new Stack<>();
         this.batch = batch;
+        this.ioManager = ioManager;
     }
 
     /* Public Functions */
@@ -50,6 +57,7 @@ public class SceneManager {
             sceneStack.peek().pause();
         }
         scene.setSceneManager(this);
+        scene.setIOManager(ioManager);
         sceneStack.push(scene);
         scene.show();
         scene.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -89,6 +97,7 @@ public class SceneManager {
 
         // Push the new scene as the base
         scene.setSceneManager(this);
+        scene.setIOManager(ioManager);
         sceneStack.push(scene);
         scene.show();
         scene.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());

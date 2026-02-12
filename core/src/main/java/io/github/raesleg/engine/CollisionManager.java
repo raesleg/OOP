@@ -16,7 +16,6 @@ public class CollisionManager implements ContactListener {
 
     private final EntityManager entityManager;
     private final PhysicsWorld physicsWorld;
-    private static final float PPM = 100f;
 
     public CollisionManager(PhysicsWorld physicsWorld, EntityManager entityManager) {
         this.entityManager = entityManager;
@@ -32,9 +31,10 @@ public class CollisionManager implements ContactListener {
         Object objectA = contact.getFixtureA().getBody().getUserData();
         Object objectB = contact.getFixtureB().getBody().getUserData();
 
-        if (handleMotionZone(contact.getFixtureA(), contact.getFixtureB(), true)) return;
-        if (handleMotionZone(contact.getFixtureB(), contact.getFixtureA(), true)) return;
-
+        if (handleMotionZone(contact.getFixtureA(), contact.getFixtureB(), true))
+            return;
+        if (handleMotionZone(contact.getFixtureB(), contact.getFixtureA(), true))
+            return;
 
         if (objectA instanceof Entity && objectB instanceof Entity) {
             handleCollision((Entity) objectA, (Entity) objectB, contact);
@@ -43,19 +43,23 @@ public class CollisionManager implements ContactListener {
 
     /* Empty functions required by ContactListener interface, TBC */
     @Override
-    public void endContact(Contact contact) { 
-        if (handleMotionZone(contact.getFixtureA(), contact.getFixtureB(), false)) return;
-        if (handleMotionZone(contact.getFixtureB(), contact.getFixtureA(), false)) return;
+    public void endContact(Contact contact) {
+        if (handleMotionZone(contact.getFixtureA(), contact.getFixtureB(), false))
+            return;
+        if (handleMotionZone(contact.getFixtureB(), contact.getFixtureA(), false))
+            return;
     } // Called when contact stops
 
     @Override
-    public void preSolve(Contact contact, Manifold oldManifold) {} // called before physics resolution
+    public void preSolve(Contact contact, Manifold oldManifold) {
+    } // called before physics resolution
 
     @Override
     public void postSolve(Contact contact, ContactImpulse impulse) {
         // called after physics resolution - used for impact detection
 
-        if (contact.getFixtureA().isSensor() || contact.getFixtureB().isSensor()) return;
+        if (contact.getFixtureA().isSensor() || contact.getFixtureB().isSensor())
+            return;
 
         Object objectA = contact.getFixtureA().getBody().getUserData();
         Object objectB = contact.getFixtureB().getBody().getUserData();
@@ -63,7 +67,7 @@ public class CollisionManager implements ContactListener {
         if (objectA instanceof Entity && objectB instanceof Entity) {
             float impactForce = impulse.getNormalImpulses()[0];
             handleImpact((Entity) objectA, (Entity) objectB, impactForce, contact);
-        } 
+        }
     }
 
     private boolean handleMotionZone(Fixture entityFix, Fixture zoneFix, boolean begin) {
@@ -72,9 +76,9 @@ public class CollisionManager implements ContactListener {
 
         if (entityObj instanceof MovableEntity me && zoneObj instanceof MotionProfile mp) {
             if (begin) {
-                me.onEnterZone(mp);   
+                me.onEnterZone(mp);
             } else {
-                me.onExitZone();     
+                me.onExitZone();
             }
             return true; // handled as zone, not a normal collision
         }
@@ -83,7 +87,7 @@ public class CollisionManager implements ContactListener {
 
     private void handleCollision(Entity a, Entity b, Contact contact) {
         // game logic here (what happens when collision?)
-        System.out.println("Collision detected between entities");  // print logging for now
+        System.out.println("Collision detected between entities"); // print logging for now
     }
 
     private void handleImpact(Entity a, Entity b, float force, Contact contact) {
@@ -147,10 +151,9 @@ public class CollisionManager implements ContactListener {
                     float explosionForce = force * falloff * 5000f;
 
                     body.applyLinearImpulse(
-                        direction.scl(explosionForce),
-                        body.getWorldCenter(),
-                        true
-                    );
+                            direction.scl(explosionForce),
+                            body.getWorldCenter(),
+                            true);
                 }
                 return true; // continue querying
             }
@@ -162,31 +165,31 @@ public class CollisionManager implements ContactListener {
         float particleSize = 16f;
         float particleLifetime = 1.0f;
 
-        float explosionX = impactPoint.x * PPM;
-        float explosionY = impactPoint.y * PPM;
+        float explosionX = impactPoint.x * Constants.PPM;
+        float explosionY = impactPoint.y * Constants.PPM;
 
         for (int i = 0; i < numParticles; i++) {
-            float angle = (float) (Math.PI * 2 * i / numParticles) + (float) (Math.random() * 0.5f - 0.25f); // random scatter pattern
+            float angle = (float) (Math.PI * 2 * i / numParticles) + (float) (Math.random() * 0.5f - 0.25f); // random
+                                                                                                             // scatter
+                                                                                                             // pattern
             float speed = 50f + (float) Math.random() * 100f; // random speed
 
             Vector2 particleVelocity = new Vector2(
-                (float) Math.cos(angle) * speed,
-                (float) Math.sin(angle) * speed
-            );
+                    (float) Math.cos(angle) * speed,
+                    (float) Math.sin(angle) * speed);
 
             // random offset from exact impact point for scatter effect
             float offsetX = (float) (Math.random() * 10 - 5); // -5 to +5 pixels
-            float offsetY = (float) (Math.random() * 10 -5);
+            float offsetY = (float) (Math.random() * 10 - 5);
 
             ExplosionParticle particle = new ExplosionParticle(
-                "droplet.png",
-                explosionX + offsetX,
-                explosionY + offsetY,
-                particleSize,
-                particleSize,
-                particleVelocity,
-                particleLifetime
-            );
+                    "droplet.png",
+                    explosionX + offsetX,
+                    explosionY + offsetY,
+                    particleSize,
+                    particleSize,
+                    particleVelocity,
+                    particleLifetime);
 
             entityManager.addEntity(particle);
         }

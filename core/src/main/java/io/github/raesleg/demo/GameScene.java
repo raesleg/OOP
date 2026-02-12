@@ -13,6 +13,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import io.github.raesleg.engine.CollisionManager;
+import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.ControlState;
 import io.github.raesleg.engine.EntityManager;
 import io.github.raesleg.engine.IOManager;
@@ -26,8 +27,10 @@ import io.github.raesleg.engine.Surfaces;
 /**
  * GameScene — Main gameplay scene.
  *
- * Uses an {@link ExtendViewport} so the player sees more of the world when
- * the window is enlarged, rather than stretching.
+ * Uses an {@link ExtendViewport} for the game world so the player sees
+ * more of the world when the window is enlarged, and a separate
+ * {@link com.badlogic.gdx.utils.viewport.FitViewport} ({@code uiViewport})
+ * for HUD text so it never distorts on resize.
  */
 public class GameScene extends Scene {
 
@@ -42,13 +45,12 @@ public class GameScene extends Scene {
     private MovableEntity bucket;
     private MovableEntity droplet;
 
-    // movement — use virtual resolution for consistent PPM scaling
-    private float PPM = 100f;
+    // movement — use Constants.PPM for single source of truth
     private ShapeRenderer shapeRenderer;
     private final ArrayList<Shape> zones = new ArrayList<>();
 
-    private float worldW = VIRTUAL_WIDTH / PPM;
-    private float worldH = VIRTUAL_HEIGHT / PPM;
+    private float worldW = VIRTUAL_WIDTH / Constants.PPM;
+    private float worldH = VIRTUAL_HEIGHT / Constants.PPM;
 
     private float zoneW = worldW * 0.12f;
     private float zoneH = worldH * 0.45f;
@@ -77,7 +79,7 @@ public class GameScene extends Scene {
 
         // out of bound walls — use virtual resolution for consistent bounds
         physicsWorld = new PhysicsWorld(new Vector2(0, 0));
-        physicsWorld.createBoundsPixels((int) VIRTUAL_WIDTH, (int) VIRTUAL_HEIGHT, PPM);
+        physicsWorld.createBoundsPixels((int) VIRTUAL_WIDTH, (int) VIRTUAL_HEIGHT, Constants.PPM);
 
         // create friction zone, forces from box2d
         physicsWorld.createMotionZone(worldW * 0.65f, worldH * 0.5f, zoneW * 0.5f, zoneH * 0.5f,
@@ -89,25 +91,24 @@ public class GameScene extends Scene {
 
         // low friction
         zones.add(new Surfaces(
-                (worldW * 0.65f - zoneW * 0.5f) * PPM,
-                (worldH * 0.5f - zoneH * 0.5f) * PPM,
-                zoneW * PPM,
-                zoneH * PPM,
+                (worldW * 0.65f - zoneW * 0.5f) * Constants.PPM,
+                (worldH * 0.5f - zoneH * 0.5f) * Constants.PPM,
+                zoneW * Constants.PPM,
+                zoneH * Constants.PPM,
                 Color.BLUE));
 
         // high friction
         zones.add(new Surfaces(
-                (worldW * 0.35f - zoneW * 0.5f) * PPM,
-                (worldH * 0.5f - zoneH * 0.5f) * PPM,
-                zoneW * PPM,
-                zoneH * PPM,
+                (worldW * 0.35f - zoneW * 0.5f) * Constants.PPM,
+                (worldH * 0.5f - zoneH * 0.5f) * Constants.PPM,
+                zoneW * Constants.PPM,
+                zoneH * Constants.PPM,
                 Color.RED // red
         ));
 
         entityManager = new EntityManager();
         movementManager = new MovementManager(physicsWorld);
         collisionManager = new CollisionManager(physicsWorld, entityManager);
-        ioManager = new IOManager();
 
         // test entities
         bucket = new MovableEntity(
@@ -149,7 +150,6 @@ public class GameScene extends Scene {
         }
         gameTime += deltaTime;
 
-        ioManager.update();
         handleInput();
         entityManager.update(deltaTime);
         movementManager.update(entityManager, deltaTime);
@@ -172,12 +172,23 @@ public class GameScene extends Scene {
             z.draw(shapeRenderer);
         shapeRenderer.end();
 
+        // --- World rendering (ExtendViewport) ---
         batch.begin();
         entityManager.render(batch);
-        // HUD rendering (uses virtual coordinates, scaled for readability)
+        batch.end();
+
+        // --- HUD rendering (FitViewport — pixel-stable, never distorted) ---
+        uiViewport.apply();
+        uiCamera.update();
+        batch.setProjectionMatrix(uiCamera.combined);
+
+        batch.begin();
         font.getData().setScale(2f);
         font.draw(batch, "Game Time: " + String.format("%.1f", gameTime) + "s", 10, VIRTUAL_HEIGHT - 10);
-        font.draw(batch, "Use WASD/Arrows to move | ESC to pause", 10, VIRTUAL_HEIGHT - 45);
+
+        // Dynamic key name — stays accurate even after rebinding
+        String pauseKey = ioManager.getKeyName(IOManager.PAUSE);
+        font.draw(batch, "Use WASD/Arrows to move | " + pauseKey + " to pause", 10, VIRTUAL_HEIGHT - 45);
         batch.end();
     }
 

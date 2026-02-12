@@ -248,6 +248,30 @@ public class IOManager {
 
     /*
      * ══════════════════════════════════════════════════════════════════
+     * Dynamic UI query — returns human-readable key name for an action
+     * ══════════════════════════════════════════════════════════════════
+     */
+
+    /**
+     * Returns the human-readable name of the primary key bound to the
+     * given action (e.g. "Escape", "W", "Space").
+     * <p>
+     * Use this in HUD / UI text so prompts stay accurate when keys are
+     * rebound at runtime.
+     *
+     * @param action one of the semantic action constants (e.g. {@link #PAUSE})
+     * @return display name of the bound key, or "???" if unbound
+     */
+    public String getKeyName(String action) {
+        Integer keyCode = config.getPrimary(action);
+        if (keyCode != null) {
+            return Input.Keys.toString(keyCode);
+        }
+        return "???";
+    }
+
+    /*
+     * ══════════════════════════════════════════════════════════════════
      * Internal helpers — delegate entirely to the config maps
      * ══════════════════════════════════════════════════════════════════
      */

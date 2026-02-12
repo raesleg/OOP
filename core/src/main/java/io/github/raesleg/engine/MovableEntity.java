@@ -5,8 +5,6 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 
 public class MovableEntity extends TextureObject implements IMovable {
 
-    private float PPM = 100f; // pixels per meter (render scale)
-
     private final ControlState.ControlSource controls;
     private final PhysicsBody body;
 
@@ -27,13 +25,13 @@ public class MovableEntity extends TextureObject implements IMovable {
             float height,
             ControlState.ControlSource controls,
             MotionProfile base) {
-        super(filename, x, y, width, height); 
+        super(filename, x, y, width, height);
         this.controls = controls;
 
-        float xm = (x + width / 2f) / PPM;
-        float ym = (y + height / 2f) / PPM;
+        float xm = (x + width / 2f) / Constants.PPM;
+        float ym = (y + height / 2f) / Constants.PPM;
 
-        this.body = new PhysicsBody(physicsWorld, BodyDef.BodyType.DynamicBody, xm, ym);
+        this.body = new PhysicsBody(physicsWorld, BodyDef.BodyType.DynamicBody, xm, ym, width, height);
         this.body.setUserData(this); // link entity to physics body
 
         this.base = base;
@@ -41,11 +39,17 @@ public class MovableEntity extends TextureObject implements IMovable {
     }
 
     /* getter functions for collision */
-    public PhysicsBody getPhysicsBody() { return body; }
-    public ControlState.ControlSource getControlSource() { return controls; }
+    public PhysicsBody getPhysicsBody() {
+        return body;
+    }
+
+    public ControlState.ControlSource getControlSource() {
+        return controls;
+    }
 
     public void applyMotionProfile(MotionProfile p) {
-        if (p == null) return;
+        if (p == null)
+            return;
         this.profile = p;
         body.setLinearDamping(p.linearDamping);
     }
@@ -61,7 +65,7 @@ public class MovableEntity extends TextureObject implements IMovable {
         System.out.println("EXIT zoneContacts=" + zoneContacts);
         if (zoneContacts <= 0) {
             zoneContacts = 0;
-            applyMotionProfile(base); 
+            applyMotionProfile(base);
         }
     }
 
@@ -71,7 +75,8 @@ public class MovableEntity extends TextureObject implements IMovable {
 
         // input direction
         v1.set(s.xAxis(), s.yAxis());
-        if (v1.len2() > 1f) v1.nor();
+        if (v1.len2() > 1f)
+            v1.nor();
 
         // target velocity (m/s)
         v2.set(v1).scl(profile.maxSpeed);
@@ -100,8 +105,8 @@ public class MovableEntity extends TextureObject implements IMovable {
 
     private void syncPosition() {
         Vector2 p = body.getPosition();
-        setX(p.x * PPM - getWidth() / 2f);
-        setY(p.y * PPM - getHeight() / 2f);
+        setX(p.x * Constants.PPM - getWidth() / 2f);
+        setY(p.y * Constants.PPM - getHeight() / 2f);
     }
 
     private void applyLateralGrip() {

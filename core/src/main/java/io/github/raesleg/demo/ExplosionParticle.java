@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 
+import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.IExpirable;
 import io.github.raesleg.engine.TextureObject;
 
@@ -16,7 +17,8 @@ public class ExplosionParticle extends TextureObject implements IExpirable {
     private final float width;
     private final float height;
 
-    public ExplosionParticle(String filename, float x, float y, float width, float height, Vector2 velocity, float lifetime) {
+    public ExplosionParticle(String filename, float x, float y, float width, float height, Vector2 velocity,
+            float lifetime) {
         super(filename, x, y, width, height);
         this.width = width;
         this.height = height;
@@ -29,8 +31,8 @@ public class ExplosionParticle extends TextureObject implements IExpirable {
     @Override
     public void update(float deltaTime) {
         // move particle
-        setX(getX() + velocity.x * deltaTime * 100f); // 100 = ppm
-        setY(getY() + velocity.y * deltaTime * 100f);
+        setX(getX() + velocity.x * deltaTime * Constants.PPM);
+        setY(getY() + velocity.y * deltaTime * Constants.PPM);
 
         // apply gravity effect
         velocity.y -= 9.8f * deltaTime * 10f;
@@ -49,12 +51,11 @@ public class ExplosionParticle extends TextureObject implements IExpirable {
             batch.setColor(1f, 1f, 1f, alpha);
 
             batch.draw(
-                getTexture(),
-                getX() - width / 2f,
-                getY() - height / 2f,
-                width,
-                height
-            );
+                    getTexture(),
+                    getX() - width / 2f,
+                    getY() - height / 2f,
+                    width,
+                    height);
             batch.setColor(oldColor); // restore original color
         }
     }
@@ -66,10 +67,11 @@ public class ExplosionParticle extends TextureObject implements IExpirable {
     // added this for generic removal of dead entities
     @Override
     public boolean isExpired() {
-        return isDead(); 
+        return isDead();
     }
 
     @Override
-    public void dispose() {}
+    public void dispose() {
+    }
 
 }

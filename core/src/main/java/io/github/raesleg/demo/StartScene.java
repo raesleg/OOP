@@ -7,7 +7,6 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import io.github.raesleg.engine.IOManager;
 import io.github.raesleg.engine.Scene;
 
 /**
@@ -18,8 +17,7 @@ import io.github.raesleg.engine.Scene;
  * 
  * TRIGGER: Press ENTER -> Calls sceneManager.set(new GameScene())
  * 
- * SCENE SOVEREIGNTY: This scene owns its own managers.
- * Since this is a simple menu, it only needs IOManager for input.
+ * IOManager is injected by SceneManager (never created here).
  */
 public class StartScene extends Scene {
 
@@ -45,9 +43,6 @@ public class StartScene extends Scene {
         font.setColor(Color.WHITE);
         layout = new GlyphLayout();
 
-        ioManager = new IOManager();
-        ioManager.update();
-
         Gdx.app.log("StartScene", "Scene shown - Press ENTER to start the game");
     }
 
@@ -62,7 +57,6 @@ public class StartScene extends Scene {
 
     @Override
     public void update(float deltaTime) {
-        ioManager.update();
         handleInput();
     }
 
@@ -108,7 +102,6 @@ public class StartScene extends Scene {
     @Override
     public void dispose() {
         font.dispose();
-        ioManager = null;
 
         Gdx.app.log("StartScene", "Scene disposed");
     }
