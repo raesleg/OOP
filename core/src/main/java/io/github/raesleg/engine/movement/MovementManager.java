@@ -2,15 +2,15 @@ package io.github.raesleg.engine.movement;
 
 import io.github.raesleg.engine.entity.Entity;
 import io.github.raesleg.engine.entity.EntityManager;
-import io.github.raesleg.engine.physics.PhysicsWorld;
+import io.github.raesleg.engine.physics.IPhysics;
 
 public class MovementManager {
 
-    private PhysicsWorld physicsWorld;
+    private IPhysics physics;
     private EntityManager entityM;
 
-    public MovementManager(PhysicsWorld physicsWorld, EntityManager entityM) {
-        this.physicsWorld = physicsWorld;
+    public MovementManager(IPhysics physics, EntityManager entityM) {
+        this.physics = physics;
         this.entityM = entityM;
     }
 
@@ -21,6 +21,6 @@ public class MovementManager {
                 m.move(deltaTime);
             }
         }
-        physicsWorld.step(deltaTime);
+        physics.step(deltaTime);
     }
 }

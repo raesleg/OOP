@@ -1,12 +1,11 @@
 package io.github.raesleg.engine.movement;
 
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.BodyDef;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.TextureObject;
+import io.github.raesleg.engine.physics.IPhysics;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.engine.physics.PhysicsWorld;
 
 public class MovableEntity extends TextureObject implements IMovable {
 
@@ -22,7 +21,7 @@ public class MovableEntity extends TextureObject implements IMovable {
     private int zoneContacts = 0;
 
     public MovableEntity(
-            PhysicsWorld physicsWorld,
+            IPhysics physics,
             String filename,
             float x,
             float y,
@@ -36,8 +35,13 @@ public class MovableEntity extends TextureObject implements IMovable {
         float xm = (x + width / 2f) / Constants.PPM;
         float ym = (y + height / 2f) / Constants.PPM;
 
-        this.body = new PhysicsBody(physicsWorld, BodyDef.BodyType.DynamicBody, xm, ym, width, height);
-        this.body.setUserData(this); // link entity to physics body
+        float halfW = (width / Constants.PPM) / 2f;
+        float halfH = (height / Constants.PPM) / 2f;
+
+
+        this.body = physics.createBody(IPhysics.BodyType.DYNAMIC, xm, ym, halfW, halfH, 1f, 0.3f, false, this);
+        // new PhysicsBody(physics, BodyDef.BodyType.DynamicBody, xm, ym, width, height);
+        // this.body.setUserData(this); // link entity to physics body
 
         this.base = base;
         applyMotionProfile(base);

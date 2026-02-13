@@ -3,43 +3,24 @@ package io.github.raesleg.engine.physics;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
-import io.github.raesleg.engine.Constants;
-
 public class PhysicsBody {
 
-    private final PhysicsWorld physicsWorld;
+    private IPhysics physics;
     private Body body;
 
-    public PhysicsBody(PhysicsWorld physicsWorld, BodyDef.BodyType type,
-            float x, float y, float widthPx, float heightPx) {
-        this.physicsWorld = physicsWorld;
-
-        BodyDef def = new BodyDef();
-        def.type = type;
-        def.position.set(x, y);
-
-        body = physicsWorld.raw().createBody(def);
-
-        // Shape sized to match the entity sprite (pixels → meters)
-        float halfW = (widthPx / Constants.PPM) / 2f;
-        float halfH = (heightPx / Constants.PPM) / 2f;
-
-        PolygonShape shape = new PolygonShape();
-        shape.setAsBox(halfW, halfH);
-
-        FixtureDef fix = new FixtureDef();
-        fix.shape = shape;
-        fix.density = 1f;
-        fix.friction = 0.3f;
-
-        body.createFixture(fix);
-        shape.dispose();
+    PhysicsBody(IPhysics physics, Body body) {
+        this.physics = physics;
+        this.body = body;
     }
 
+    // package-private: only PhysicsWorld should access raw body for destroy
+    Body _raw() { return body; }
+    void _clearRaw() { body = null; }
+
+    // public API: game/entities call this
     public void destroy() {
         if (body != null) {
-            physicsWorld.raw().destroyBody(body);
-            body = null;
+            physics.destroy(this);
         }
     }
 
@@ -77,8 +58,7 @@ public class PhysicsBody {
         body.setUserData(data);
     }
 
-    // explosion queries
-    public Body getBody() {
-        return body;
+    public void applyImpulseAtCenter(Vector2 impulse) {
+        body.applyLinearImpulse(impulse, body.getWorldCenter(), true);
     }
 }

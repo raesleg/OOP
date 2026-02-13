@@ -22,6 +22,7 @@ import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.entity.Shape;
 import io.github.raesleg.engine.entity.Surfaces;
 import io.github.raesleg.engine.movement.MovableEntity;
+import io.github.raesleg.engine.physics.IPhysics;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.PauseScene;
 import io.github.raesleg.engine.scene.Scene;
@@ -36,6 +37,7 @@ public class GameScene extends Scene {
 
     // movable entities implementing box2d physics engine
     private PhysicsWorld physicsWorld;
+    private IPhysics physics;
     private MovableEntity bucket;
     private MovableEntity droplet;
 
@@ -73,6 +75,9 @@ public class GameScene extends Scene {
 
         // out of bound walls — use virtual resolution for consistent bounds
         physicsWorld = new PhysicsWorld(new Vector2(0, 0));
+
+        physics = physicsWorld; //physicsWorld implements IPhysics
+
         physicsWorld.createBoundsPixels((int) VIRTUAL_WIDTH, (int) VIRTUAL_HEIGHT, Constants.PPM);
 
         // create friction zone, forces from box2d
@@ -101,12 +106,12 @@ public class GameScene extends Scene {
         ));
 
         entityManager = new EntityManager();
-        movementManager = new MovementManager(physicsWorld, entityManager);
-        collisionManager = new CollisionManager(physicsWorld, entityManager);
+        movementManager = new MovementManager(physics, entityManager);
+        collisionManager = new CollisionManager(physics, entityManager);
 
         // test entities
         bucket = new MovableEntity(
-                physicsWorld,
+                physics,
                 "bucket.png",
                 200,
                 200,
@@ -116,7 +121,7 @@ public class GameScene extends Scene {
                 MotionTuning.DEFAULT);
 
         droplet = new MovableEntity(
-                physicsWorld,
+                physics,
                 "droplet.png",
                 500,
                 300,
@@ -208,14 +213,10 @@ public class GameScene extends Scene {
     @Override
     public void dispose() {
         font.dispose();
-        entityManager.dispose();
-
-        // movement texture
         shapeRenderer.dispose();
         zones.clear();
-
-        // abstract movement manager physics
-        physicsWorld.dispose();
+        entityManager.dispose();
+        physics.dispose();   
 
         Gdx.app.log("GameScene", "Scene disposed - All managers and resources cleaned up");
     }
