@@ -107,7 +107,8 @@ public class GameScene extends Scene {
 
         entityManager = new EntityManager();
         movementManager = new MovementManager(physics, entityManager);
-        collisionManager = new CollisionManager(physics, entityManager);
+        GameCollisionHandler handler = new GameCollisionHandler(entityManager);
+        new CollisionManager(physics, handler);
 
         // test entities
         bucket = new MovableEntity(

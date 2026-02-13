@@ -64,14 +64,11 @@ public class ExplosionParticle extends TextureObject implements IExpirable {
         return lifetime <= 0;
     }
 
-    // added this for generic removal of dead entities
+    // generic removal of dead entities
     @Override
     public boolean isExpired() {
         return isDead();
     }
 
-    @Override
-    public void dispose() {
-    }
 
 }
