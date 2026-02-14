@@ -46,14 +46,17 @@ public class GameScene extends Scene {
     private ShapeRenderer shapeRenderer;
     private final ArrayList<Shape> zones = new ArrayList<>();
 
-    // Sound manager for menu navigation and selection sounds
-    private SoundManager soundManager;
-
     private float worldW = VIRTUAL_WIDTH / Constants.PPM;
     private float worldH = VIRTUAL_HEIGHT / Constants.PPM;
 
     private float zoneW = worldW * 0.12f;
     private float zoneH = worldH * 0.45f;
+
+    // Sound manager implementing menu navigation and selection sounds
+    private SoundManager soundManager;
+
+    // Condition to demo sound effect when object is moving or not moving
+    boolean isMoving = false; 
 
     public GameScene() {
         super();
@@ -138,10 +141,11 @@ public class GameScene extends Scene {
         entityManager.addEntity(bucket);
         entityManager.addEntity(droplet);
 
-        // Initialize sound manager and load sounds
+        // Initialize sound manager and load sounds in the GameScene
         soundManager = new SoundManager();
-        soundManager.addSound("menu", "uiMenu_sound.wav"); // add navigating option sound
-        soundManager.addSound("selected", "uiSelected_sound.wav"); // add select option sound
+        soundManager.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
+        soundManager.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
+        soundManager.addSound("move", "moving_sound.wav"); // Add moving object sound
     }
 
     @Override
@@ -155,6 +159,7 @@ public class GameScene extends Scene {
     @Override
     public void update(float deltaTime) {
         if (isPaused) {
+            soundManager.stopSound("move"); // Stop moving sound if paused
             return;
         }
         gameTime += deltaTime;
@@ -162,6 +167,22 @@ public class GameScene extends Scene {
         handleInput();
         entityManager.update(deltaTime);
         movementManager.update(deltaTime);
+
+        // Demo: Play moving sound effect when object is moving
+        Vector2 velocity = bucket.getPhysicsBody().getVelocity();
+        boolean objMoving =
+            Math.abs(velocity.x) > 0.05f ||
+            Math.abs(velocity.y) > 0.05f;
+
+        if (objMoving && !isMoving) {
+            soundManager.loopSound("move");
+        }
+
+        if (!objMoving && isMoving) {
+            soundManager.stopSound("move");
+        }
+
+        isMoving = objMoving;
     }
 
     @Override
