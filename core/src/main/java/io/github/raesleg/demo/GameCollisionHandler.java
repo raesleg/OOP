@@ -9,18 +9,21 @@ import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.movement.AIControlled;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.engine.sound.SoundManager;
 
 public class GameCollisionHandler implements ICollisionListener {
 
     private final EntityManager entityManager;
     private final float explosionForceThreshold;
+    private final SoundManager soundManager;
 
-    public GameCollisionHandler(EntityManager entityManager) {
-        this(entityManager, 0.1f); // default threshold
+    public GameCollisionHandler(EntityManager entityManager, SoundManager soundManager) {
+        this(entityManager, soundManager, 0.1f); // default threshold
     }
 
-    public GameCollisionHandler(EntityManager entityManager, float explosionForceThreshold) {
+    public GameCollisionHandler(EntityManager entityManager, SoundManager soundManager, float explosionForceThreshold) {
         this.entityManager = entityManager;
+        this.soundManager = soundManager;
         this.explosionForceThreshold = explosionForceThreshold;
     }
 
@@ -70,6 +73,11 @@ public class GameCollisionHandler implements ICollisionListener {
         // Game Rule: User hitting AI entity casues explosion
         if (aiEntity != null && userEntity != null) {
             System.out.println("User entity hit AI entity - creating explosion!");
+
+            if (soundManager != null) {
+                soundManager.playSound("explosion");
+            }
+
             createParticleExplosion(aiEntity, impactPoint, impactForce);
             createExplosion(impactPoint, impactForce);
         }
