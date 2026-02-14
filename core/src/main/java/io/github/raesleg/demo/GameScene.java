@@ -248,6 +248,7 @@ public class GameScene extends Scene {
         zones.clear();
         entityManager.dispose();
         physics.dispose();   
+        soundManager.dispose();
 
         Gdx.app.log("GameScene", "Scene disposed - All managers and resources cleaned up");
     }
