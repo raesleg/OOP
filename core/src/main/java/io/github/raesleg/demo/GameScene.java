@@ -114,7 +114,15 @@ public class GameScene extends Scene {
 
         entityManager = new EntityManager();
         movementManager = new MovementManager(physics, entityManager);
-        GameCollisionHandler handler = new GameCollisionHandler(entityManager);
+
+        // Initialize sound manager and load sounds in the GameScene
+        soundManager = new SoundManager();
+        soundManager.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
+        soundManager.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
+        soundManager.addSound("move", "moving_sound.wav"); // Add moving object sound
+        soundManager.addSound("explosion", "collide_sound.wav"); // Add collision sound
+
+        GameCollisionHandler handler = new GameCollisionHandler(entityManager, soundManager);
         new CollisionManager(physics, handler);
 
         // test entities
@@ -140,12 +148,6 @@ public class GameScene extends Scene {
 
         entityManager.addEntity(bucket);
         entityManager.addEntity(droplet);
-
-        // Initialize sound manager and load sounds in the GameScene
-        soundManager = new SoundManager();
-        soundManager.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
-        soundManager.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
-        soundManager.addSound("move", "moving_sound.wav"); // Add moving object sound
     }
 
     @Override
