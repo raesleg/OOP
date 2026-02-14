@@ -3,7 +3,21 @@ package io.github.raesleg.engine.sound;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.badlogic.gdx.Gdx;
+
 public class SoundManager {
+    
+    // Static variable to track mute state
+    private static boolean muted = false;
+
+    public static void toggleMute() {
+        muted = !muted;
+        Gdx.app.log("SoundManager", muted ? "Muted" : "Unmuted");
+    }
+
+    public static boolean isMuted() {
+        return muted;
+    }
 
     // Map to hold sound effects
     private Map<String, SoundEffect> sounds = new HashMap<>();
@@ -15,6 +29,10 @@ public class SoundManager {
 
     // Play sound by their name
     public void playSound(String name) {
+        if (muted) {
+            return;
+        }
+
         if (sounds.containsKey(name)) {
           sounds.get(name).play();
         }
@@ -22,6 +40,10 @@ public class SoundManager {
 
     // Loop sound by their name
     public void loopSound(String name) {
+        if (muted) {
+            return;
+        }
+        
         if (sounds.containsKey(name)) {
             sounds.get(name).loop();
         }
