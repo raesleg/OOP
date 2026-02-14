@@ -104,7 +104,7 @@ public class PauseScene extends Scene {
             if (selectedOption < 0) {
                 selectedOption = menuOptions.length - 1;
             }
-                soundManager.playSound("menu"); // Play menu navigation sound
+            soundManager.playSound("menu"); // Play menu navigation sound
         }
 
         else if (ioManager.isDownJustPressed()) {
