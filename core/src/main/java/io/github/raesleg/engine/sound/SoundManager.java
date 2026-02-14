@@ -20,6 +20,20 @@ public class SoundManager {
         }
     }
 
+    // Loop sound by their name
+    public void loopSound(String name) {
+        if (sounds.containsKey(name)) {
+            sounds.get(name).loop();
+        }
+    }
+
+    // Stop sound by their name
+    public void stopSound(String name) {
+        if (sounds.containsKey(name)) {
+            sounds.get(name).stop();
+        }
+    }
+
     public void dispose() {
         for (SoundEffect sound : sounds.values()) {
             sound.dispose();
