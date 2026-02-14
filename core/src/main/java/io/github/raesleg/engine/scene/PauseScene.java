@@ -8,6 +8,8 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
+
+import io.github.raesleg.engine.sound.SoundManager;
 /**
  * PauseScene - The pause menu overlay.
  * 
@@ -43,6 +45,9 @@ public class PauseScene extends Scene {
     /* Screen-space projection — updated on resize */
     private Matrix4 screenProjection;
 
+    // Sound manager for menu navigation and selection sounds
+    private SoundManager soundManager;
+
     /* Constructor */
     public PauseScene() {
         super();
@@ -71,6 +76,11 @@ public class PauseScene extends Scene {
         screenProjection = new Matrix4().setToOrtho2D(0, 0,
                 Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
+        // Initialize sound manager and load sounds
+        soundManager = new SoundManager();
+        soundManager.addSound("menu", "uiMenu_sound.wav"); // add navigating option sound
+        soundManager.addSound("selected", "uiSelected_sound.wav"); // add select option sound
+
         Gdx.app.log("PauseScene", "Pause menu shown - ESC/Enter to resume, navigate with W/S or Up/Down");
     }
 
@@ -85,22 +95,25 @@ public class PauseScene extends Scene {
         }
 
         // Navigate menu with W/S or Up/Down arrows
-        if (ioManager.isUpJustPressed()) {
+        else if (ioManager.isUpJustPressed()) {
             selectedOption--;
             if (selectedOption < 0) {
                 selectedOption = menuOptions.length - 1;
             }
+                soundManager.playSound("menu"); // play navigating option sound
         }
 
-        if (ioManager.isDownJustPressed()) {
+        else if (ioManager.isDownJustPressed()) {
             selectedOption++;
             if (selectedOption >= menuOptions.length) {
                 selectedOption = 0;
             }
+            soundManager.playSound("menu"); // play navigating option sound
         }
 
         // ENTER -> Select current option
-        if (ioManager.isConfirmRequested()) {
+        else if (ioManager.isConfirmRequested()) {
+            soundManager.playSound("selected"); // play selected option sound
             executeSelectedOption();
         }
     }
@@ -109,6 +122,7 @@ public class PauseScene extends Scene {
      * Executes the currently selected menu option.
      */
     private void executeSelectedOption() {
+
         switch (selectedOption) {
             case 0: // Resume
                 // Pop this scene to return to the paused GameScene

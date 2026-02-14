@@ -26,6 +26,7 @@ import io.github.raesleg.engine.physics.IPhysics;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.PauseScene;
 import io.github.raesleg.engine.scene.Scene;
+import io.github.raesleg.engine.sound.SoundManager;
 
 public class GameScene extends Scene {
 
@@ -44,6 +45,9 @@ public class GameScene extends Scene {
     // movement — use Constants.PPM for single source of truth
     private ShapeRenderer shapeRenderer;
     private final ArrayList<Shape> zones = new ArrayList<>();
+
+    // Sound manager for menu navigation and selection sounds
+    private SoundManager soundManager;
 
     private float worldW = VIRTUAL_WIDTH / Constants.PPM;
     private float worldH = VIRTUAL_HEIGHT / Constants.PPM;
@@ -133,6 +137,11 @@ public class GameScene extends Scene {
 
         entityManager.addEntity(bucket);
         entityManager.addEntity(droplet);
+
+        // Initialize sound manager and load sounds
+        soundManager = new SoundManager();
+        soundManager.addSound("menu", "uiMenu_sound.wav"); // add navigating option sound
+        soundManager.addSound("selected", "uiSelected_sound.wav"); // add select option sound
     }
 
     @Override
