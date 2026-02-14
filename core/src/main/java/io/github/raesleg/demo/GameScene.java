@@ -154,6 +154,12 @@ public class GameScene extends Scene {
             sceneManager.push(new PauseScene());
             return;
         }
+
+        // Press M to mute/unmute all sounds
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.M)) {
+            SoundManager.toggleMute();
+        }
+
     }
 
     @Override
@@ -218,7 +224,8 @@ public class GameScene extends Scene {
 
         // Dynamic key name — stays accurate even after rebinding
         String pauseKey = ioManager.getKeyName(IOManager.PAUSE);
-        font.draw(batch, "Use WASD/Arrows to move | " + pauseKey + " to pause", 10, VIRTUAL_HEIGHT - 45);
+        String muteText = SoundManager.isMuted() ? "M to unmute" : "M to mute";
+        font.draw(batch, "Use WASD/Arrows to move | " + pauseKey + " to pause | " + muteText, 10, VIRTUAL_HEIGHT - 45);
         batch.end();
     }
 

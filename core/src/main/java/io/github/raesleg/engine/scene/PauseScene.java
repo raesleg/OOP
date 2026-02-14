@@ -120,6 +120,12 @@ public class PauseScene extends Scene {
             soundManager.playSound("selected"); // Play selection sound
             executeSelectedOption();
         }
+
+        // Press M to mute/unmute all sounds
+        else if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.M)) {
+            SoundManager.toggleMute();
+        }
+
     }
 
     /**
