@@ -78,8 +78,8 @@ public class PauseScene extends Scene {
 
         // Initialize sound manager and load sounds
         soundManager = new SoundManager();
-        soundManager.addSound("menu", "uiMenu_sound.wav"); // add navigating option sound
-        soundManager.addSound("selected", "uiSelected_sound.wav"); // add select option sound
+        soundManager.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
+        soundManager.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
 
         Gdx.app.log("PauseScene", "Pause menu shown - ESC/Enter to resume, navigate with W/S or Up/Down");
     }
@@ -90,6 +90,10 @@ public class PauseScene extends Scene {
 
         // ESC -> Resume game (pop this scene)
         if (ioManager.isPauseRequested()) {
+
+            // Play sound when ESC is pressed to resume
+            soundManager.playSound("selected"); 
+
             sceneManager.pop();
             return;
         }
@@ -100,7 +104,7 @@ public class PauseScene extends Scene {
             if (selectedOption < 0) {
                 selectedOption = menuOptions.length - 1;
             }
-                soundManager.playSound("menu"); // play navigating option sound
+                soundManager.playSound("menu"); // Play menu navigation sound
         }
 
         else if (ioManager.isDownJustPressed()) {
@@ -108,12 +112,12 @@ public class PauseScene extends Scene {
             if (selectedOption >= menuOptions.length) {
                 selectedOption = 0;
             }
-            soundManager.playSound("menu"); // play navigating option sound
+            soundManager.playSound("menu"); // Play menu navigation sound
         }
 
         // ENTER -> Select current option
         else if (ioManager.isConfirmRequested()) {
-            soundManager.playSound("selected"); // play selected option sound
+            soundManager.playSound("selected"); // Play selection sound
             executeSelectedOption();
         }
     }
