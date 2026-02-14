@@ -8,6 +8,9 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import io.github.raesleg.demo.GameScene;
+
+import io.github.raesleg.engine.sound.SoundManager;
+
 /**
  * StartScene - The initial menu scene (Stack Base).
  * 
@@ -26,6 +29,9 @@ public class StartScene extends Scene {
     private String titleText;
     private String promptText;
 
+    // Sound manager for "Enter to Start"
+    private SoundManager soundManager;
+
     /* Constructor */
     public StartScene() {
         super();
@@ -37,10 +43,15 @@ public class StartScene extends Scene {
 
     @Override
     public void show() {
+
         // Initialize scene-specific resources
         font = new BitmapFont();
         font.setColor(Color.WHITE);
         layout = new GlyphLayout();
+
+        // Initialize sound manager and load sounds
+        soundManager = new SoundManager();
+        soundManager.addSound("enter", "enterStart_sound.wav"); // add enter to start sound
 
         Gdx.app.log("StartScene", "Scene shown - Press ENTER to start the game");
     }
@@ -49,6 +60,10 @@ public class StartScene extends Scene {
     public void handleInput() {
         // Input Focus Rule: This only runs when StartScene is the top scene
         if (ioManager.isConfirmRequested()) {
+
+            // Play "ENTER to Start" sound
+            soundManager.playSound("enter"); 
+
             // Transition to GameScene using set() - clears stack and starts fresh
             sceneManager.set(new GameScene());
         }
@@ -101,6 +116,9 @@ public class StartScene extends Scene {
     @Override
     public void dispose() {
         font.dispose();
+
+        // ** Note: DO NOT dispose the soundManager or else the sound for "ENTER to Start" will not play 
+        // when you hit ENTER or when you go back to StartScene from PauseScene **
 
         Gdx.app.log("StartScene", "Scene disposed");
     }
