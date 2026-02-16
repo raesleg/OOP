@@ -28,12 +28,12 @@ public class SoundManager {
     }
 
     // Play sound by their name
-    public void playSound(String name) {
+    public void playSound(String name, float volume) {
         if (muted) {
             return;
         }
         if (sounds.containsKey(name)) {
-          sounds.get(name).play();
+          sounds.get(name).play(volume);
         }
     }
 
