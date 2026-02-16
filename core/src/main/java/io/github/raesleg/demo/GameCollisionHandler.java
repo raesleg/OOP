@@ -75,7 +75,7 @@ public class GameCollisionHandler implements ICollisionListener {
             System.out.println("User entity hit AI entity - creating explosion!");
 
             if (soundManager != null) {
-                soundManager.playSound("explosion");
+                soundManager.playSound("explosion", 1.0f);
             }
 
             createParticleExplosion(aiEntity, impactPoint, impactForce);

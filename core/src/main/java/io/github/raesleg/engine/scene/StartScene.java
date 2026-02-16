@@ -51,7 +51,7 @@ public class StartScene extends Scene {
 
         // Initialize sound manager and load sounds
         soundManager = new SoundManager();
-        soundManager.addSound("enter", "enterStart_sound.wav"); // add enter to start sound
+        soundManager.addSound("selected", "uiSelected_sound.wav"); // add enter to start sound
 
         Gdx.app.log("StartScene", "Scene shown - Press ENTER to start the game");
     }
@@ -62,7 +62,7 @@ public class StartScene extends Scene {
         if (ioManager.isConfirmRequested()) {
 
             // Play "ENTER to Start" sound
-            soundManager.playSound("enter"); 
+            soundManager.playSound("selected", 1.0f); 
 
             // Transition to GameScene using set() - clears stack and starts fresh
             sceneManager.set(new GameScene());

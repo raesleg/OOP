@@ -92,7 +92,7 @@ public class PauseScene extends Scene {
         if (ioManager.isPauseRequested()) {
 
             // Play sound when ESC is pressed to resume
-            soundManager.playSound("selected"); 
+            soundManager.playSound("selected", 1.0f); 
 
             sceneManager.pop();
             return;
@@ -104,7 +104,7 @@ public class PauseScene extends Scene {
             if (selectedOption < 0) {
                 selectedOption = menuOptions.length - 1;
             }
-            soundManager.playSound("menu"); // Play menu navigation sound
+            soundManager.playSound("menu", 1.0f); // Play menu navigation sound
         }
 
         else if (ioManager.isDownJustPressed()) {
@@ -112,12 +112,12 @@ public class PauseScene extends Scene {
             if (selectedOption >= menuOptions.length) {
                 selectedOption = 0;
             }
-            soundManager.playSound("menu"); // Play menu navigation sound
+            soundManager.playSound("menu", 1.0f); // Play menu navigation sound
         }
 
         // ENTER -> Select current option
         else if (ioManager.isConfirmRequested()) {
-            soundManager.playSound("selected"); // Play selection sound
+            soundManager.playSound("selected", 1.0f); // Play selection sound
             executeSelectedOption();
         }
 
