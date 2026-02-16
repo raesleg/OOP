@@ -156,7 +156,7 @@ public class GameScene extends Scene {
         // Start background music
         bgm = Gdx.audio.newMusic(Gdx.files.internal("bgm.ogg"));
         bgm.setLooping(true);
-        bgm.setVolume(0.5f); // Set volume to 50%
+        bgm.setVolume(0.2f); // Set volume to 20%
         bgm.play();
     }
 
@@ -171,8 +171,22 @@ public class GameScene extends Scene {
         if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.M)) {
             SoundManager.toggleMute();
 
+            // Stop all the sound when is muted
+            if (SoundManager.isMuted()) {
+                if (soundManager != null) {
+                    soundManager.stopSound("move"); // stop moving sound when the game is muted
+                }
+                isMoving = false; // reset moving state
+            }
+
+            // Mute/umute background music
             if (bgm != null) {
-                bgm.setVolume(SoundManager.isMuted() ? 0f : 0.5f);
+                if (SoundManager.isMuted()) {
+                    bgm.setVolume(0f); 
+                }
+                else {
+                    bgm.setVolume(0.2f);
+                }
             }
         }
 
