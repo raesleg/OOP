@@ -16,8 +16,8 @@ public class SoundEffect {
   }
 
   // Play the sound effect
-  public void play() {
-    sound.play();
+  public void play(float volume) {
+    sound.play(volume);
   }
 
   // Loop the sound effect
@@ -32,6 +32,9 @@ public class SoundEffect {
     if (loopId != -1) {
         sound.stop(loopId);
         loopId = -1;
+    }
+    else {
+        sound.stop();
     }
   }
 
