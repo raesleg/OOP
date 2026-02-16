@@ -32,7 +32,6 @@ public class SoundManager {
         if (muted) {
             return;
         }
-
         if (sounds.containsKey(name)) {
           sounds.get(name).play();
         }
@@ -42,8 +41,7 @@ public class SoundManager {
     public void loopSound(String name) {
         if (muted) {
             return;
-        }
-        
+        }   
         if (sounds.containsKey(name)) {
             sounds.get(name).loop();
         }
