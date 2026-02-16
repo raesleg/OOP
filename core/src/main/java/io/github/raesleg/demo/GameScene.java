@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.badlogic.gdx.audio.Music;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.movement.AIControlled;
@@ -54,6 +55,9 @@ public class GameScene extends Scene {
 
     // Sound manager implementing menu navigation and selection sounds
     private SoundManager soundManager;
+
+    // Background music purposes
+    private Music bgm;
 
     // Condition to demo sound effect when object is moving or not moving
     boolean isMoving = false; 
@@ -148,6 +152,12 @@ public class GameScene extends Scene {
 
         entityManager.addEntity(bucket);
         entityManager.addEntity(droplet);
+
+        // Start background music
+        bgm = Gdx.audio.newMusic(Gdx.files.internal("bgm.ogg"));
+        bgm.setLooping(true);
+        bgm.setVolume(0.5f); // Set volume to 50%
+        bgm.play();
     }
 
     @Override
@@ -160,6 +170,10 @@ public class GameScene extends Scene {
         // Press M to mute/unmute all sounds
         if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.M)) {
             SoundManager.toggleMute();
+
+            if (bgm != null) {
+                bgm.setVolume(SoundManager.isMuted() ? 0f : 0.5f);
+            }
         }
 
     }
@@ -234,12 +248,22 @@ public class GameScene extends Scene {
     @Override
     public void pause() {
         isPaused = true;
+
+        if (bgm != null) {
+            bgm.pause();
+        }
+
         Gdx.app.log("GameScene", "Scene paused - Game state preserved");
     }
 
     @Override
     public void resume() {
         isPaused = false;
+
+        if (bgm != null) {
+            bgm.play();
+        }
+
         Gdx.app.log("GameScene", "Scene resumed - Continuing gameplay");
     }
 
@@ -258,6 +282,12 @@ public class GameScene extends Scene {
         entityManager.dispose();
         physics.dispose();   
         soundManager.dispose();
+
+        if (bgm != null) {
+            bgm.stop();
+            bgm.dispose();
+        }
+
 
         Gdx.app.log("GameScene", "Scene disposed - All managers and resources cleaned up");
     }
