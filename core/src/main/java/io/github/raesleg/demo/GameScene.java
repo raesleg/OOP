@@ -15,7 +15,6 @@ import com.badlogic.gdx.audio.Music;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.movement.AIControlled;
-import io.github.raesleg.engine.movement.IOManager;
 import io.github.raesleg.engine.movement.MovementManager;
 import io.github.raesleg.engine.movement.UserControlled;
 import io.github.raesleg.engine.collision.CollisionManager;
@@ -27,7 +26,7 @@ import io.github.raesleg.engine.physics.IPhysics;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.PauseScene;
 import io.github.raesleg.engine.scene.Scene;
-import io.github.raesleg.engine.sound.SoundManager;
+import io.github.raesleg.engine.io.SoundDevice;
 
 public class GameScene extends Scene {
 
@@ -45,7 +44,7 @@ public class GameScene extends Scene {
 
     // movement — use Constants.PPM for single source of truth
     private ShapeRenderer shapeRenderer;
-    private final ArrayList<Shape> zones = new ArrayList<>();
+    private ArrayList<Shape> zones = new ArrayList<>();
 
     private float worldW = VIRTUAL_WIDTH / Constants.PPM;
     private float worldH = VIRTUAL_HEIGHT / Constants.PPM;
@@ -53,14 +52,10 @@ public class GameScene extends Scene {
     private float zoneW = worldW * 0.12f;
     private float zoneH = worldH * 0.45f;
 
-    // Sound manager implementing menu navigation and selection sounds
-    private SoundManager soundManager;
-
     // Background music purposes
     private Music bgm;
-
     // Condition to demo sound effect when object is moving or not moving
-    boolean isMoving = false; 
+    private boolean isMoving = false;
 
     public GameScene() {
         super();
@@ -120,7 +115,6 @@ public class GameScene extends Scene {
         movementManager = new MovementManager(physics, entityManager);
 
         // Initialize sound manager and load sounds in the GameScene
-        soundManager = new SoundManager();
         soundManager.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
         soundManager.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
         soundManager.addSound("move", "moving_sound.wav"); // Add moving object sound
@@ -137,7 +131,7 @@ public class GameScene extends Scene {
                 200,
                 64f,
                 64f,
-                new UserControlled(ioManager),
+                new UserControlled(ioManager.getInput()),
                 MotionTuning.DEFAULT);
 
         droplet = new MovableEntity(
@@ -161,33 +155,44 @@ public class GameScene extends Scene {
     }
 
     @Override
-    public void handleInput() {
-        if (ioManager.isPauseRequested()) {
+    public void handleInput(float deltaTime) {
+        if (controls.isPause(deltaTime)) {
             sceneManager.push(new PauseScene());
             return;
         }
 
         // Press M to mute/unmute all sounds
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.M)) {
-            SoundManager.toggleMute();
+        if (controls.isMuteJustPressed(deltaTime)) {
+            soundManager.toggleMute();
 
             // Stop all the sound when is muted
-            if (SoundManager.isMuted()) {
-                if (soundManager != null) {
-                    soundManager.stopSound("move"); // stop moving sound when the game is muted
-                }
+            if (soundManager.isMuted()) {
+                soundManager.stopSound("move"); // stop moving sound when the game is muted
                 isMoving = false; // reset moving state
+                if (bgm != null) bgm.setVolume(0f);
+            } else {
+                if (bgm != null) bgm.setVolume(0.2f);
+            }
+            
+            // If currently moving, restart loop immediately
+            Vector2 v = bucket.getPhysicsBody().getVelocity();
+            boolean objMoving = Math.abs(v.x) > 0.05f || Math.abs(v.y) > 0.05f;
+
+            if (objMoving) {
+                soundManager.loopSound("move");
+                isMoving = true;
             }
 
-            // Mute/umute background music
-            if (bgm != null) {
-                if (SoundManager.isMuted()) {
-                    bgm.setVolume(0f); 
-                }
-                else {
-                    bgm.setVolume(0.2f);
-                }
-            }
+
+            // // Mute/umute background music
+            // if (bgm != null) {
+            //     if (soundManager.isMuted()) {
+            //         bgm.setVolume(0f); 
+            //     }
+            //     else {
+            //         bgm.setVolume(0.2f);
+            //     }
+            // }
         }
 
     }
@@ -200,7 +205,7 @@ public class GameScene extends Scene {
         }
         gameTime += deltaTime;
 
-        handleInput();
+        handleInput(deltaTime);
         entityManager.update(deltaTime);
         movementManager.update(deltaTime);
 
@@ -210,15 +215,15 @@ public class GameScene extends Scene {
             Math.abs(velocity.x) > 0.05f ||
             Math.abs(velocity.y) > 0.05f;
 
-        if (objMoving && !isMoving) {
+        if (objMoving && !isMoving && !soundManager.isMuted()) {
             soundManager.loopSound("move");
-        }
-
-        if (!objMoving && isMoving) {
+            isMoving = true;
+        } 
+        
+        if (!objMoving || isMoving && soundManager.isMuted()) {
             soundManager.stopSound("move");
+            isMoving = false;
         }
-
-        isMoving = objMoving;
     }
 
     @Override
@@ -252,11 +257,15 @@ public class GameScene extends Scene {
         font.getData().setScale(2f);
         font.draw(batch, "Game Time: " + String.format("%.1f", gameTime) + "s", 10, VIRTUAL_HEIGHT - 10);
 
-        // Dynamic key name — stays accurate even after rebinding
-        String pauseKey = ioManager.getKeyName(IOManager.PAUSE);
-        String muteText = SoundManager.isMuted() ? "M to unmute" : "M to mute";
-        font.draw(batch, "Use WASD/Arrows to move | " + pauseKey + " to pause | " + muteText, 10, VIRTUAL_HEIGHT - 45);
+        String muteText = ioManager.getSound().isMuted() ? "M to unmute" : "M to mute";
+        font.draw(batch,
+                "Use WASD/Arrows to move | ESC to pause | " + muteText,
+                10, VIRTUAL_HEIGHT - 45);
         batch.end();
+        // String pauseKey = ioManager.getKeyName(IOManagerr.PAUSE);
+        // String muteText = soundManager.isMuted() ? "M to unmute" : "M to mute";
+        // font.draw(batch, "Use WASD/Arrows to move | " + pauseKey + " to pause | " + muteText, 10, VIRTUAL_HEIGHT - 45);
+        // batch.end();
     }
 
     @Override
@@ -295,7 +304,6 @@ public class GameScene extends Scene {
         zones.clear();
         entityManager.dispose();
         physics.dispose();   
-        soundManager.dispose();
 
         if (bgm != null) {
             bgm.stop();

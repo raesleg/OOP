@@ -5,17 +5,19 @@ import java.util.Map;
 
 import com.badlogic.gdx.Gdx;
 
-public class SoundManager {
+import io.github.raesleg.engine.io.SoundDevice;
+
+public class SoundManager implements SoundDevice {
     
     // Static variable to track mute state
-    private static boolean muted = false;
+    private boolean muted = false;
 
-    public static void toggleMute() {
+    public void toggleMute() {
         muted = !muted;
         Gdx.app.log("SoundManager", muted ? "Muted" : "Unmuted");
     }
 
-    public static boolean isMuted() {
+    public boolean isMuted() {
         return muted;
     }
 

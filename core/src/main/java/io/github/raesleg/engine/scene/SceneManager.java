@@ -3,7 +3,7 @@ package io.github.raesleg.engine.scene;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import io.github.raesleg.engine.movement.IOManager;
+import io.github.raesleg.engine.io.IOManager;
 
 import java.util.Stack;
 
@@ -19,7 +19,7 @@ import java.util.Stack;
  * ARCHITECTURAL NOTES (Following SOLID Principles):
  * - Single Responsibility: Only manages scene lifecycle and transitions
  * - Dependency Injection: Holds the shared IOManager and injects it into
- * every scene via {@link Scene#setIOManager(IOManager)} so no scene
+ * every scene via {@link Scene#setIOManager(IOManagerr)} so no scene
  * ever creates its own instance.
  * - Does NOT hold references to EntityManager, CollisionManager, or
  * MovementManager
@@ -44,6 +44,10 @@ public class SceneManager {
         this.sceneStack = new Stack<>();
         this.batch = batch;
         this.ioManager = ioManager;
+    }
+
+    public IOManager getIO() {
+        return ioManager;
     }
 
     /* Public Functions */
@@ -144,9 +148,9 @@ public class SceneManager {
      * Handles input for the top scene only.
      * Background scenes (paused) do not receive input events.
      */
-    public void handleInput() {
+    public void handleInput(float deltaTime) {
         if (!sceneStack.isEmpty()) {
-            sceneStack.peek().handleInput();
+            sceneStack.peek().handleInput(deltaTime);
         }
     }
 

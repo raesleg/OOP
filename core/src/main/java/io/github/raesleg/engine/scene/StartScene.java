@@ -8,8 +8,8 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import io.github.raesleg.demo.GameScene;
-
-import io.github.raesleg.engine.sound.SoundManager;
+// import io.github.raesleg.engine.io.SoundDevice;
+// import io.github.raesleg.engine.sound.SoundManager;
 
 /**
  * StartScene - The initial menu scene (Stack Base).
@@ -30,7 +30,6 @@ public class StartScene extends Scene {
     private String promptText;
 
     // Sound manager for "Enter to Start"
-    private SoundManager soundManager;
 
     /* Constructor */
     public StartScene() {
@@ -40,7 +39,6 @@ public class StartScene extends Scene {
     }
 
     /* Scene Lifecycle Methods */
-
     @Override
     public void show() {
 
@@ -50,20 +48,16 @@ public class StartScene extends Scene {
         layout = new GlyphLayout();
 
         // Initialize sound manager and load sounds
-        soundManager = new SoundManager();
         soundManager.addSound("selected", "uiSelected_sound.wav"); // add enter to start sound
 
         Gdx.app.log("StartScene", "Scene shown - Press ENTER to start the game");
     }
 
     @Override
-    public void handleInput() {
-        // Input Focus Rule: This only runs when StartScene is the top scene
-        if (ioManager.isConfirmRequested()) {
-
+    public void handleInput(float deltaTime) {
+        if (controls.isConfirm(deltaTime)) {
             // Play "ENTER to Start" sound
             soundManager.playSound("selected", 1.0f); 
-
             // Transition to GameScene using set() - clears stack and starts fresh
             sceneManager.set(new GameScene());
         }
@@ -71,7 +65,7 @@ public class StartScene extends Scene {
 
     @Override
     public void update(float deltaTime) {
-        handleInput();
+        handleInput(deltaTime);
     }
 
     @Override

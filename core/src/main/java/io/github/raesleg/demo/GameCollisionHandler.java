@@ -6,22 +6,21 @@ import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.collision.ICollisionListener;
 import io.github.raesleg.engine.entity.Entity;
 import io.github.raesleg.engine.entity.EntityManager;
-import io.github.raesleg.engine.movement.AIControlled;
+import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.engine.sound.SoundManager;
 
 public class GameCollisionHandler implements ICollisionListener {
 
     private final EntityManager entityManager;
     private final float explosionForceThreshold;
-    private final SoundManager soundManager;
+    private final SoundDevice soundManager;
 
-    public GameCollisionHandler(EntityManager entityManager, SoundManager soundManager) {
+    public GameCollisionHandler(EntityManager entityManager, SoundDevice soundManager) {
         this(entityManager, soundManager, 0.1f); // default threshold
     }
 
-    public GameCollisionHandler(EntityManager entityManager, SoundManager soundManager, float explosionForceThreshold) {
+    public GameCollisionHandler(EntityManager entityManager, SoundDevice soundManager, float explosionForceThreshold) {
         this.entityManager = entityManager;
         this.soundManager = soundManager;
         this.explosionForceThreshold = explosionForceThreshold;
@@ -55,7 +54,7 @@ public class GameCollisionHandler implements ICollisionListener {
         MovableEntity userEntity = null;
 
         if (entityA instanceof MovableEntity movableA) {
-            if (isAIControlled(movableA)) {
+            if (movableA.isAIControlled()) {
                 aiEntity = movableA;
             } else {
                 userEntity = movableA;
@@ -63,7 +62,7 @@ public class GameCollisionHandler implements ICollisionListener {
         }
 
         if (entityB instanceof MovableEntity movableB) {
-            if (isAIControlled(movableB)) {
+            if (movableB.isAIControlled()) {
                 aiEntity = movableB;
             } else {
                 userEntity = movableB;
@@ -87,10 +86,10 @@ public class GameCollisionHandler implements ICollisionListener {
      * Game-Specific Logic
      */
 
-    private boolean isAIControlled(MovableEntity entity) {
-        // check if entity uses AIControlled
-        return entity.getControls() instanceof AIControlled;
-    }
+    // private boolean isAIControlled(MovableEntity entity) {
+    //     // check if entity uses AIControlled
+    //     return entity.isAIControlled();
+    // }
 
     // apply radial explosion force to all nearby MoveableEntities
     private void createExplosion(Vector2 center, float force) {

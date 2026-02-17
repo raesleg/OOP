@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 
-import io.github.raesleg.engine.sound.SoundManager;
 /**
  * PauseScene - The pause menu overlay.
  * 
@@ -45,9 +44,6 @@ public class PauseScene extends Scene {
     /* Screen-space projection — updated on resize */
     private Matrix4 screenProjection;
 
-    // Sound manager for menu navigation and selection sounds
-    private SoundManager soundManager;
-
     /* Constructor */
     public PauseScene() {
         super();
@@ -77,7 +73,7 @@ public class PauseScene extends Scene {
                 Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         // Initialize sound manager and load sounds
-        soundManager = new SoundManager();
+        // soundManager = new SoundManager();
         soundManager.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
         soundManager.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
 
@@ -85,21 +81,17 @@ public class PauseScene extends Scene {
     }
 
     @Override
-    public void handleInput() {
-        // Input Focus Rule: Only PauseScene receives input when it's on top
-
+    public void handleInput(float deltaTime) {
         // ESC -> Resume game (pop this scene)
-        if (ioManager.isPauseRequested()) {
-
+        if (controls.isPause(deltaTime)) {
             // Play sound when ESC is pressed to resume
             soundManager.playSound("selected", 1.0f); 
-
             sceneManager.pop();
             return;
         }
 
         // Navigate menu with W/S or Up/Down arrows
-        else if (ioManager.isUpJustPressed()) {
+        else if (controls.isUpJustPressed(deltaTime)) {
             selectedOption--;
             if (selectedOption < 0) {
                 selectedOption = menuOptions.length - 1;
@@ -107,7 +99,7 @@ public class PauseScene extends Scene {
             soundManager.playSound("menu", 1.0f); // Play menu navigation sound
         }
 
-        else if (ioManager.isDownJustPressed()) {
+        else if (controls.isDownJustPressed(deltaTime)) {
             selectedOption++;
             if (selectedOption >= menuOptions.length) {
                 selectedOption = 0;
@@ -116,14 +108,14 @@ public class PauseScene extends Scene {
         }
 
         // ENTER -> Select current option
-        else if (ioManager.isConfirmRequested()) {
+        else if (controls.isConfirm(deltaTime)) {
             soundManager.playSound("selected", 1.0f); // Play selection sound
             executeSelectedOption();
         }
 
         // Press M to mute/unmute all sounds
-        else if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.M)) {
-            SoundManager.toggleMute();
+        else if (controls.isMuteJustPressed(deltaTime)) {
+            soundManager.toggleMute();
         }
 
     }
@@ -151,7 +143,7 @@ public class PauseScene extends Scene {
 
     @Override
     public void update(float deltaTime) {
-        handleInput();
+        handleInput(deltaTime);
     }
 
     @Override

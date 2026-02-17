@@ -8,15 +8,18 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.raesleg.engine.GameMaster;
 import io.github.raesleg.engine.collision.CollisionManager;
 import io.github.raesleg.engine.entity.EntityManager;
-import io.github.raesleg.engine.movement.IOManager;
+import io.github.raesleg.engine.io.ControlSource;
+import io.github.raesleg.engine.io.IOManager;
+import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovementManager;
+import io.github.raesleg.engine.movement.UserControlled;
 
 /**
  * Scene — Abstract base class for all game scenes.
  *
  * <h3>Dependency Injection</h3>
- * A single {@link IOManager} instance is created by {@link GameMaster} and
- * injected into every Scene via {@link #setIOManager(IOManager)}, called
+ * A single {@link IOManagerr} instance is created by {@link GameMaster} and
+ * injected into every Scene via {@link #setIOManager(IOManagerr)}, called
  * automatically by {@link SceneManager}. Scenes must <b>never</b> create
  * their own {@code IOManager}.
  *
@@ -56,6 +59,8 @@ public abstract class Scene {
     protected MovementManager movementManager;
     protected CollisionManager collisionManager;
     protected IOManager ioManager;
+    protected ControlSource controls;
+    protected SoundDevice soundManager;
 
     /** Shared camera — subclasses use this for projection. */
     protected OrthographicCamera camera;
@@ -143,7 +148,7 @@ public abstract class Scene {
      * Handles input for this scene.
      * Called only when this scene is at the top of the stack (has input focus).
      */
-    public abstract void handleInput();
+    public abstract void handleInput(float deltaTime);
 
     /* Lifecycle Methods - Can be overridden */
 
@@ -213,10 +218,11 @@ public abstract class Scene {
      * Receives the shared IOManager instance (injected by SceneManager).
      * Scenes must <b>never</b> create their own IOManager.
      *
-     * @param ioManager The shared IOManager instance
      */
-    public void setIOManager(IOManager ioManager) {
-        this.ioManager = ioManager;
+    public void setIOManager(IOManager io) {
+        this.ioManager = io;
+        this.soundManager = io.getSound();
+        this.controls = new UserControlled(io.getInput());
     }
 
     /**

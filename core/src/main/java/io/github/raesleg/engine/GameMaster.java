@@ -5,9 +5,13 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.Box2D;
 
-import io.github.raesleg.engine.movement.IOManager;
+import io.github.raesleg.engine.io.IOManager;
+import io.github.raesleg.engine.io.InputDevice;
+import io.github.raesleg.engine.io.SoundDevice;
+import io.github.raesleg.engine.io.KeyboardMouse;
 import io.github.raesleg.engine.scene.SceneManager;
 import io.github.raesleg.engine.scene.StartScene;
+import io.github.raesleg.engine.sound.SoundManager;
 
 public class GameMaster extends ApplicationAdapter {
 
@@ -19,8 +23,13 @@ public class GameMaster extends ApplicationAdapter {
     public void create() {
         Box2D.init();
         batch = new SpriteBatch();
+
+        // create devices
+        SoundDevice sound = new SoundManager();
+        InputDevice input = new KeyboardMouse();
+
         // Single IOManager instance — injected into every Scene by SceneManager
-        ioManager = new IOManager();
+        ioManager = new IOManager(input, sound);
         sceneManager = new SceneManager(batch, ioManager);
 
         // Start with the StartScene (main menu)
@@ -48,6 +57,7 @@ public class GameMaster extends ApplicationAdapter {
     @Override
     public void dispose() {
         sceneManager.dispose();
+        ioManager.dispose();
         batch.dispose();
         Gdx.app.log("Main", "Game disposed - all resources cleaned up");
     }

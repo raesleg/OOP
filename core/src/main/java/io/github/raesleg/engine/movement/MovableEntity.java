@@ -4,12 +4,13 @@ import com.badlogic.gdx.math.Vector2;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.TextureObject;
+import io.github.raesleg.engine.io.ControlSource;
 import io.github.raesleg.engine.physics.IPhysics;
 import io.github.raesleg.engine.physics.PhysicsBody;
 
 public class MovableEntity extends TextureObject implements IMovable {
 
-    private IControllable controls;
+    private ControlSource controls;
     private PhysicsBody body;
 
     private Vector2 v1 = new Vector2();
@@ -20,6 +21,8 @@ public class MovableEntity extends TextureObject implements IMovable {
 
     private int zoneContacts = 0;
 
+    private boolean aiControlled;
+
     public MovableEntity(
             IPhysics physics,
             String filename,
@@ -27,10 +30,11 @@ public class MovableEntity extends TextureObject implements IMovable {
             float y,
             float width,
             float height,
-            IControllable controls,
+            ControlSource controls,
             MotionProfile base) {
         super(filename, x, y, width, height);
         this.controls = controls;
+        this.aiControlled = controls instanceof AIControlled;
 
         float xm = (x + width / 2f) / Constants.PPM;
         float ym = (y + height / 2f) / Constants.PPM;
@@ -52,9 +56,9 @@ public class MovableEntity extends TextureObject implements IMovable {
         return body;
     }
 
-    public IControllable getControls() {    
-        return controls;
-    }
+    // public ControlSource getControls() {    
+    //     return controls;
+    // }
 
     public void applyMotionProfile(MotionProfile p) {
         if (p == null)
@@ -80,10 +84,13 @@ public class MovableEntity extends TextureObject implements IMovable {
 
     @Override
     public void move(float dt) {
-        ControlState s = controls.get(dt);
+
+        float xAxis = controls.getX(dt);
+        float yAxis = controls.getY(dt);
+        // boolean action = controls.isAction(dt);
 
         // input direction
-        v1.set(s.getxAxis(), s.getyAxis());
+        v1.set(xAxis,yAxis);
         if (v1.len2() > 1f) {
             v1.nor();
         }
@@ -143,5 +150,9 @@ public class MovableEntity extends TextureObject implements IMovable {
         }
 
         body.applyLinearImpulse(v2);
+    }
+
+    public boolean isAIControlled() {
+        return aiControlled;
     }
 }
