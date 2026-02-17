@@ -2,6 +2,7 @@ package io.github.raesleg.engine.movement;
 
 import com.badlogic.gdx.math.Vector2;
 
+import io.github.raesleg.demo.MotionProfile;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.TextureObject;
 import io.github.raesleg.engine.io.ControlSource;
@@ -55,10 +56,6 @@ public class MovableEntity extends TextureObject implements IMovable {
     public PhysicsBody getPhysicsBody() {
         return body;
     }
-
-    // public ControlSource getControls() {    
-    //     return controls;
-    // }
 
     public void applyMotionProfile(MotionProfile p) {
         if (p == null)

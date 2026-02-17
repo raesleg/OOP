@@ -24,9 +24,7 @@ import io.github.raesleg.engine.entity.Surfaces;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.IPhysics;
 import io.github.raesleg.engine.physics.PhysicsWorld;
-import io.github.raesleg.engine.scene.PauseScene;
 import io.github.raesleg.engine.scene.Scene;
-import io.github.raesleg.engine.io.SoundDevice;
 
 public class GameScene extends Scene {
 
@@ -63,11 +61,6 @@ public class GameScene extends Scene {
         this.gameTime = 0f;
     }
 
-    /**
-     * GameScene uses an {@link ExtendViewport} so the visible world area
-     * grows when the window is enlarged, rather than stretching or
-     * letter-boxing.
-     */
     @Override
     protected Viewport createViewport(OrthographicCamera cam) {
         return new ExtendViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, cam);
@@ -162,7 +155,7 @@ public class GameScene extends Scene {
         }
 
         // Press M to mute/unmute all sounds
-        if (controls.isMuteJustPressed(deltaTime)) {
+        if (controls.isMute(deltaTime)) {
             soundManager.toggleMute();
 
             // Stop all the sound when is muted
@@ -183,16 +176,6 @@ public class GameScene extends Scene {
                 isMoving = true;
             }
 
-
-            // // Mute/umute background music
-            // if (bgm != null) {
-            //     if (soundManager.isMuted()) {
-            //         bgm.setVolume(0f); 
-            //     }
-            //     else {
-            //         bgm.setVolume(0.2f);
-            //     }
-            // }
         }
 
     }
@@ -262,10 +245,6 @@ public class GameScene extends Scene {
                 "Use WASD/Arrows to move | ESC to pause | " + muteText,
                 10, VIRTUAL_HEIGHT - 45);
         batch.end();
-        // String pauseKey = ioManager.getKeyName(IOManagerr.PAUSE);
-        // String muteText = soundManager.isMuted() ? "M to unmute" : "M to mute";
-        // font.draw(batch, "Use WASD/Arrows to move | " + pauseKey + " to pause | " + muteText, 10, VIRTUAL_HEIGHT - 45);
-        // batch.end();
     }
 
     @Override

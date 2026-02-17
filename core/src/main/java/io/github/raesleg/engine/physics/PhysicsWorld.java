@@ -8,7 +8,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 
-import io.github.raesleg.engine.movement.MotionProfile;
+import io.github.raesleg.demo.MotionProfile;
 
 public class PhysicsWorld implements IPhysics {
 

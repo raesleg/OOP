@@ -5,12 +5,12 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.Box2D;
 
+import io.github.raesleg.demo.StartScene;
 import io.github.raesleg.engine.io.IOManager;
 import io.github.raesleg.engine.io.InputDevice;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.io.KeyboardMouse;
 import io.github.raesleg.engine.scene.SceneManager;
-import io.github.raesleg.engine.scene.StartScene;
 import io.github.raesleg.engine.sound.SoundManager;
 
 public class GameMaster extends ApplicationAdapter {

@@ -1,5 +1,7 @@
 package io.github.raesleg.engine.movement;
 
+import io.github.raesleg.demo.MotionProfile;
+
 public class MotionZoneHandler {
 
     public boolean handle(Object aUserData, Object bUserData, boolean begin) {

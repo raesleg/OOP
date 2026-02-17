@@ -1,4 +1,4 @@
-package io.github.raesleg.engine.movement;
+package io.github.raesleg.demo;
 
 public class MotionProfile {
     public float maxSpeed; 

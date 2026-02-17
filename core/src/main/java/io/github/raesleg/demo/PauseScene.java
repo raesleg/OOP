@@ -1,4 +1,4 @@
-package io.github.raesleg.engine.scene;
+package io.github.raesleg.demo;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -8,6 +8,8 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
+
+import io.github.raesleg.engine.scene.Scene;
 
 /**
  * PauseScene - The pause menu overlay.
@@ -91,7 +93,7 @@ public class PauseScene extends Scene {
         }
 
         // Navigate menu with W/S or Up/Down arrows
-        else if (controls.isUpJustPressed(deltaTime)) {
+        else if (controls.isUp(deltaTime)) {
             selectedOption--;
             if (selectedOption < 0) {
                 selectedOption = menuOptions.length - 1;
@@ -99,7 +101,7 @@ public class PauseScene extends Scene {
             soundManager.playSound("menu", 1.0f); // Play menu navigation sound
         }
 
-        else if (controls.isDownJustPressed(deltaTime)) {
+        else if (controls.isDown(deltaTime)) {
             selectedOption++;
             if (selectedOption >= menuOptions.length) {
                 selectedOption = 0;
@@ -114,7 +116,7 @@ public class PauseScene extends Scene {
         }
 
         // Press M to mute/unmute all sounds
-        else if (controls.isMuteJustPressed(deltaTime)) {
+        else if (controls.isMute(deltaTime)) {
             soundManager.toggleMute();
         }
 

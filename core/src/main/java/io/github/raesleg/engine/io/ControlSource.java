@@ -7,7 +7,7 @@ public interface ControlSource {
 
     default boolean isConfirm(float deltaTime) { return false; };
     default boolean isPause(float deltaTime) { return false; };
-    default boolean isUpJustPressed(float deltaTime) { return false; };
-    default boolean isDownJustPressed(float deltaTime) { return false; }; 
-    default boolean isMuteJustPressed(float deltaTime) { return false; };
+    default boolean isUp(float deltaTime) { return false; };
+    default boolean isDown(float deltaTime) { return false; }; 
+    default boolean isMute(float deltaTime) { return false; };
 }
