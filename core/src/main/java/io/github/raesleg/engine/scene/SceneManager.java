@@ -4,7 +4,9 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import io.github.raesleg.engine.io.IOManager;
+// import io.github.raesleg.engine.io.Keyboard;
 
+// import java.security.Key;
 import java.util.Stack;
 
 /**
@@ -36,36 +38,31 @@ public class SceneManager {
     /**
      * Creates a new SceneManager with the provided SpriteBatch and shared
      * IOManager.
-     *
-     * @param batch     The SpriteBatch used for rendering (owned by GameMaster)
-     * @param ioManager The single shared IOManager (owned by GameMaster)
-     */
+    */
+
     public SceneManager(SpriteBatch batch, IOManager ioManager) {
         this.sceneStack = new Stack<>();
         this.batch = batch;
         this.ioManager = ioManager;
     }
 
-    public IOManager getIO() {
-        return ioManager;
-    }
-
-    /* Public Functions */
-
     /**
      * Pushes a new scene onto the stack.
      * The current top scene is paused (not disposed).
      * The new scene becomes the active scene receiving input and render calls.
-     * 
-     * @param scene The scene to push onto the stack
      */
+
     public void push(Scene scene) {
         if (!sceneStack.isEmpty()) {
             sceneStack.peek().pause();
         }
         scene.setSceneManager(this);
         scene.setIOManager(ioManager);
+
         sceneStack.push(scene);
+
+        ioManager.pushInputContext(); //input device binding
+
         scene.show();
         scene.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
@@ -80,6 +77,8 @@ public class SceneManager {
             Scene removedScene = sceneStack.pop();
             removedScene.hide();
             removedScene.dispose();
+
+            ioManager.popInputContext();
 
             if (!sceneStack.isEmpty()) {
                 sceneStack.peek().resume();
@@ -101,6 +100,9 @@ public class SceneManager {
             removedScene.hide();
             removedScene.dispose();
         }
+
+        ioManager.resetInputContexts();
+        ioManager.pushInputContext();
 
         // Push the new scene as the base
         scene.setSceneManager(this);

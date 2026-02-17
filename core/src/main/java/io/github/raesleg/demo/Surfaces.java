@@ -1,7 +1,9 @@
-package io.github.raesleg.engine.entity;
+package io.github.raesleg.demo;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+
+import io.github.raesleg.engine.entity.Shape;
 
 public class Surfaces extends Shape {
 

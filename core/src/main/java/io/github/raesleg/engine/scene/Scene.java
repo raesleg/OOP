@@ -12,7 +12,6 @@ import io.github.raesleg.engine.io.ControlSource;
 import io.github.raesleg.engine.io.IOManager;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovementManager;
-import io.github.raesleg.engine.movement.UserControlled;
 
 /**
  * Scene — Abstract base class for all game scenes.
@@ -219,10 +218,10 @@ public abstract class Scene {
      * Scenes must <b>never</b> create their own IOManager.
      *
      */
-    public void setIOManager(IOManager io) {
-        this.ioManager = io;
-        this.soundManager = io.getSound();
-        this.controls = new UserControlled(io.getInput());
+    public void setIOManager(IOManager ioManager) {
+        this.ioManager = ioManager;
+        this.soundManager = ioManager.getSound();
+        // this.controls = new UserControlled(io.getInput());
     }
 
     /**

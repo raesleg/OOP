@@ -1,6 +1,7 @@
 package io.github.raesleg.demo;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -79,48 +80,24 @@ public class PauseScene extends Scene {
         soundManager.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
         soundManager.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
 
+        Keyboard kb = ioManager.getInputs(Keyboard.class); // uses your IOManager generic getter
+
+        if (kb != null) {
+            // Navigate Menu
+            kb.addBind(Input.Keys.ESCAPE, this::resumeGame, true);
+            kb.addBind(Input.Keys.W, this::moveUp, true);
+            kb.addBind(Input.Keys.UP, this::moveUp, true);
+            kb.addBind(Input.Keys.S, this::moveDown, true);
+            kb.addBind(Input.Keys.DOWN, this::moveDown, true);
+            kb.addBind(Input.Keys.ENTER, this::confirm, true);
+            kb.addBind(Input.Keys.NUMPAD_ENTER, this::confirm, true);
+            kb.addBind(Input.Keys.M, this::toggleMute, true);
+        }
+
         Gdx.app.log("PauseScene", "Pause menu shown - ESC/Enter to resume, navigate with W/S or Up/Down");
     }
 
-    @Override
-    public void handleInput(float deltaTime) {
-        // ESC -> Resume game (pop this scene)
-        if (controls.isPause(deltaTime)) {
-            // Play sound when ESC is pressed to resume
-            soundManager.playSound("selected", 1.0f); 
-            sceneManager.pop();
-            return;
-        }
-
-        // Navigate menu with W/S or Up/Down arrows
-        else if (controls.isUp(deltaTime)) {
-            selectedOption--;
-            if (selectedOption < 0) {
-                selectedOption = menuOptions.length - 1;
-            }
-            soundManager.playSound("menu", 1.0f); // Play menu navigation sound
-        }
-
-        else if (controls.isDown(deltaTime)) {
-            selectedOption++;
-            if (selectedOption >= menuOptions.length) {
-                selectedOption = 0;
-            }
-            soundManager.playSound("menu", 1.0f); // Play menu navigation sound
-        }
-
-        // ENTER -> Select current option
-        else if (controls.isConfirm(deltaTime)) {
-            soundManager.playSound("selected", 1.0f); // Play selection sound
-            executeSelectedOption();
-        }
-
-        // Press M to mute/unmute all sounds
-        else if (controls.isMute(deltaTime)) {
-            soundManager.toggleMute();
-        }
-
-    }
+    public void handleInput(float deltaTime) {}
 
     /**
      * Executes the currently selected menu option.
@@ -144,9 +121,7 @@ public class PauseScene extends Scene {
     }
 
     @Override
-    public void update(float deltaTime) {
-        handleInput(deltaTime);
-    }
+    public void update(float deltaTime) {}
 
     @Override
     public void render(SpriteBatch batch) {
@@ -255,4 +230,31 @@ public class PauseScene extends Scene {
 
         Gdx.app.log("PauseScene", "Pause scene disposed");
     }
+
+    private void resumeGame() {
+        soundManager.playSound("selected", 1.0f);
+        sceneManager.pop();
+    }
+
+    private void moveUp() {
+        selectedOption--;
+        if (selectedOption < 0) selectedOption = menuOptions.length - 1;
+        soundManager.playSound("menu", 1.0f);
+    }
+
+    private void moveDown() {
+        selectedOption++;
+        if (selectedOption >= menuOptions.length) selectedOption = 0;
+        soundManager.playSound("menu", 1.0f);
+    }
+
+    private void confirm() {
+        soundManager.playSound("selected", 1.0f);
+        executeSelectedOption();
+    }
+
+    private void toggleMute() {
+        soundManager.toggleMute();
+    }
+
 }

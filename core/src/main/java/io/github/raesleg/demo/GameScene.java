@@ -2,6 +2,7 @@ package io.github.raesleg.demo;
 
 import java.util.ArrayList;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -13,14 +14,13 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.audio.Music;
 
-import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.movement.AIControlled;
 import io.github.raesleg.engine.movement.MovementManager;
 import io.github.raesleg.engine.movement.UserControlled;
+import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.collision.CollisionManager;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.entity.Shape;
-import io.github.raesleg.engine.entity.Surfaces;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.IPhysics;
 import io.github.raesleg.engine.physics.PhysicsWorld;
@@ -107,12 +107,21 @@ public class GameScene extends Scene {
         entityManager = new EntityManager();
         movementManager = new MovementManager(physics, entityManager);
 
-        // Initialize sound manager and load sounds in the GameScene
-        soundManager.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
-        soundManager.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
-        soundManager.addSound("move", "moving_sound.wav"); // Add moving object sound
-        soundManager.addSound("explosion", "collide_sound.wav"); // Add collision sound
+        /* Key Binds for Game Scene Implementation */
+        Keyboard kb = ioManager.getInputs(Keyboard.class);
+        UserControlled user = new UserControlled(kb);
+        AIControlled ai = new AIControlled();
 
+        kb.bindAction(Input.Keys.A, Constants.LEFT);
+        kb.bindAction(Input.Keys.D, Constants.RIGHT);
+        kb.bindAction(Input.Keys.W, Constants.UP);
+        kb.bindAction(Input.Keys.S, Constants.DOWN);
+        kb.bindAction(Input.Keys.SPACE, Constants.ACTION);
+
+        kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
+        kb.addBind(Input.Keys.M, this::toggleMute, true);
+        
+        // Collision Handler
         GameCollisionHandler handler = new GameCollisionHandler(entityManager, soundManager);
         new CollisionManager(physics, handler);
 
@@ -124,7 +133,7 @@ public class GameScene extends Scene {
                 200,
                 64f,
                 64f,
-                new UserControlled(ioManager.getInput()),
+                user,
                 MotionTuning.DEFAULT);
 
         droplet = new MovableEntity(
@@ -134,7 +143,7 @@ public class GameScene extends Scene {
                 300,
                 64f,
                 64f,
-                new AIControlled(),
+                ai,
                 MotionTuning.DEFAULT);
 
         entityManager.addEntity(bucket);
@@ -145,50 +154,26 @@ public class GameScene extends Scene {
         bgm.setLooping(true);
         bgm.setVolume(0.2f); // Set volume to 20%
         bgm.play();
+
+        // Initialize sound manager and load sounds in the GameScene
+        soundManager.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
+        soundManager.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
+        soundManager.addSound("move", "moving_sound.wav"); // Add moving object sound
+        soundManager.addSound("explosion", "collide_sound.wav"); // Add collision sound
     }
 
-    @Override
-    public void handleInput(float deltaTime) {
-        if (controls.isPause(deltaTime)) {
-            sceneManager.push(new PauseScene());
-            return;
-        }
-
-        // Press M to mute/unmute all sounds
-        if (controls.isMute(deltaTime)) {
-            soundManager.toggleMute();
-
-            // Stop all the sound when is muted
-            if (soundManager.isMuted()) {
-                soundManager.stopSound("move"); // stop moving sound when the game is muted
-                isMoving = false; // reset moving state
-                if (bgm != null) bgm.setVolume(0f);
-            } else {
-                if (bgm != null) bgm.setVolume(0.2f);
-            }
-            
-            // If currently moving, restart loop immediately
-            Vector2 v = bucket.getPhysicsBody().getVelocity();
-            boolean objMoving = Math.abs(v.x) > 0.05f || Math.abs(v.y) > 0.05f;
-
-            if (objMoving) {
-                soundManager.loopSound("move");
-                isMoving = true;
-            }
-
-        }
-
-    }
+    public void handleInput(float deltaTime) {}
 
     @Override
     public void update(float deltaTime) {
         if (isPaused) {
             soundManager.stopSound("move"); // Stop moving sound if paused
+            isMoving = false;
             return;
         }
+
         gameTime += deltaTime;
 
-        handleInput(deltaTime);
         entityManager.update(deltaTime);
         movementManager.update(deltaTime);
 
@@ -198,15 +183,7 @@ public class GameScene extends Scene {
             Math.abs(velocity.x) > 0.05f ||
             Math.abs(velocity.y) > 0.05f;
 
-        if (objMoving && !isMoving && !soundManager.isMuted()) {
-            soundManager.loopSound("move");
-            isMoving = true;
-        } 
-        
-        if (!objMoving || isMoving && soundManager.isMuted()) {
-            soundManager.stopSound("move");
-            isMoving = false;
-        }
+        updateMoveLoop(objMoving);
     }
 
     @Override
@@ -250,6 +227,7 @@ public class GameScene extends Scene {
     @Override
     public void pause() {
         isPaused = true;
+        stopMoveLoop();
 
         if (bgm != null) {
             bgm.pause();
@@ -272,8 +250,7 @@ public class GameScene extends Scene {
     @Override
     public void resize(int width, int height) {
         super.resize(width, height);
-        // Player stays in bounds — physics walls are based on VIRTUAL size, not window
-        // size
+        // Player stays in bounds — physics walls are based on VIRTUAL size, not window size
     }
 
     @Override
@@ -291,5 +268,37 @@ public class GameScene extends Scene {
 
 
         Gdx.app.log("GameScene", "Scene disposed - All managers and resources cleaned up");
+    }
+
+    private void stopMoveLoop() {
+        soundManager.stopSound("move");
+        isMoving = false;
+    }
+
+    private void updateMoveLoop(boolean objMoving) {
+        if (soundManager.isMuted() || !objMoving) {
+            stopMoveLoop();
+            return;
+        }
+
+        if (!isMoving) {
+            soundManager.loopSound("move");
+            isMoving = true;
+        }
+    }
+
+    private void openPause() {
+        sceneManager.push(new PauseScene());
+    }
+
+    private void toggleMute() {
+        soundManager.toggleMute();
+
+        if (bgm != null) bgm.setVolume(soundManager.isMuted() ? 0f : 0.2f);
+
+        Vector2 v = bucket.getPhysicsBody().getVelocity();
+        boolean objMoving = Math.abs(v.x) > 0.05f || Math.abs(v.y) > 0.05f;
+
+        updateMoveLoop(objMoving);
     }
 }

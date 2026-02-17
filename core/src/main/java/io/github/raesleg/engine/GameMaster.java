@@ -5,11 +5,10 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.Box2D;
 
+import io.github.raesleg.demo.Keyboard;
 import io.github.raesleg.demo.StartScene;
 import io.github.raesleg.engine.io.IOManager;
-import io.github.raesleg.engine.io.InputDevice;
 import io.github.raesleg.engine.io.SoundDevice;
-import io.github.raesleg.engine.io.KeyboardMouse;
 import io.github.raesleg.engine.scene.SceneManager;
 import io.github.raesleg.engine.sound.SoundManager;
 
@@ -26,13 +25,15 @@ public class GameMaster extends ApplicationAdapter {
 
         // create devices
         SoundDevice sound = new SoundManager();
-        InputDevice input = new KeyboardMouse();
-
-        // Single IOManager instance — injected into every Scene by SceneManager
-        ioManager = new IOManager(input, sound);
-        sceneManager = new SceneManager(batch, ioManager);
+        Keyboard keyboard = new Keyboard();
+        
+        // single IOManager instance — injected into every Scene by SceneManager
+        // io manager many inputs + one output
+        ioManager = new IOManager(sound);
+        ioManager.addInput(keyboard);
 
         // Start with the StartScene (main menu)
+        sceneManager = new SceneManager(batch, ioManager);
         sceneManager.push(new StartScene());
         Gdx.app.log("Main", "Game initialized with Scene Management System");
     }
@@ -41,8 +42,7 @@ public class GameMaster extends ApplicationAdapter {
     public void render() {
         float deltaTime = Gdx.graphics.getDeltaTime();
 
-        // Update input state ONCE per frame before any scene logic
-        ioManager.update();
+        ioManager.update(); //trigger keybinds
 
         // SceneManager routes to the correct scene (top of stack)
         sceneManager.update(deltaTime);

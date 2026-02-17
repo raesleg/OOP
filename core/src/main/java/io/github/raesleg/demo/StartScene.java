@@ -1,6 +1,7 @@
 package io.github.raesleg.demo;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -27,8 +28,6 @@ public class StartScene extends Scene {
     private String titleText;
     private String promptText;
 
-    // Sound manager for "Enter to Start"
-
     /* Constructor */
     public StartScene() {
         super();
@@ -48,18 +47,25 @@ public class StartScene extends Scene {
         // Initialize sound manager and load sounds
         soundManager.addSound("selected", "uiSelected_sound.wav"); // add enter to start sound
 
+        Keyboard kb = ioManager.getInputs(Keyboard.class); // uses your IOManager generic getter
+        if (kb != null) {
+            // Start Navigation
+            kb.addBind(Input.Keys.ENTER, this::confirm, true);
+            kb.addBind(Input.Keys.NUMPAD_ENTER, this::confirm, true);
+        }
+
         Gdx.app.log("StartScene", "Scene shown - Press ENTER to start the game");
     }
 
     @Override
-    public void handleInput(float deltaTime) {
-        if (controls.isConfirm(deltaTime)) {
-            // Play "ENTER to Start" sound
-            soundManager.playSound("selected", 1.0f); 
-            // Transition to GameScene using set() - clears stack and starts fresh
-            sceneManager.set(new GameScene());
-        }
+    public void handleInput(float deltaTime) {}
+
+    private void confirm() {
+        soundManager.playSound("selected", 1.0f); 
+        // Transition to GameScene using set() - clears stack and starts fresh
+        sceneManager.set(new GameScene());
     }
+
 
     @Override
     public void update(float deltaTime) {
@@ -108,10 +114,6 @@ public class StartScene extends Scene {
     @Override
     public void dispose() {
         font.dispose();
-
-        // ** Note: DO NOT dispose the soundManager or else the sound for "ENTER to Start" will not play 
-        // when you hit ENTER or when you go back to StartScene from PauseScene **
-
         Gdx.app.log("StartScene", "Scene disposed");
     }
 }

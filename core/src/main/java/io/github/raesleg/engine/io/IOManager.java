@@ -1,16 +1,26 @@
 package io.github.raesleg.engine.io;
 
-public class IOManager {
-    private InputDevice input;
-    private SoundDevice output;
+import java.util.ArrayList;
+import java.util.List;
 
-    public IOManager(InputDevice input, SoundDevice output) {
-        this.input = input;
+public class IOManager {
+
+    private final List<InputDevice> inputs = new ArrayList<>();
+    private final SoundDevice output;
+
+    public IOManager(SoundDevice output) {
         this.output = output;
     }
 
-    public InputDevice getInput() {
-        return input;
+    public void addInput(InputDevice device) {
+        inputs.add(device);
+    }
+
+    public <T extends InputDevice> T getInputs(Class<T> type) {
+        for (InputDevice d : inputs) {
+            if (type.isInstance(d)) return type.cast(d);
+        }
+        return null;
     }
 
     public SoundDevice getSound() {
@@ -18,11 +28,24 @@ public class IOManager {
     }
 
     public void update() {
-        input.update();
+        for (InputDevice d : inputs) {
+            d.handleInput();
+        }
     }
 
     public void dispose() {
         output.dispose();
-        // input.dispose(); //maybe if input has dispose
+    }
+
+    public void pushInputContext() {
+        for (InputDevice d : inputs) d.pushContext();
+    }
+
+    public void popInputContext() {
+        for (InputDevice d : inputs) d.popContext();
+    }
+
+    public void resetInputContexts() {
+        for (InputDevice d : inputs) d.resetToBase();
     }
 }

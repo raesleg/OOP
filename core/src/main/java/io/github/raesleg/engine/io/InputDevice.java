@@ -1,15 +1,12 @@
 package io.github.raesleg.engine.io;
 
 public interface InputDevice {
-    void update();
-    float getX();
-    float getY();
-    boolean isAction();
-    float getScroll();
+    void handleInput();
+    // bind to an action
+    void addBind(int input, Runnable action, boolean isJustPressed);
+    void removeBind(int input);
 
-    boolean isKeyPressed(int key);
-    boolean isKeyJustPressed(int key);
-
-    boolean isMouseButtonPressed(int btn);
-    boolean isMouseButtonJustPressed(int btn);
+    void pushContext();
+    void popContext();
+    void resetToBase();
 }

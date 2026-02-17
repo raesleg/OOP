@@ -57,6 +57,11 @@ public class MovableEntity extends TextureObject implements IMovable {
         return body;
     }
 
+    public boolean isMoving() {
+        Vector2 v = body.getVelocity();
+        return Math.abs(v.x) > 0.05f || Math.abs(v.y) > 0.05f;
+    }
+
     public void applyMotionProfile(MotionProfile p) {
         if (p == null)
             return;
