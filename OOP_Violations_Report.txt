@@ -1,0 +1,247 @@
+OOP VIOLATIONS REPORT
+=====================
+What was changed, why it was a violation, and how it was fixed.
+
+
+1. ENCAPSULATION — MotionTuning exposed public fields
+------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/MotionTuning.java
+
+What was wrong:
+  All four fields (maxSpeed, maxForce, lateralGrip, linearDamping) were
+  declared as "public final" instead of "private final" with getters.
+
+Why it violates OOP:
+  Encapsulation requires that an object's internal data is hidden behind
+  an access-controlled interface. Public fields let any external class
+  couple directly to the internal representation, making future changes
+  (validation, derived values, unit conversion) impossible without
+  modifying every consumer.
+
+How it was fixed:
+  Changed all four fields to "private final" and added getter methods:
+  getMaxSpeed(), getMaxForce(), getLateralGrip(), getLinearDamping().
+  Updated FrictionMovement.java to call the getters instead of accessing
+  fields directly (e.g. tuning.maxSpeed -> tuning.getMaxSpeed()).
+
+
+2. ENCAPSULATION — Scene exposed protected fields
+--------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/scene/Scene.java
+
+What was wrong:
+  All 11 fields (sceneManager, ioManager, controls, camera, viewport,
+  uiCamera, uiViewport, entityManager, movementManager, collisionManager)
+  were declared "protected", giving every subclass direct field access.
+
+Why it violates OOP:
+  Protected fields expose internal representation to the entire
+  inheritance hierarchy. Any subclass can bypass invariants, and changes
+  to how a field is stored or initialised force modifications across all
+  subclasses. This is the "fragile base class" problem.
+
+How it was fixed:
+  Changed all fields to "private". Added protected getters:
+  getSceneManager(), getIOManager(), getControls(), getCamera(),
+  getViewport(), getUiCamera(), getUiViewport(), getEntityManager(),
+  getMovementManager(), getCollisionManager(). Added protected setters:
+  setEntityManager(), setMovementManager(), setCollisionManager(),
+  setControls(). Updated all three subclasses (GameScene, StartScene,
+  PauseScene) to use the accessor methods instead of direct field access.
+
+
+3. ENCAPSULATION / DRY — GameScene.isMoving duplicated sound state
+------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/GameScene.java
+
+What was wrong:
+  A "private boolean isMoving" field manually shadowed whether the
+  move-loop sound was playing, duplicating state already tracked inside
+  SoundManager. The two could drift out of sync.
+
+Why it violates OOP:
+  Maintaining a shadow copy of another object's state breaks
+  encapsulation (the scene "knows" internal implementation details of the
+  sound system) and violates DRY (two sources of truth). A bug in either
+  update path silently causes inconsistency.
+
+How it was fixed:
+  Removed the isMoving field. updateMoveLoop() now queries
+  sound.isLooping("move") instead. Added isLooping(String) to the
+  SoundDevice interface and implemented it in SoundManager via
+  SoundEffect.isLooping(). stopMoveLoop() no longer sets a flag.
+
+
+4. ENCAPSULATION / DRY — ExplosionParticle duplicated width/height
+------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/ExplosionParticle.java
+
+What was wrong:
+  The class declared its own "private final float width" and
+  "private final float height" fields, duplicating the same values
+  already stored in the parent Entity class.
+
+Why it violates OOP:
+  Duplicating inherited state wastes memory, introduces the risk of
+  inconsistency if one copy is updated but not the other, and ignores
+  the encapsulated interface the superclass already provides via
+  getW() and getH().
+
+How it was fixed:
+  Removed the duplicate fields. The draw() method now calls the
+  inherited getW() and getH() accessors.
+
+
+5. DEPENDENCY INVERSION PRINCIPLE — GameMaster depended on concrete classes
+---------------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/GameMaster.java
+
+What was wrong:
+  GameMaster (a high-level engine class) directly imported and
+  instantiated Keyboard and StartScene (low-level demo classes) inside
+  its create() method.
+
+Why it violates OOP:
+  The Dependency Inversion Principle states that high-level modules
+  should depend on abstractions, not concrete implementations.
+  Hardcoding demo-specific classes in the engine makes the engine
+  non-reusable and tightly coupled to a single game.
+
+How it was fixed:
+  GameMaster now accepts a Scene and an InputDevice through its
+  constructor. The composition root in Lwjgl3Launcher.java now passes
+  "new StartScene()" and "new Keyboard()", keeping all concrete wiring
+  at the application boundary.
+
+
+6. POLYMORPHISM / OPEN-CLOSED PRINCIPLE — MovableEntity used instanceof
+-----------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/movement/MovableEntity.java
+
+What was wrong:
+  The constructor contained "this.aiControlled = controls instanceof
+  AIControlled" and stored a redundant boolean flag. isAIControlled()
+  returned that flag.
+
+Why it violates OOP:
+  instanceof checks defeat polymorphism. Adding a new non-player
+  ControlSource (e.g. network-controlled) would require modifying
+  MovableEntity. The Open-Closed Principle says classes should be open
+  for extension but closed for modification. The separate boolean also
+  duplicates state.
+
+How it was fixed:
+  Removed the aiControlled field and the instanceof check. Added a
+  "default boolean isPlayerControlled()" method to the ControlSource
+  interface (returns true). AIControlled overrides it to return false.
+  MovableEntity.isAIControlled() now delegates to
+  !controls.isPlayerControlled().
+
+
+7. LISKOV SUBSTITUTION PRINCIPLE — Shape forced to implement meaningless methods
+--------------------------------------------------------------------------------
+Files: core/src/main/java/io/github/raesleg/engine/entity/Entity.java
+       core/src/main/java/io/github/raesleg/engine/entity/Shape.java
+
+What was wrong:
+  Entity declared "abstract void draw(SpriteBatch batch)" and
+  "abstract void dispose()". Shape (which renders via ShapeRenderer,
+  not SpriteBatch) was forced to provide empty no-op implementations
+  of both methods.
+
+Why it violates OOP:
+  The Liskov Substitution Principle requires that subclasses can
+  meaningfully honour their parent's contract. Forcing Shape to
+  implement a SpriteBatch-based draw method it can never use means the
+  abstraction is wrong. The empty overrides are dead code that misleads
+  readers.
+
+How it was fixed:
+  Changed draw(SpriteBatch) and dispose() from abstract to concrete
+  methods with empty default bodies in Entity. Removed the empty
+  overrides from Shape. Subclasses that need sprite-based drawing
+  (like MovableEntity) still override them.
+
+
+8. LAW OF DEMETER — GameScene reached through bucket to query velocity
+----------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/GameScene.java
+
+What was wrong:
+  Two places in GameScene called
+  "bucket.getPhysicsBody().getVelocity().len()" — a three-level chain
+  that couples the scene to the internal structure of MovableEntity's
+  physics implementation.
+
+Why it violates OOP:
+  The Law of Demeter ("don't talk to strangers") says an object should
+  only call methods on its direct collaborators, not reach deep into
+  their internals. If the physics body representation changes, GameScene
+  would break even though it has no direct relationship with PhysicsBody.
+
+How it was fixed:
+  Both call sites now use bucket.isMoving(), a method already exposed
+  by MovableEntity that encapsulates the velocity check.
+
+
+9. DRY — GameCollisionHandler duplicated A/B instanceof checks
+--------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/GameCollisionHandler.java
+
+What was wrong:
+  Both beginContact and endContact contained four mirrored
+  "if (a instanceof X && b instanceof Y) ... else if (a instanceof Y
+  && b instanceof X)" blocks — identical logic with A and B swapped.
+
+Why it violates OOP:
+  DRY states every piece of knowledge should have a single, unambiguous
+  representation. Duplicating the swap logic means a change to collision
+  matching must be made in two mirrored branches, doubling the chance of
+  error.
+
+How it was fixed:
+  Added a private record ZoneCollision(MovableEntity, MotionZone) and a
+  helper method extractZoneCollision(Entity, Entity) that normalises
+  the pair regardless of order. Each contact method now calls the helper
+  once and acts on the result, eliminating the mirrored branches.
+
+
+10. ENCAPSULATION — SoundDevice interface lacked loop-state query
+-----------------------------------------------------------------
+Files: core/src/main/java/io/github/raesleg/engine/io/SoundDevice.java
+       core/src/main/java/io/github/raesleg/engine/sound/SoundManager.java
+       core/src/main/java/io/github/raesleg/engine/sound/SoundEffect.java
+
+What was wrong:
+  There was no way to ask the sound system whether a sound was currently
+  looping. This forced GameScene to maintain its own shadow isMoving
+  flag (see violation #3).
+
+Why it violates OOP:
+  When an object owns a piece of state but doesn't expose it through
+  its interface, consumers are forced to duplicate that state externally,
+  breaking encapsulation.
+
+How it was fixed:
+  Added "boolean isLooping(String name)" to SoundDevice. Implemented it
+  in SoundManager by delegating to a new SoundEffect.isLooping() method
+  that checks whether a loop ID is active.
+
+
+SUMMARY TABLE
+=============
+ #  | Principle Violated       | File(s) Changed
+----+--------------------------+------------------------------------------
+ 1  | Encapsulation            | MotionTuning, FrictionMovement
+ 2  | Encapsulation            | Scene, GameScene, StartScene, PauseScene
+ 3  | Encapsulation / DRY      | GameScene, SoundDevice, SoundManager,
+    |                          | SoundEffect
+ 4  | Encapsulation / DRY      | ExplosionParticle
+ 5  | Dependency Inversion     | GameMaster, Lwjgl3Launcher
+ 6  | Polymorphism / OCP       | MovableEntity, ControlSource, AIControlled
+ 7  | Liskov Substitution      | Entity, Shape
+ 8  | Law of Demeter           | GameScene
+ 9  | DRY                      | GameCollisionHandler
+ 10 | Encapsulation            | SoundDevice, SoundManager, SoundEffect
+
+All changes compile cleanly with zero errors.

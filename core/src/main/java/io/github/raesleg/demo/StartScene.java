@@ -42,11 +42,11 @@ public class StartScene extends Scene {
         layout = new GlyphLayout();
 
         // Initialize sound manager and load sounds
-        sound = ioManager.getSound();
+        sound = getIOManager().getSound();
         sound.addSound("selected", "uiSelected_sound.wav"); // add enter to start sound
 
         // Input Bindings
-        Keyboard kb = ioManager.getInputs(Keyboard.class); // uses your IOManager generic getter
+        Keyboard kb = getIOManager().getInputs(Keyboard.class); // uses your IOManager generic getter
         if (kb != null) {
             kb.addBind(Input.Keys.ENTER, this::confirm, true);
             kb.addBind(Input.Keys.NUMPAD_ENTER, this::confirm, true);
@@ -55,7 +55,8 @@ public class StartScene extends Scene {
     }
 
     @Override
-    public void handleInput(float deltaTime) { }
+    public void handleInput(float deltaTime) {
+    }
 
     @Override
     public void update(float deltaTime) {
@@ -69,9 +70,9 @@ public class StartScene extends Scene {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         // Apply viewport and camera
-        viewport.apply();
-        camera.update();
-        batch.setProjectionMatrix(camera.combined);
+        getViewport().apply();
+        getCamera().update();
+        batch.setProjectionMatrix(getCamera().combined);
 
         // Use virtual dimensions for consistent layout
         float screenWidth = VIRTUAL_WIDTH;
@@ -109,9 +110,9 @@ public class StartScene extends Scene {
 
     /* Private method for key bindings */
     private void confirm() {
-        sound.playSound("selected", 1.0f); 
+        sound.playSound("selected", 1.0f);
         // Transition to GameScene using set() - clears stack and starts fresh
-        sceneManager.set(new GameScene());
+        getSceneManager().set(new GameScene());
     }
 
 }

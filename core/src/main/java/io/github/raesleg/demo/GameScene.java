@@ -59,7 +59,6 @@ public class GameScene extends Scene {
     // Audio
     private SoundDevice sound;
     private Music bgm;
-    private boolean isMoving = false;
 
     public GameScene() {
         super();
@@ -69,7 +68,8 @@ public class GameScene extends Scene {
 
     @Override
     protected Viewport createViewport(OrthographicCamera cam) {
-        // ExtendViewport keeps aspect ratio without cropping, shows more world on bigger screens
+        // ExtendViewport keeps aspect ratio without cropping, shows more world on
+        // bigger screens
         return new ExtendViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, cam);
     }
 
@@ -81,48 +81,46 @@ public class GameScene extends Scene {
 
         shapeRenderer = new ShapeRenderer();
 
-        /* Physics world setup : uses METERS, (0,0) top-down movement*/
+        /* Physics world setup : uses METERS, (0,0) top-down movement */
         world = new PhysicsWorld(new Vector2(0, 0));
 
         // (injected via abstract scene)
-        sound = ioManager.getSound(); 
+        sound = getIOManager().getSound();
 
         /* Managers */
-        entityManager = new EntityManager();
-        movementManager = new MovementManager(world, entityManager);
-        GameCollisionHandler handler = new GameCollisionHandler(entityManager, sound);
-        collisionManager = new CollisionManager(world, handler);
+        setEntityManager(new EntityManager());
+        setMovementManager(new MovementManager(world, getEntityManager()));
+        GameCollisionHandler handler = new GameCollisionHandler(getEntityManager(), sound);
+        setCollisionManager(new CollisionManager(world, handler));
 
         // wall thickness, static body use solid bounds
-        float t = 0.2f; 
+        float t = 0.2f;
 
         // create 4 booundary walls, static fixtures, not sensors
-        world.createBody(BodyDef.BodyType.StaticBody, w/2, t/2, w/2, t/2, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody, w/2, h+t/2, w/2, t/2, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody, t/2, h/2, t/2, h/2, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody, w+t/2, h/2, t/2, h/2, 0, 0.4f, false, null);
+        world.createBody(BodyDef.BodyType.StaticBody, w / 2, t / 2, w / 2, t / 2, 0, 0.4f, false, null);
+        world.createBody(BodyDef.BodyType.StaticBody, w / 2, h + t / 2, w / 2, t / 2, 0, 0.4f, false, null);
+        world.createBody(BodyDef.BodyType.StaticBody, t / 2, h / 2, t / 2, h / 2, 0, 0.4f, false, null);
+        world.createBody(BodyDef.BodyType.StaticBody, w + t / 2, h / 2, t / 2, h / 2, 0, 0.4f, false, null);
 
         /* Dynamic bodies creation, passing into movableEntity */
         // game scene controls where/how bodies are spawned
         PhysicsBody bucketBody = world.createBody(
-            BodyDef.BodyType.DynamicBody,
-            (200 + 64f/2f) / Constants.PPM,
-            (200 + 64f/2f) / Constants.PPM,
-            (64f / Constants.PPM) / 2f,
-            (64f / Constants.PPM) / 2f,
-            1f, 0.3f, false,
-            null
-        );
+                BodyDef.BodyType.DynamicBody,
+                (200 + 64f / 2f) / Constants.PPM,
+                (200 + 64f / 2f) / Constants.PPM,
+                (64f / Constants.PPM) / 2f,
+                (64f / Constants.PPM) / 2f,
+                1f, 0.3f, false,
+                null);
 
         PhysicsBody dropletBody = world.createBody(
-            BodyDef.BodyType.DynamicBody,
-            (500 + 64f/2f) / Constants.PPM,
-            (300 + 64f/2f) / Constants.PPM,
-            (64f / Constants.PPM) / 2f,
-            (64f / Constants.PPM) / 2f,
-            1f, 0.3f, false,
-            null
-        );
+                BodyDef.BodyType.DynamicBody,
+                (500 + 64f / 2f) / Constants.PPM,
+                (300 + 64f / 2f) / Constants.PPM,
+                (64f / Constants.PPM) / 2f,
+                (64f / Constants.PPM) / 2f,
+                1f, 0.3f, false,
+                null);
 
         /* Movement models, defining how movement feels (friction) */
         MovementModel bucketMovement = new FrictionMovement(MotionTuning.DEFAULT);
@@ -130,49 +128,53 @@ public class GameScene extends Scene {
 
         /* Motion zones (sensor areas) for collision entry detection */
         MotionZone low = new MotionZone(
-            world,
-            w * 0.65f, h * 0.5f,
-            zoneW * 0.5f, zoneH * 0.5f,
-            MotionTuning.LOW_TRACTION,
-            Color.BLUE
-        );
+                world,
+                w * 0.65f, h * 0.5f,
+                zoneW * 0.5f, zoneH * 0.5f,
+                MotionTuning.LOW_TRACTION,
+                Color.BLUE);
 
         MotionZone high = new MotionZone(
-            world,
-            w * 0.35f, h * 0.5f,
-            zoneW * 0.5f, zoneH * 0.5f,
-            MotionTuning.HIGH_FRICTION,
-            Color.RED
-        );
+                world,
+                w * 0.35f, h * 0.5f,
+                zoneW * 0.5f, zoneH * 0.5f,
+                MotionTuning.HIGH_FRICTION,
+                Color.RED);
 
-        //logging
+        // logging
         System.out.println("LOW zone px: x=" + low.getX() + " y=" + low.getY() +
-                   " w=" + low.getW() + " h=" + low.getH());
+                " w=" + low.getW() + " h=" + low.getH());
 
         // collision listener receives Entity–Entity
-        entityManager.addEntity(low);
-        entityManager.addEntity(high);
+        getEntityManager().addEntity(low);
+        getEntityManager().addEntity(high);
         // stored for debug rendering
         zones.add(low);
         zones.add(high);
 
         /* Key Binds for Game Scene Implementation */
-        Keyboard kb = ioManager.getInputs(Keyboard.class);
+        Keyboard kb = getIOManager().getInputs(Keyboard.class);
         UserControlled user = new UserControlled(kb);
         AIControlled ai = new AIControlled();
 
         kb.bindAction(Input.Keys.A, Constants.LEFT);
+        kb.bindAction(Input.Keys.LEFT, Constants.LEFT);
         kb.bindAction(Input.Keys.D, Constants.RIGHT);
+        kb.bindAction(Input.Keys.RIGHT, Constants.RIGHT);
         kb.bindAction(Input.Keys.W, Constants.UP);
+        kb.bindAction(Input.Keys.UP, Constants.UP);
         kb.bindAction(Input.Keys.S, Constants.DOWN);
+        kb.bindAction(Input.Keys.DOWN, Constants.DOWN);
         kb.bindAction(Input.Keys.SPACE, Constants.ACTION);
 
         kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
         kb.addBind(Input.Keys.M, this::toggleMute, true);
-        
-        /* Testing game objects 
-            - movableEntity have texture, controller, movement model and physicsbody (box2d)
-        */
+
+        /*
+         * Testing game objects
+         * - movableEntity have texture, controller, movement model and physicsbody
+         * (box2d)
+         */
         bucket = new MovableEntity(
                 "bucket.png", 200, 200, 64f, 64f,
                 user,
@@ -185,8 +187,8 @@ public class GameScene extends Scene {
                 dropletMovement,
                 dropletBody);
 
-        entityManager.addEntity(bucket);
-        entityManager.addEntity(droplet);
+        getEntityManager().addEntity(bucket);
+        getEntityManager().addEntity(droplet);
 
         // Start background music
         bgm = Gdx.audio.newMusic(Gdx.files.internal("bgm.ogg"));
@@ -201,28 +203,24 @@ public class GameScene extends Scene {
         sound.addSound("explosion", "collide_sound.wav"); // Add collision sound
     }
 
-    public void handleInput(float deltaTime) {}
+    public void handleInput(float deltaTime) {
+    }
 
     @Override
     public void update(float deltaTime) {
         if (isPaused) {
             sound.stopSound("move"); // Stop moving sound if paused
-            isMoving = false;
             return;
         }
 
         gameTime += deltaTime;
 
-        entityManager.update(deltaTime);
-        movementManager.update(deltaTime);
+        getEntityManager().update(deltaTime);
+        getMovementManager().update(deltaTime);
 
-        // Demo: Play moving sound effect when object is moving
-        Vector2 velocity = bucket.getPhysicsBody().getVelocity();
-        boolean objMoving =
-            Math.abs(velocity.x) > 0.05f ||
-            Math.abs(velocity.y) > 0.05f;
-
-        updateMoveLoop(objMoving);
+        // Use bucket.isMoving() — proper encapsulation instead of duplicating velocity
+        // check
+        updateMoveLoop(bucket.isMoving());
     }
 
     @Override
@@ -231,10 +229,10 @@ public class GameScene extends Scene {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         // Apply the viewport so the GL viewport matches & apply camera
-        viewport.apply();
-        camera.update();
-        batch.setProjectionMatrix(camera.combined);
-        shapeRenderer.setProjectionMatrix(camera.combined);
+        getViewport().apply();
+        getCamera().update();
+        batch.setProjectionMatrix(getCamera().combined);
+        shapeRenderer.setProjectionMatrix(getCamera().combined);
 
         // movement texture zones demo
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -244,19 +242,19 @@ public class GameScene extends Scene {
 
         // --- World rendering (ExtendViewport) ---
         batch.begin();
-        entityManager.render(batch);
+        getEntityManager().render(batch);
         batch.end();
 
         // --- HUD rendering (FitViewport — pixel-stable, never distorted) ---
-        uiViewport.apply();
-        uiCamera.update();
-        batch.setProjectionMatrix(uiCamera.combined);
+        getUiViewport().apply();
+        getUiCamera().update();
+        batch.setProjectionMatrix(getUiCamera().combined);
 
         batch.begin();
         font.getData().setScale(2f);
         font.draw(batch, "Game Time: " + String.format("%.1f", gameTime) + "s", 10, VIRTUAL_HEIGHT - 10);
 
-        String muteText = ioManager.getSound().isMuted() ? "M to unmute" : "M to mute";
+        String muteText = getIOManager().getSound().isMuted() ? "M to unmute" : "M to mute";
         font.draw(batch,
                 "Use WASD/Arrows to move | ESC to pause | " + muteText,
                 10, VIRTUAL_HEIGHT - 45);
@@ -296,14 +294,13 @@ public class GameScene extends Scene {
         font.dispose();
         shapeRenderer.dispose();
         zones.clear();
-        entityManager.dispose();
-        world.dispose();   
+        getEntityManager().dispose();
+        world.dispose();
 
         if (bgm != null) {
             bgm.stop();
             bgm.dispose();
         }
-
 
         Gdx.app.log("GameScene", "Scene disposed - All managers and resources cleaned up");
     }
@@ -311,7 +308,6 @@ public class GameScene extends Scene {
     /* Private Helpers for movement SFX loop */
     private void stopMoveLoop() {
         sound.stopSound("move");
-        isMoving = false;
     }
 
     private void updateMoveLoop(boolean objMoving) {
@@ -320,26 +316,25 @@ public class GameScene extends Scene {
             stopMoveLoop();
             return;
         }
-        // if moving and not already looping start it
-        if (!isMoving) { 
+        // if moving and not already looping start it (query sound system — no duplicate
+        // state)
+        if (!sound.isLooping("move")) {
             sound.loopSound("move");
-            isMoving = true;
         }
     }
 
     /* Private Scene controls */
     private void openPause() {
-        sceneManager.push(new PauseScene());
+        getSceneManager().push(new PauseScene());
     }
 
     private void toggleMute() {
         sound.toggleMute();
 
-        if (bgm != null) bgm.setVolume(sound.isMuted() ? 0f : 0.2f);
+        if (bgm != null)
+            bgm.setVolume(sound.isMuted() ? 0f : 0.2f);
 
-        Vector2 v = bucket.getPhysicsBody().getVelocity();
-        boolean objMoving = Math.abs(v.x) > 0.05f || Math.abs(v.y) > 0.05f;
-
-        updateMoveLoop(objMoving);
+        // Use bucket.isMoving() — delegates to MovableEntity (Law of Demeter)
+        updateMoveLoop(bucket.isMoving());
     }
 }

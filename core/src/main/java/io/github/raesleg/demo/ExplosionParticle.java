@@ -14,14 +14,9 @@ public class ExplosionParticle extends TextureObject implements IExpirable {
     private Vector2 velocity;
     private float alpha; // transparency
 
-    private final float width;
-    private final float height;
-
     public ExplosionParticle(String filename, float x, float y, float width, float height, Vector2 velocity,
             float lifetime) {
         super(filename, x, y, width, height);
-        this.width = width;
-        this.height = height;
         this.velocity = velocity;
         this.lifetime = lifetime;
         this.maxLifetime = lifetime;
@@ -52,10 +47,10 @@ public class ExplosionParticle extends TextureObject implements IExpirable {
 
             batch.draw(
                     getTexture(),
-                    getX() - width / 2f,
-                    getY() - height / 2f,
-                    width,
-                    height);
+                    getX() - getW() / 2f,
+                    getY() - getH() / 2f,
+                    getW(),
+                    getH());
             batch.setColor(oldColor); // restore original color
         }
     }
@@ -69,6 +64,5 @@ public class ExplosionParticle extends TextureObject implements IExpirable {
     public boolean isExpired() {
         return isDead();
     }
-
 
 }

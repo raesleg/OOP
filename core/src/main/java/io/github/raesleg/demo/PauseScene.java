@@ -67,12 +67,12 @@ public class PauseScene extends Scene {
                 Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         // Initialize sound manager and load sounds
-        sound = ioManager.getSound();
+        sound = getIOManager().getSound();
         sound.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
         sound.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
 
         // Input Bindings
-        Keyboard kb = ioManager.getInputs(Keyboard.class);
+        Keyboard kb = getIOManager().getInputs(Keyboard.class);
         if (kb != null) {
             // Navigate Menu
             kb.addBind(Input.Keys.ESCAPE, this::resumeGame, true);
@@ -88,7 +88,8 @@ public class PauseScene extends Scene {
         Gdx.app.log("PauseScene", "Pause menu shown - ESC/Enter to resume, navigate with W/S or Up/Down");
     }
 
-    public void handleInput(float deltaTime) { }
+    public void handleInput(float deltaTime) {
+    }
 
     /* Executes the currently selected menu option */
     private void executeSelectedOption() {
@@ -96,12 +97,12 @@ public class PauseScene extends Scene {
         switch (selectedOption) {
             case 0: // Resume
                 // Pop this scene to return to the paused GameScene
-                sceneManager.pop();
+                getSceneManager().pop();
                 break;
 
             case 1: // Exit to Main Menu
                 // Set new StartScene - clears entire stack including paused GameScene
-                sceneManager.set(new StartScene());
+                getSceneManager().set(new StartScene());
                 break;
 
             default:
@@ -110,14 +111,15 @@ public class PauseScene extends Scene {
     }
 
     @Override
-    public void update(float deltaTime) {}
+    public void update(float deltaTime) {
+    }
 
     /*
-    * Rendering strategy (Liskov-safe — uses the base-class uiViewport):
-    * 1. Screen-space overlay → covers the ENTIRE window (incl. letterbox bars)
-    * 2. UI-viewport box+text → all layout in 1280×720 virtual coords;
-    * FitViewport scales automatically so the menu always fits any window.
-    */
+     * Rendering strategy (Liskov-safe — uses the base-class uiViewport):
+     * 1. Screen-space overlay → covers the ENTIRE window (incl. letterbox bars)
+     * 2. UI-viewport box+text → all layout in 1280×720 virtual coords;
+     * FitViewport scales automatically so the menu always fits any window.
+     */
     @Override
     public void render(SpriteBatch batch) {
         int screenWidth = Gdx.graphics.getWidth();
@@ -136,9 +138,9 @@ public class PauseScene extends Scene {
         shapeRenderer.end();
 
         // ── 2. Switch to UI viewport (1280×720 virtual coords) ──
-        uiViewport.apply();
-        uiCamera.update();
-        shapeRenderer.setProjectionMatrix(uiCamera.combined);
+        getUiViewport().apply();
+        getUiCamera().update();
+        shapeRenderer.setProjectionMatrix(getUiCamera().combined);
 
         // Menu box — proportional to virtual resolution, always centred
         float boxWidth = VIRTUAL_WIDTH * 0.5f; // 640
@@ -161,7 +163,7 @@ public class PauseScene extends Scene {
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
         // ── 3. Text — all in virtual coords (no manual scaleFactor) ──
-        batch.setProjectionMatrix(uiCamera.combined);
+        batch.setProjectionMatrix(getUiCamera().combined);
         batch.begin();
 
         // Title
@@ -220,18 +222,20 @@ public class PauseScene extends Scene {
     /* Private method for key bindings */
     private void resumeGame() {
         sound.playSound("selected", 1.0f);
-        sceneManager.pop();
+        getSceneManager().pop();
     }
 
     private void moveUp() {
         selectedOption--;
-        if (selectedOption < 0) selectedOption = menuOptions.length - 1;
+        if (selectedOption < 0)
+            selectedOption = menuOptions.length - 1;
         sound.playSound("menu", 1.0f);
     }
 
     private void moveDown() {
         selectedOption++;
-        if (selectedOption >= menuOptions.length) selectedOption = 0;
+        if (selectedOption >= menuOptions.length)
+            selectedOption = 0;
         sound.playSound("menu", 1.0f);
     }
 

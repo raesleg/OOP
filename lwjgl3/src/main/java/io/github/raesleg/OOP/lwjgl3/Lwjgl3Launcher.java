@@ -3,9 +3,14 @@ package io.github.raesleg.OOP.lwjgl3;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 
+import io.github.raesleg.demo.Keyboard;
+import io.github.raesleg.demo.StartScene;
 import io.github.raesleg.engine.GameMaster;
 
-/** Launches the desktop (LWJGL3) application. */
+/**
+ * Launches the desktop (LWJGL3) application.
+ * Acts as the composition root — the only place that knows concrete game types.
+ */
 public class Lwjgl3Launcher {
     public static void main(String[] args) {
         if (StartupHelper.startNewJvmIfRequired())
@@ -14,7 +19,9 @@ public class Lwjgl3Launcher {
     }
 
     private static Lwjgl3Application createApplication() {
-        return new Lwjgl3Application(new GameMaster(), getDefaultConfiguration());
+        return new Lwjgl3Application(
+                new GameMaster(new StartScene(), new Keyboard()),
+                getDefaultConfiguration());
     }
 
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {

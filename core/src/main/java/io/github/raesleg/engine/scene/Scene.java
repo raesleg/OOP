@@ -5,7 +5,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
-import io.github.raesleg.engine.GameMaster;
 import io.github.raesleg.engine.collision.CollisionManager;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.io.ControlSource;
@@ -51,31 +50,31 @@ public abstract class Scene {
     public static final float VIRTUAL_WIDTH = 1280f;
     public static final float VIRTUAL_HEIGHT = 720f;
 
-    /* Protected Variables — Available to subclasses */
-    protected SceneManager sceneManager;
-    protected EntityManager entityManager;
-    protected MovementManager movementManager;
-    protected CollisionManager collisionManager;
-    protected IOManager ioManager;
-    protected ControlSource controls;
+    /* Private Variables — Accessible to subclasses via protected getters */
+    private SceneManager sceneManager;
+    private EntityManager entityManager;
+    private MovementManager movementManager;
+    private CollisionManager collisionManager;
+    private IOManager ioManager;
+    private ControlSource controls;
 
     /** Shared camera — subclasses use this for projection. */
-    protected OrthographicCamera camera;
+    private OrthographicCamera camera;
 
     /** Viewport — handles letterboxing / scaling on resize. */
-    protected Viewport viewport;
+    private Viewport viewport;
 
     /** UI camera — always uses a stable FitViewport for HUD elements. */
-    protected OrthographicCamera uiCamera;
+    private OrthographicCamera uiCamera;
 
     /** UI viewport — FitViewport for pixel-stable HUD rendering. */
-    protected Viewport uiViewport;
+    private Viewport uiViewport;
 
     /**
      * Whether this scene allows the scene below to be visible (e.g., pause
      * overlay).
      */
-    protected boolean transparent;
+    private boolean transparent;
 
     /* ── Constructor ── */
 
@@ -94,11 +93,9 @@ public abstract class Scene {
 
         camera = new OrthographicCamera();
         viewport = createViewport(camera);
-        viewport.apply(true);
 
         uiCamera = new OrthographicCamera();
         uiViewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, uiCamera);
-        uiViewport.apply(true);
     }
 
     /* ── Viewport factory hook ── */
@@ -197,6 +194,68 @@ public abstract class Scene {
         // Example implementation in subclass:
         // if (entityManager != null) entityManager.dispose();
         // if (ioManager != null) ioManager.dispose();
+    }
+
+    /* ── Protected Getters — Subclass access to encapsulated state ── */
+
+    protected SceneManager getSceneManager() {
+        return sceneManager;
+    }
+
+    protected IOManager getIOManager() {
+        return ioManager;
+    }
+
+    protected ControlSource getControls() {
+        return controls;
+    }
+
+    protected OrthographicCamera getCamera() {
+        return camera;
+    }
+
+    protected Viewport getViewport() {
+        return viewport;
+    }
+
+    protected OrthographicCamera getUiCamera() {
+        return uiCamera;
+    }
+
+    protected Viewport getUiViewport() {
+        return uiViewport;
+    }
+
+    protected EntityManager getEntityManager() {
+        return entityManager;
+    }
+
+    protected MovementManager getMovementManager() {
+        return movementManager;
+    }
+
+    protected CollisionManager getCollisionManager() {
+        return collisionManager;
+    }
+
+    /*
+     * ── Protected Setters — Subclasses own their managers (Scene Sovereignty) ──
+     */
+
+    protected void setEntityManager(EntityManager em) {
+        this.entityManager = em;
+    }
+
+    protected void setMovementManager(MovementManager mm) {
+        this.movementManager = mm;
+    }
+
+    protected void setCollisionManager(CollisionManager cm) {
+        this.collisionManager = cm;
+    }
+
+    protected void setControls(ControlSource cs) {
+        this.controls = cs;
     }
 
     /* Getters and Setters */

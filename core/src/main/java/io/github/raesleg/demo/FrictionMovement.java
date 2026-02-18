@@ -12,7 +12,7 @@ public class FrictionMovement implements MovementModel {
 
     private MotionTuning base;
     private MotionTuning tuning;
-    
+
     private int zoneContacts = 0;
 
     public FrictionMovement(MotionTuning base) {
@@ -21,9 +21,10 @@ public class FrictionMovement implements MovementModel {
     }
 
     private void applyMotionProfile(PhysicsBody body, MotionTuning t) {
-        if (t == null) return;
+        if (t == null)
+            return;
         this.tuning = t;
-        body.setLinearDamping(t.linearDamping);
+        body.setLinearDamping(t.getLinearDamping());
     }
 
     public void onEnterZone(PhysicsBody body, MotionTuning zoneTuning) {
@@ -47,16 +48,18 @@ public class FrictionMovement implements MovementModel {
         float yAxis = e.getControls().getY(dt);
 
         v1.set(xAxis, yAxis);
-        if (v1.len2() > 1f) v1.nor();
+        if (v1.len2() > 1f)
+            v1.nor();
 
         // target velocity
-        v2.set(v1).scl(tuning.maxSpeed);
+        v2.set(v1).scl(tuning.getMaxSpeed());
 
         Vector2 curVel = body.getVelocity();
         v1.set(v2).sub(curVel);
 
-        float maxDelta = tuning.maxForce * dt;
-        if (v1.len2() > maxDelta * maxDelta) v1.nor().scl(maxDelta);
+        float maxDelta = tuning.getMaxForce() * dt;
+        if (v1.len2() > maxDelta * maxDelta)
+            v1.nor().scl(maxDelta);
 
         body.setVelocity(curVel.x + v1.x, curVel.y + v1.y);
 
@@ -70,14 +73,14 @@ public class FrictionMovement implements MovementModel {
         float lateralSpeed = vel.dot(v1);
         v2.set(v1).scl(lateralSpeed);
 
-        float grip = tuning.lateralGrip;
+        float grip = tuning.getLateralGrip();
 
         v2.scl(-body.getMass() * grip);
 
         float maxImpulse = 1.5f * grip;
-        if (v2.len2() > maxImpulse * maxImpulse) v2.nor().scl(maxImpulse);
+        if (v2.len2() > maxImpulse * maxImpulse)
+            v2.nor().scl(maxImpulse);
 
         body.applyLinearImpulse(v2);
     }
 }
-

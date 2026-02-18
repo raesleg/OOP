@@ -12,7 +12,6 @@ public class MovableEntity extends TextureObject implements IMovable {
     private ControlSource controls;
     private PhysicsBody body;
     private MovementModel movementModel;
-    private boolean aiControlled;
 
     public MovableEntity(
             String filename,
@@ -20,30 +19,34 @@ public class MovableEntity extends TextureObject implements IMovable {
             float width, float height,
             ControlSource controls,
             MovementModel movementModel,
-            PhysicsBody body
-    ) {
+            PhysicsBody body) {
         super(filename, x, y, width, height);
         this.controls = controls;
         this.movementModel = movementModel;
-        this.aiControlled = controls instanceof AIControlled;
 
         this.body = body;
         this.body.setUserData(this);
     }
 
+    /**
+     * Delegates to the ControlSource interface (polymorphic dispatch)
+     * instead of storing a flag from instanceof.
+     */
     public boolean isAIControlled() {
-        return aiControlled;
+        return !controls.isPlayerControlled();
     }
 
-    /* getter functions for collision handler and resolver*/
+    /* getter functions for collision handler and resolver */
     public PhysicsBody getPhysicsBody() {
         return body;
     }
-    public ControlSource getControls() { 
-        return controls; 
+
+    public ControlSource getControls() {
+        return controls;
     }
-    public MovementModel getMovementModel() { 
-        return movementModel; 
+
+    public MovementModel getMovementModel() {
+        return movementModel;
     }
 
     public boolean isMoving() {

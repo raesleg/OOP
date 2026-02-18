@@ -1,7 +1,6 @@
 package io.github.raesleg.engine.entity;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 public abstract class Shape extends Entity {
@@ -9,12 +8,12 @@ public abstract class Shape extends Entity {
     private Color color;
 
     public Shape() {
-        super(0,0,0,0);
+        super(0, 0, 0, 0);
         this.color = null;
     };
 
     public Shape(float x, float y, float w, float h, Color c) {
-        super(x,y,w,h);
+        super(x, y, w, h);
         this.color = c;
     };
 
@@ -22,19 +21,15 @@ public abstract class Shape extends Entity {
         return color;
     };
 
-    public void setColor(Color c) { 
-        this.color = c; 
+    public void setColor(Color c) {
+        this.color = c;
     }
 
-    public void setSize(float w, float h) { 
+    public void setSize(float w, float h) {
         setW(w);
         setH(h);
     }
 
-    @Override
-    public void draw(SpriteBatch batch) {}
-
-    public void draw(ShapeRenderer shape) {};
-
-    public void dispose() {};
+    public void draw(ShapeRenderer shape) {
+    };
 }

@@ -16,6 +16,22 @@ public class GameCollisionHandler implements ICollisionListener {
     private final float explosionForceThreshold;
     private final SoundDevice soundManager;
 
+    /** Helper record to normalise the order of entity pairs (DRY). */
+    private record ZoneCollision(MovableEntity movable, MotionZone zone) {
+    }
+
+    /**
+     * Extracts a MovableEntity/MotionZone pair regardless of A/B ordering.
+     * Returns null if the pair is not a zone collision.
+     */
+    private ZoneCollision extractZoneCollision(Entity a, Entity b) {
+        if (a instanceof MovableEntity m && b instanceof MotionZone z)
+            return new ZoneCollision(m, z);
+        if (b instanceof MovableEntity m && a instanceof MotionZone z)
+            return new ZoneCollision(m, z);
+        return null;
+    }
+
     public GameCollisionHandler(EntityManager entityManager, SoundDevice soundManager) {
         this(entityManager, soundManager, 0.1f); // default threshold
     }
@@ -28,17 +44,9 @@ public class GameCollisionHandler implements ICollisionListener {
 
     @Override
     public void onCollisionBegin(Entity entityA, Entity entityB) {
-        // a enters b
-        if (entityA instanceof MovableEntity m && entityB instanceof MotionZone z) {
-            if (m.getMovementModel() instanceof FrictionMovement fm) {
-                fm.onEnterZone(m.getPhysicsBody(), z.getTuning());
-            }
-        }
-        // b enters a
-        if (entityB instanceof MovableEntity m && entityA instanceof MotionZone z) {
-            if (m.getMovementModel() instanceof FrictionMovement fm) {
-                fm.onEnterZone(m.getPhysicsBody(), z.getTuning());
-            }
+        ZoneCollision zc = extractZoneCollision(entityA, entityB);
+        if (zc != null && zc.movable().getMovementModel() instanceof FrictionMovement fm) {
+            fm.onEnterZone(zc.movable().getPhysicsBody(), zc.zone().getTuning());
         }
         // logging
         System.out.println("Collision detected between " + entityA.getClass().getSimpleName() + " and " +
@@ -47,17 +55,9 @@ public class GameCollisionHandler implements ICollisionListener {
 
     @Override
     public void onCollisionEnd(Entity entityA, Entity entityB) {
-        // a exits b
-        if (entityA instanceof MovableEntity m && entityB instanceof MotionZone z) {
-            if (m.getMovementModel() instanceof FrictionMovement fm) {
-                fm.onExitZone(m.getPhysicsBody());
-            }
-        }
-        // b exits a
-        if (entityB instanceof MovableEntity m && entityA instanceof MotionZone z) {
-            if (m.getMovementModel() instanceof FrictionMovement fm) {
-                fm.onExitZone(m.getPhysicsBody());
-            }
+        ZoneCollision zc = extractZoneCollision(entityA, entityB);
+        if (zc != null && zc.movable().getMovementModel() instanceof FrictionMovement fm) {
+            fm.onExitZone(zc.movable().getPhysicsBody());
         }
     }
 
@@ -121,7 +121,7 @@ public class GameCollisionHandler implements ICollisionListener {
                 float dx = bodyPos.x - center.x;
                 float dy = bodyPos.y - center.y;
                 float dist2 = dx * dx + dy * dy;
-                
+
                 // only affect entities within explosion radius
                 if (dist2 < radius2 && dist2 > 0.000001f) {
                     float dist = (float) Math.sqrt(dist2);
@@ -129,7 +129,7 @@ public class GameCollisionHandler implements ICollisionListener {
                     // direction normalized
                     float nx = dx / dist;
                     float ny = dy / dist;
-                    
+
                     // linear falloff: entities further away get less force
                     float falloff = 1f - (dist / radius);
                     float explosionForce = force * falloff * 5000f; // scale factor
@@ -152,7 +152,9 @@ public class GameCollisionHandler implements ICollisionListener {
         float explosionY = impactPoint.y * Constants.PPM;
 
         for (int i = 0; i < numParticles; i++) {
-            float angle = (float) (Math.PI * 2 * i / numParticles) + (float) (Math.random() * 0.5f - 0.25f); // random scatter pattern
+            float angle = (float) (Math.PI * 2 * i / numParticles) + (float) (Math.random() * 0.5f - 0.25f); // random
+                                                                                                             // scatter
+                                                                                                             // pattern
 
             float speed = 50f + (float) Math.random() * 100f; // random speed
 

@@ -8,7 +8,7 @@ import com.badlogic.gdx.Gdx;
 import io.github.raesleg.engine.io.SoundDevice;
 
 public class SoundManager implements SoundDevice {
-    
+
     // Static variable to track mute state
     private boolean muted = false;
 
@@ -35,7 +35,7 @@ public class SoundManager implements SoundDevice {
             return;
         }
         if (sounds.containsKey(name)) {
-          sounds.get(name).play(volume);
+            sounds.get(name).play(volume);
         }
     }
 
@@ -43,7 +43,7 @@ public class SoundManager implements SoundDevice {
     public void loopSound(String name) {
         if (muted) {
             return;
-        }   
+        }
         if (sounds.containsKey(name)) {
             sounds.get(name).loop();
         }
@@ -54,6 +54,14 @@ public class SoundManager implements SoundDevice {
         if (sounds.containsKey(name)) {
             sounds.get(name).stop();
         }
+    }
+
+    // Check if a sound is currently looping
+    public boolean isLooping(String name) {
+        if (sounds.containsKey(name)) {
+            return sounds.get(name).isLooping();
+        }
+        return false;
     }
 
     public void dispose() {

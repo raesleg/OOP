@@ -23,22 +23,25 @@ public class SoundEffect {
   // Loop the sound effect
   public void loop() {
     if (loopId == -1) {
-        loopId = sound.loop();
+      loopId = sound.loop();
     }
   }
 
   // Stop the sound effect
   public void stop() {
     if (loopId != -1) {
-        sound.stop(loopId);
-        loopId = -1;
-    }
-    else {
-        sound.stop();
+      sound.stop(loopId);
+      loopId = -1;
+    } else {
+      sound.stop();
     }
   }
 
   public void dispose() {
     sound.dispose();
+  }
+
+  public boolean isLooping() {
+    return loopId != -1;
   }
 }
