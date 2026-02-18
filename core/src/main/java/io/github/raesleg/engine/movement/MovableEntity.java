@@ -46,11 +46,6 @@ public class MovableEntity extends TextureObject implements IMovable {
         return movementModel; 
     }
 
-    public boolean isMoving() {
-        Vector2 v = body.getVelocity();
-        return Math.abs(v.x) > 0.05f || Math.abs(v.y) > 0.05f;
-    }
-
     @Override
     public void move(float dt) {
         if (movementModel != null) {

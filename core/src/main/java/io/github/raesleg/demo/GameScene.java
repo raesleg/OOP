@@ -59,7 +59,6 @@ public class GameScene extends Scene {
     // Audio
     private SoundDevice sound;
     private Music bgm;
-    private boolean isMoving = false;
 
     public GameScene() {
         super();
@@ -207,7 +206,6 @@ public class GameScene extends Scene {
     public void update(float deltaTime) {
         if (isPaused) {
             sound.stopSound("move"); // Stop moving sound if paused
-            isMoving = false;
             return;
         }
 
@@ -311,7 +309,6 @@ public class GameScene extends Scene {
     /* Private Helpers for movement SFX loop */
     private void stopMoveLoop() {
         sound.stopSound("move");
-        isMoving = false;
     }
 
     private void updateMoveLoop(boolean objMoving) {
@@ -319,11 +316,9 @@ public class GameScene extends Scene {
         if (sound.isMuted() || !objMoving) {
             stopMoveLoop();
             return;
-        }
-        // if moving and not already looping start it
-        if (!isMoving) { 
+        } else {
             sound.loopSound("move");
-            isMoving = true;
+
         }
     }
 
