@@ -6,6 +6,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import io.github.raesleg.demo.Keyboard;
 import io.github.raesleg.demo.StartScene;
 import io.github.raesleg.engine.GameMaster;
+import io.github.raesleg.engine.sound.SoundManager;
 
 /**
  * Launches the desktop (LWJGL3) application.
@@ -19,8 +20,11 @@ public class Lwjgl3Launcher {
     }
 
     private static Lwjgl3Application createApplication() {
+        // Composition root — wire concrete types here.
+        // SoundManager is passed empty; GameMaster.create() registers sounds
+        // after LibGDX is fully initialised (Gdx.files is ready).
         return new Lwjgl3Application(
-                new GameMaster(new StartScene(), new Keyboard()),
+                new GameMaster(new StartScene(), new Keyboard(), new SoundManager()),
                 getDefaultConfiguration());
     }
 

@@ -3,7 +3,14 @@ package io.github.raesleg.engine.movement;
 import io.github.raesleg.engine.physics.PhysicsBody;
 
 public interface MovementModel {
-    void step(MovableEntity e, float dt);
+    /**
+     * Advances the movement simulation by one frame.
+     * <p>
+     * The parameter is typed as {@link IMovable} rather than the concrete
+     * {@link MovableEntity} so this engine-level interface does not depend
+     * on a specific implementation (Dependency Inversion Principle).
+     */
+    void step(IMovable e, float dt);
 
     /**
      * Called when the entity enters a motion zone.

@@ -54,10 +54,6 @@ public class StartScene extends Scene {
     }
 
     @Override
-    public void handleInput(float deltaTime) {
-    }
-
-    @Override
     public void update(float deltaTime) {
         handleInput(deltaTime);
     }

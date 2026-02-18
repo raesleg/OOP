@@ -10,15 +10,15 @@ import io.github.raesleg.engine.io.InputDevice;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.scene.Scene;
 import io.github.raesleg.engine.scene.SceneManager;
-import io.github.raesleg.engine.sound.SoundManager;
 
 /**
  * GameMaster — Application entry point.
  *
- * Accepts the initial {@link Scene} and {@link InputDevice} via constructor
- * injection so this engine-level class never depends on the demo/game layer
- * (Dependency Inversion Principle). Concrete types are wired by the launcher
- * (the composition root).
+ * Accepts the initial {@link Scene}, {@link InputDevice}, and
+ * {@link SoundDevice} via constructor injection so this engine-level class
+ * never depends on the demo/game layer (Dependency Inversion Principle).
+ * Concrete types — including which sounds to pre-register — are wired by
+ * the launcher (the composition root).
  */
 public class GameMaster extends ApplicationAdapter {
 
@@ -28,14 +28,18 @@ public class GameMaster extends ApplicationAdapter {
 
     private final Scene initialScene;
     private final InputDevice inputDevice;
+    private final SoundDevice soundDevice;
 
     /**
      * @param initialScene the first scene to push (e.g. a title screen)
      * @param inputDevice  the input device to register (e.g. keyboard)
+     * @param soundDevice  a pre-configured sound device (sounds already
+     *                     registered by the composition root)
      */
-    public GameMaster(Scene initialScene, InputDevice inputDevice) {
+    public GameMaster(Scene initialScene, InputDevice inputDevice, SoundDevice soundDevice) {
         this.initialScene = initialScene;
         this.inputDevice = inputDevice;
+        this.soundDevice = soundDevice;
     }
 
     @Override
@@ -43,16 +47,15 @@ public class GameMaster extends ApplicationAdapter {
         Box2D.init();
         batch = new SpriteBatch();
 
-        // create devices
-        SoundDevice sound = new SoundManager();
-
-        // Register shared UI sounds once (DRY — avoids duplication across scenes)
-        sound.addSound("menu", "uiMenu_sound.wav");
-        sound.addSound("selected", "uiSelected_sound.wav");
+        // Register shared UI sounds — done here (after LibGDX init) so Gdx.files
+        // is available when SoundEffect loads the asset (DIP: filenames are
+        // game-layer knowledge injected at the composition root boundary).
+        soundDevice.addSound("menu", "uiMenu_sound.wav");
+        soundDevice.addSound("selected", "uiSelected_sound.wav");
 
         // single IOManager instance — injected into every Scene by SceneManager
         // io manager many inputs + one output
-        ioManager = new IOManager(sound);
+        ioManager = new IOManager(soundDevice);
         ioManager.addInput(inputDevice);
 
         // Start with the injected initial scene

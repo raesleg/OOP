@@ -201,9 +201,6 @@ public class GameScene extends Scene {
         sound.addSound("explosion", "collide_sound.wav"); // Add collision sound
     }
 
-    public void handleInput(float deltaTime) {
-    }
-
     @Override
     public void update(float deltaTime) {
         if (isPaused) {

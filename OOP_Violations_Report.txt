@@ -26,7 +26,7 @@ How it was fixed:
 
 
 2. ENCAPSULATION — Scene exposed protected fields
---------------------------------------------------
+-----A---------------------------------------------
 File: core/src/main/java/io/github/raesleg/engine/scene/Scene.java
 
 What was wrong:
@@ -409,3 +409,116 @@ UPDATED SUMMARY TABLE
  16 | Encapsulation            | Scene
 
 All changes compile cleanly with zero errors.
+
+
+===========================================================================
+ADDITIONAL VIOLATIONS FOUND AND FIXED (Round 3)
+===========================================================================
+
+
+17. DEPENDENCY INVERSION PRINCIPLE — MovementModel.step depended on concrete MovableEntity
+-----------------------------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/movement/MovementModel.java
+
+What was wrong:
+  The engine-level `MovementModel.step` method used the concrete `MovableEntity`
+  type as its parameter. This couples the abstract movement behaviour to a
+  specific game-layer implementation.
+
+Why it violates OOP:
+  A high-level engine abstraction should depend on an interface rather than a
+  concrete class (Dependency Inversion Principle). Relying on `MovableEntity`
+  prevents other movable implementations from reusing the movement models.
+
+How it was fixed:
+  Added the required accessors to the existing `IMovable` interface
+  (`getPhysicsBody()`, `getInputX(float)`, `getInputY(float)`) and changed
+  `MovementModel.step(MovableEntity, float)` to `MovementModel.step(IMovable, float)`.
+  Updated `FrictionMovement` to accept `IMovable` and `MovableEntity` already
+  implements `IMovable`, so no game-layer changes were required beyond the
+  method signature update.
+
+
+18. DEPENDENCY INVERSION PRINCIPLE — UI sound registration before LibGDX init
+---------------------------------------------------------------------------
+File: lwjgl3/src/main/java/io/github/raesleg/OOP/lwjgl3/Lwjgl3Launcher.java
+      core/src/main/java/io/github/raesleg/engine/GameMaster.java
+
+What was wrong:
+  The launcher created a `SoundManager` and immediately called `addSound(...)`
+  before LibGDX had been initialised. `SoundEffect` attempts to access
+  `Gdx.files` during construction which is null before `Lwjgl3Application`
+  starts, causing a runtime `NullPointerException` when running via Gradle.
+
+Why it violates OOP / runtime safety:
+  This is an initialization-order error: composition/root wiring must avoid
+  performing framework-dependent work before the framework is ready.
+
+How it was fixed:
+  Stop registering sound assets in the launcher. The launcher now constructs
+  the `SoundManager` and passes it to `GameMaster`. `GameMaster.create()` —
+  which runs after LibGDX is initialised — now registers the shared UI sounds
+  (`"menu"` and `"selected"`). This preserves Dependency Inversion while
+  ensuring framework resources are available before asset loading.
+
+
+19. LISKOV SUBSTITUTION PRINCIPLE — `Scene.handleInput` unnecessarily abstract
+-----------------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/scene/Scene.java
+      core/src/main/java/io/github/raesleg/demo/GameScene.java
+      core/src/main/java/io/github/raesleg/demo/StartScene.java
+      core/src/main/java/io/github/raesleg/demo/PauseScene.java
+
+What was wrong:
+  `Scene.handleInput(float)` was declared abstract, but the three concrete
+  scene subclasses implemented empty no-op overrides. This meant the base
+  contract forced meaningless implementations.
+
+Why it violates OOP:
+  For the Liskov Substitution Principle, a superclass should provide a
+  usable contract. Making `handleInput` abstract forced subclasses to provide
+  empty methods when no input handling was required.
+
+How it was fixed:
+  Converted `Scene.handleInput(float)` to a concrete no-op implementation in
+  the base class. Removed the empty overrides from `GameScene`, `StartScene`,
+  and `PauseScene`. Subclasses may still override when they need per-frame
+  input processing.
+
+
+20. SINGLE RESPONSIBILITY PRINCIPLE — Particle spawn math in collision handler
+-----------------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/GameCollisionHandler.java
+      core/src/main/java/io/github/raesleg/demo/ExplosionParticle.java
+
+What was wrong:
+  `GameCollisionHandler.createParticleExplosion(...)` contained detailed
+  visual spawning math (angles, random scatter, velocities) and instantiated
+  `ExplosionParticle` objects. This mixes collision/business logic with
+  presentation/visual concerns.
+
+Why it violates OOP:
+  The collision handler's responsibility is to resolve physical collisions;
+  creating and tuning visual particles is a separate concern (SRP). Mixing
+  them reduces clarity and reusability.
+
+How it was fixed:
+  Added a static factory method `ExplosionParticle.spawnExplosion(EntityManager, Vector2, float)`
+  that encapsulates the entire visual spawn logic. `GameCollisionHandler`
+  now delegates to this method and no longer contains the particle math.
+
+
+UPDATED SUMMARY TABLE (Round 3 additions)
+========================================
+ #  | Principle Violated       | File(s) Changed
+----+--------------------------+------------------------------------------
+17  | Dependency Inversion     | MovementModel, IMovable, FrictionMovement
+18  | Dependency Inversion     | Lwjgl3Launcher, GameMaster
+19  | Liskov Substitution      | Scene, GameScene, StartScene, PauseScene
+20  | Single Responsibility    | GameCollisionHandler, ExplosionParticle
+
+
+All changes compile cleanly with zero errors. The runtime failure previously
+observed when running `:lwjgl3:run` (NullPointerException due to `Gdx.files`
+being accessed before LibGDX initialisation) was fixed by deferring sound
+registration until `GameMaster.create()`.

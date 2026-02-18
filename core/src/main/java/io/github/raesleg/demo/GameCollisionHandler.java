@@ -2,7 +2,6 @@ package io.github.raesleg.demo;
 
 import com.badlogic.gdx.math.Vector2;
 
-import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.collision.ICollisionListener;
 import io.github.raesleg.engine.entity.Entity;
 import io.github.raesleg.engine.entity.EntityManager;
@@ -101,8 +100,8 @@ public class GameCollisionHandler implements ICollisionListener {
                 soundManager.playSound("explosion", 1.0f);
             }
 
-            createParticleExplosion(aiEntity, impactPoint, impactForce);
             createExplosion(impactPoint, impactForce);
+            ExplosionParticle.spawnExplosion(entityManager, impactPoint, impactForce);
         }
     }
 
@@ -143,45 +142,6 @@ public class GameCollisionHandler implements ICollisionListener {
                 }
             }
         }
-    }
-
-    // create visual particle explosion at impact point
-    private void createParticleExplosion(Entity aiEntity, Vector2 impactPoint, float force) {
-        int numParticles = 12;
-        float particleSize = 16f;
-        float particleLifetime = 1.0f;
-
-        float explosionX = impactPoint.x * Constants.PPM;
-        float explosionY = impactPoint.y * Constants.PPM;
-
-        for (int i = 0; i < numParticles; i++) {
-            float angle = (float) (Math.PI * 2 * i / numParticles) + (float) (Math.random() * 0.5f - 0.25f); // random
-                                                                                                             // scatter
-                                                                                                             // pattern
-
-            float speed = 50f + (float) Math.random() * 100f; // random speed
-
-            Vector2 particleVelocity = new Vector2(
-                    (float) Math.cos(angle) * speed,
-                    (float) Math.sin(angle) * speed);
-
-            // random offset from exact impact point for scatter effect
-            float offsetX = (float) (Math.random() * 10 - 5); // -5 to +5 pixels
-            float offsetY = (float) (Math.random() * 10 - 5);
-
-            ExplosionParticle particle = new ExplosionParticle(
-                    "droplet.png",
-                    explosionX + offsetX,
-                    explosionY + offsetY,
-                    particleSize,
-                    particleSize,
-                    particleVelocity,
-                    particleLifetime);
-
-            entityManager.addEntity(particle);
-        }
-
-        System.out.println("Created " + numParticles + " particle droplets"); // logging
     }
 
 }

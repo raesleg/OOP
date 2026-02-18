@@ -141,8 +141,14 @@ public abstract class Scene {
     /**
      * Handles input for this scene.
      * Called only when this scene is at the top of the stack (has input focus).
+     * <p>
+     * Default implementation is a no-op — subclasses override only when they
+     * need frame-by-frame input polling (Liskov Substitution Principle: every
+     * Scene is substitutable without overriding this method).
      */
-    public abstract void handleInput(float deltaTime);
+    public void handleInput(float deltaTime) {
+        // no-op by default
+    }
 
     /* Lifecycle Methods - Can be overridden */
 

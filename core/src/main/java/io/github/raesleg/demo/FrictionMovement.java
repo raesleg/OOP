@@ -1,7 +1,7 @@
 package io.github.raesleg.demo;
 
 import com.badlogic.gdx.math.Vector2;
-import io.github.raesleg.engine.movement.MovableEntity;
+import io.github.raesleg.engine.movement.IMovable;
 import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.physics.PhysicsBody;
 
@@ -51,7 +51,7 @@ public class FrictionMovement implements MovementModel {
     }
 
     @Override
-    public void step(MovableEntity e, float dt) {
+    public void step(IMovable e, float dt) {
         PhysicsBody body = e.getPhysicsBody();
 
         float xAxis = e.getInputX(dt);

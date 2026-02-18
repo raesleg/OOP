@@ -86,9 +86,6 @@ public class PauseScene extends Scene {
         Gdx.app.log("PauseScene", "Pause menu shown - ESC/Enter to resume, navigate with W/S or Up/Down");
     }
 
-    public void handleInput(float deltaTime) {
-    }
-
     /* Executes the currently selected menu option */
     private void executeSelectedOption() {
 
