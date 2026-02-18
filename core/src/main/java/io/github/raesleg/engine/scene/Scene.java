@@ -266,7 +266,7 @@ public abstract class Scene {
      * 
      * @param sceneManager The SceneManager managing this scene
      */
-    public void setSceneManager(SceneManager sceneManager) {
+    void setSceneManager(SceneManager sceneManager) {
         this.sceneManager = sceneManager;
     }
 
@@ -275,7 +275,7 @@ public abstract class Scene {
      * Scenes must <b>never</b> create their own IOManager.
      *
      */
-    public void setIOManager(IOManager ioManager) {
+    void setIOManager(IOManager ioManager) {
         this.ioManager = ioManager;
     }
 

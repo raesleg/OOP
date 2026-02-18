@@ -41,9 +41,8 @@ public class StartScene extends Scene {
         font.setColor(Color.WHITE);
         layout = new GlyphLayout();
 
-        // Initialize sound manager and load sounds
+        // Retrieve shared sound device (UI sounds registered centrally)
         sound = getIOManager().getSound();
-        sound.addSound("selected", "uiSelected_sound.wav"); // add enter to start sound
 
         // Input Bindings
         Keyboard kb = getIOManager().getInputs(Keyboard.class); // uses your IOManager generic getter

@@ -196,9 +196,7 @@ public class GameScene extends Scene {
         bgm.setVolume(0.2f); // Set volume to 20%
         bgm.play();
 
-        // Initialize sound manager and load sounds in the GameScene
-        sound.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
-        sound.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
+        // Initialize GameScene-specific sounds (shared UI sounds registered centrally)
         sound.addSound("move", "moving_sound.wav"); // Add moving object sound
         sound.addSound("explosion", "collide_sound.wav"); // Add collision sound
     }
@@ -254,7 +252,7 @@ public class GameScene extends Scene {
         font.getData().setScale(2f);
         font.draw(batch, "Game Time: " + String.format("%.1f", gameTime) + "s", 10, VIRTUAL_HEIGHT - 10);
 
-        String muteText = getIOManager().getSound().isMuted() ? "M to unmute" : "M to mute";
+        String muteText = sound.isMuted() ? "M to unmute" : "M to mute";
         font.draw(batch,
                 "Use WASD/Arrows to move | ESC to pause | " + muteText,
                 10, VIRTUAL_HEIGHT - 45);

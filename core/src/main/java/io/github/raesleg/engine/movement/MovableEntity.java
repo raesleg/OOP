@@ -45,6 +45,18 @@ public class MovableEntity extends TextureObject implements IMovable {
         return controls;
     }
 
+    /**
+     * Delegates to ControlSource — avoids Law of Demeter violations
+     * in callers that only need the input axis values.
+     */
+    public float getInputX(float dt) {
+        return controls.getX(dt);
+    }
+
+    public float getInputY(float dt) {
+        return controls.getY(dt);
+    }
+
     public MovementModel getMovementModel() {
         return movementModel;
     }

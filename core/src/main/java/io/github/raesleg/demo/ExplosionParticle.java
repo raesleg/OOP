@@ -44,13 +44,7 @@ public class ExplosionParticle extends TextureObject implements IExpirable {
         if (getTexture() != null && alpha > 0) {
             Color oldColor = batch.getColor().cpy(); // copy colour
             batch.setColor(1f, 1f, 1f, alpha);
-
-            batch.draw(
-                    getTexture(),
-                    getX() - getW() / 2f,
-                    getY() - getH() / 2f,
-                    getW(),
-                    getH());
+            super.draw(batch); // reuse parent's centering logic (DRY)
             batch.setColor(oldColor); // restore original color
         }
     }

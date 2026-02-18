@@ -27,13 +27,23 @@ public class FrictionMovement implements MovementModel {
         body.setLinearDamping(t.getLinearDamping());
     }
 
-    public void onEnterZone(PhysicsBody body, MotionTuning zoneTuning) {
-        zoneContacts++;
-        applyMotionProfile(body, zoneTuning);
+    @Override
+    public void onEnterZone(PhysicsBody body, Object zoneTuning) {
+        if (zoneTuning instanceof MotionTuning mt) {
+            zoneContacts++;
+            System.out.println("[ZONE ENTER] maxSpeed=" + mt.getMaxSpeed() + " damping=" + mt.getLinearDamping()
+                    + " contacts=" + zoneContacts);
+            applyMotionProfile(body, mt);
+        } else {
+            System.out.println("[ZONE ENTER] FAILED instanceof check: "
+                    + (zoneTuning == null ? "null" : zoneTuning.getClass().getName()));
+        }
     }
 
+    @Override
     public void onExitZone(PhysicsBody body) {
         zoneContacts--;
+        System.out.println("[ZONE EXIT] contacts=" + zoneContacts);
         if (zoneContacts <= 0) {
             zoneContacts = 0;
             applyMotionProfile(body, base);
@@ -44,8 +54,8 @@ public class FrictionMovement implements MovementModel {
     public void step(MovableEntity e, float dt) {
         PhysicsBody body = e.getPhysicsBody();
 
-        float xAxis = e.getControls().getX(dt);
-        float yAxis = e.getControls().getY(dt);
+        float xAxis = e.getInputX(dt);
+        float yAxis = e.getInputY(dt);
 
         v1.set(xAxis, yAxis);
         if (v1.len2() > 1f)

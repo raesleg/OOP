@@ -66,10 +66,8 @@ public class PauseScene extends Scene {
         screenProjection = new Matrix4().setToOrtho2D(0, 0,
                 Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
-        // Initialize sound manager and load sounds
+        // Retrieve shared sound device (UI sounds registered centrally)
         sound = getIOManager().getSound();
-        sound.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
-        sound.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
 
         // Input Bindings
         Keyboard kb = getIOManager().getInputs(Keyboard.class);

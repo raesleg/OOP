@@ -8,6 +8,7 @@ import io.github.raesleg.engine.entity.Entity;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
+import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.physics.PhysicsBody;
 
 public class GameCollisionHandler implements ICollisionListener {
@@ -45,8 +46,9 @@ public class GameCollisionHandler implements ICollisionListener {
     @Override
     public void onCollisionBegin(Entity entityA, Entity entityB) {
         ZoneCollision zc = extractZoneCollision(entityA, entityB);
-        if (zc != null && zc.movable().getMovementModel() instanceof FrictionMovement fm) {
-            fm.onEnterZone(zc.movable().getPhysicsBody(), zc.zone().getTuning());
+        if (zc != null) {
+            MovementModel model = zc.movable().getMovementModel();
+            model.onEnterZone(zc.movable().getPhysicsBody(), zc.zone().getTuning());
         }
         // logging
         System.out.println("Collision detected between " + entityA.getClass().getSimpleName() + " and " +
@@ -56,8 +58,9 @@ public class GameCollisionHandler implements ICollisionListener {
     @Override
     public void onCollisionEnd(Entity entityA, Entity entityB) {
         ZoneCollision zc = extractZoneCollision(entityA, entityB);
-        if (zc != null && zc.movable().getMovementModel() instanceof FrictionMovement fm) {
-            fm.onExitZone(zc.movable().getPhysicsBody());
+        if (zc != null) {
+            MovementModel model = zc.movable().getMovementModel();
+            model.onExitZone(zc.movable().getPhysicsBody());
         }
     }
 

@@ -46,6 +46,10 @@ public class GameMaster extends ApplicationAdapter {
         // create devices
         SoundDevice sound = new SoundManager();
 
+        // Register shared UI sounds once (DRY — avoids duplication across scenes)
+        sound.addSound("menu", "uiMenu_sound.wav");
+        sound.addSound("selected", "uiSelected_sound.wav");
+
         // single IOManager instance — injected into every Scene by SceneManager
         // io manager many inputs + one output
         ioManager = new IOManager(sound);

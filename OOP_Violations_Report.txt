@@ -245,3 +245,167 @@ SUMMARY TABLE
  10 | Encapsulation            | SoundDevice, SoundManager, SoundEffect
 
 All changes compile cleanly with zero errors.
+
+
+===========================================================================
+ADDITIONAL VIOLATIONS FOUND AND FIXED (Round 2)
+===========================================================================
+
+
+11. OPEN-CLOSED PRINCIPLE — GameCollisionHandler used instanceof FrictionMovement
+---------------------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/GameCollisionHandler.java
+
+What was wrong:
+  Both onCollisionBegin and onCollisionEnd checked
+  "zc.movable().getMovementModel() instanceof FrictionMovement fm"
+  before calling onEnterZone()/onExitZone(). The collision handler was
+  coupled to a specific concrete class.
+
+Why it violates OOP:
+  If a new MovementModel that also supports zone transitions were added
+  (e.g. SlipperyMovement), GameCollisionHandler would need to be
+  modified to add another instanceof check. The Open-Closed Principle
+  says classes should be open for extension but closed for modification.
+
+How it was fixed:
+  Added default onEnterZone(PhysicsBody, Object) and
+  onExitZone(PhysicsBody) methods to the MovementModel interface (as
+  no-ops). FrictionMovement now overrides them with @Override. The
+  collision handler calls model.onEnterZone()/onExitZone()
+  polymorphically on any MovementModel, with no instanceof check.
+
+
+12. LAW OF DEMETER — GameScene used getIOManager().getSound().isMuted()
+-----------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/GameScene.java
+
+What was wrong:
+  In render(), the mute status was retrieved via a two-level method
+  chain: "getIOManager().getSound().isMuted()". The SoundDevice was
+  already cached in the local "sound" field.
+
+Why it violates OOP:
+  The Law of Demeter says an object should only call methods on its
+  direct collaborators. The chain reaches through IOManager to
+  SoundDevice, coupling render() to IOManager's internal structure,
+  when a direct reference already exists.
+
+How it was fixed:
+  Replaced "getIOManager().getSound().isMuted()" with
+  "sound.isMuted()" using the already-cached field.
+
+
+13. DRY — Sound registration duplicated across three scenes
+------------------------------------------------------------
+Files: core/src/main/java/io/github/raesleg/demo/GameScene.java
+       core/src/main/java/io/github/raesleg/demo/StartScene.java
+       core/src/main/java/io/github/raesleg/demo/PauseScene.java
+       core/src/main/java/io/github/raesleg/engine/GameMaster.java
+
+What was wrong:
+  sound.addSound("selected", "uiSelected_sound.wav") appeared in three
+  scenes, and sound.addSound("menu", "uiMenu_sound.wav") in two. Each
+  scene independently re-registered the same shared UI sounds.
+
+Why it violates OOP:
+  DRY states every piece of knowledge should have a single unambiguous
+  representation. Duplicating sound-asset paths across scenes means a
+  filename change must be made in multiple places.
+
+How it was fixed:
+  Moved the shared UI sound registrations ("menu" and "selected") to
+  GameMaster.create(), where the SoundDevice is first created. Removed
+  the duplicate addSound() calls from all three scenes. Scene-specific
+  sounds (like "move" and "explosion") remain in their owning scene.
+
+
+14. DRY — ExplosionParticle.draw() duplicated TextureObject.draw() logic
+------------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/ExplosionParticle.java
+
+What was wrong:
+  ExplosionParticle.draw() contained the same centering calculation
+  as TextureObject.draw():
+    batch.draw(getTexture(), getX()-getW()/2f, getY()-getH()/2f, ...)
+  The only addition was alpha blending around it.
+
+Why it violates OOP:
+  DRY forbids copy-pasting logic that already exists in a parent class.
+  If the centering formula changes in TextureObject, the copy in
+  ExplosionParticle would silently become inconsistent.
+
+How it was fixed:
+  Replaced the duplicated draw call with super.draw(batch), which
+  reuses the parent's centering logic. The alpha blending wrapper
+  (setColor/restore) remains in the override.
+
+
+15. LAW OF DEMETER — FrictionMovement reached through MovableEntity to ControlSource
+-------------------------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/FrictionMovement.java
+      core/src/main/java/io/github/raesleg/engine/movement/MovableEntity.java
+
+What was wrong:
+  FrictionMovement.step() called "e.getControls().getX(dt)" and
+  "e.getControls().getY(dt)", reaching through MovableEntity to its
+  ControlSource collaborator.
+
+Why it violates OOP:
+  The Law of Demeter says a method should only talk to its direct
+  parameters, not to objects obtained from them. FrictionMovement
+  should not need to know that MovableEntity delegates input to a
+  separate ControlSource object.
+
+How it was fixed:
+  Added getInputX(float dt) and getInputY(float dt) delegate methods
+  to MovableEntity. FrictionMovement now calls e.getInputX(dt) and
+  e.getInputY(dt) directly, without reaching through to ControlSource.
+
+
+16. ENCAPSULATION — Scene.setSceneManager() and setIOManager() were public
+--------------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/scene/Scene.java
+
+What was wrong:
+  setSceneManager(SceneManager) and setIOManager(IOManager) were
+  declared "public", allowing any class in any package to rewire a
+  scene's manager references.
+
+Why it violates OOP:
+  Encapsulation requires restricting access to the minimum necessary.
+  These methods are only called by SceneManager (same package). Making
+  them public lets demo-layer code accidentally or intentionally
+  overwrite the wiring, breaking the framework's guarantees.
+
+How it was fixed:
+  Changed both methods from "public" to package-private (default
+  access). Only classes in io.github.raesleg.engine.scene (i.e.
+  SceneManager) can call them.
+
+
+UPDATED SUMMARY TABLE
+=====================
+ #  | Principle Violated       | File(s) Changed
+----+--------------------------+------------------------------------------
+ 1  | Encapsulation            | MotionTuning, FrictionMovement
+ 2  | Encapsulation            | Scene, GameScene, StartScene, PauseScene
+ 3  | Encapsulation / DRY      | GameScene, SoundDevice, SoundManager,
+    |                          | SoundEffect
+ 4  | Encapsulation / DRY      | ExplosionParticle
+ 5  | Dependency Inversion     | GameMaster, Lwjgl3Launcher
+ 6  | Polymorphism / OCP       | MovableEntity, ControlSource, AIControlled
+ 7  | Liskov Substitution      | Entity, Shape
+ 8  | Law of Demeter           | GameScene
+ 9  | DRY                      | GameCollisionHandler
+ 10 | Encapsulation            | SoundDevice, SoundManager, SoundEffect
+ 11 | OCP                      | GameCollisionHandler, MovementModel,
+    |                          | FrictionMovement
+ 12 | Law of Demeter           | GameScene
+ 13 | DRY                      | GameScene, StartScene, PauseScene,
+    |                          | GameMaster
+ 14 | DRY                      | ExplosionParticle
+ 15 | Law of Demeter           | FrictionMovement, MovableEntity
+ 16 | Encapsulation            | Scene
+
+All changes compile cleanly with zero errors.
