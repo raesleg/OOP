@@ -10,7 +10,6 @@ import io.github.raesleg.engine.collision.CollisionManager;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.io.ControlSource;
 import io.github.raesleg.engine.io.IOManager;
-import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovementManager;
 
 /**
@@ -59,7 +58,6 @@ public abstract class Scene {
     protected CollisionManager collisionManager;
     protected IOManager ioManager;
     protected ControlSource controls;
-    protected SoundDevice soundManager;
 
     /** Shared camera — subclasses use this for projection. */
     protected OrthographicCamera camera;
@@ -220,8 +218,6 @@ public abstract class Scene {
      */
     public void setIOManager(IOManager ioManager) {
         this.ioManager = ioManager;
-        this.soundManager = ioManager.getSound();
-        // this.controls = new UserControlled(io.getInput());
     }
 
     /**

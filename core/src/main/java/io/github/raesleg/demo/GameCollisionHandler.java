@@ -28,16 +28,37 @@ public class GameCollisionHandler implements ICollisionListener {
 
     @Override
     public void onCollisionBegin(Entity entityA, Entity entityB) {
-        // sound on collision here
-
+        // a enters b
+        if (entityA instanceof MovableEntity m && entityB instanceof MotionZone z) {
+            if (m.getMovementModel() instanceof FrictionMovement fm) {
+                fm.onEnterZone(m.getPhysicsBody(), z.getTuning());
+            }
+        }
+        // b enters a
+        if (entityB instanceof MovableEntity m && entityA instanceof MotionZone z) {
+            if (m.getMovementModel() instanceof FrictionMovement fm) {
+                fm.onEnterZone(m.getPhysicsBody(), z.getTuning());
+            }
+        }
         // logging
-        System.out.println("Collision detected between " + entityA.getClass().getSimpleName() + "and " +
+        System.out.println("Collision detected between " + entityA.getClass().getSimpleName() + " and " +
                 entityB.getClass().getSimpleName());
     }
 
     @Override
     public void onCollisionEnd(Entity entityA, Entity entityB) {
-        // stop collision effects - if we want to implement
+        // a exits b
+        if (entityA instanceof MovableEntity m && entityB instanceof MotionZone z) {
+            if (m.getMovementModel() instanceof FrictionMovement fm) {
+                fm.onExitZone(m.getPhysicsBody());
+            }
+        }
+        // b exits a
+        if (entityB instanceof MovableEntity m && entityA instanceof MotionZone z) {
+            if (m.getMovementModel() instanceof FrictionMovement fm) {
+                fm.onExitZone(m.getPhysicsBody());
+            }
+        }
     }
 
     @Override
@@ -85,11 +106,6 @@ public class GameCollisionHandler implements ICollisionListener {
     /**
      * Game-Specific Logic
      */
-
-    // private boolean isAIControlled(MovableEntity entity) {
-    //     // check if entity uses AIControlled
-    //     return entity.isAIControlled();
-    // }
 
     // apply radial explosion force to all nearby MoveableEntities
     private void createExplosion(Vector2 center, float force) {

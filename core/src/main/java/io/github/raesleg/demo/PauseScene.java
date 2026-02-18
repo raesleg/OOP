@@ -10,27 +10,18 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 
+import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.scene.Scene;
 
-/**
- * PauseScene - The pause menu overlay.
- * 
- * This scene overlays on top of GameScene (which remains in memory).
- * The scene is marked as TRANSPARENT so GameScene is rendered behind it.
- * 
- * Renders in SCREEN SPACE (not world space) so the overlay covers the entire
- * window regardless of viewport letterboxing or screen resolution.
- * 
- * TRIGGERS:
+/*
+ * PauseScene - The pause menu overlay. 
  * - Press ESC or "Resume" -> Calls sceneManager.pop() (Returns to GameScene)
  * - Press "Exit" -> Calls sceneManager.set(new StartScene()) (Returns to main
  * menu)
- * 
- * IOManager is injected by SceneManager (never created here).
- */
+*/
+
 public class PauseScene extends Scene {
 
-    /* Private Variables */
     private ShapeRenderer shapeRenderer;
     private BitmapFont font;
     private GlyphLayout layout;
@@ -44,8 +35,10 @@ public class PauseScene extends Scene {
     private Color selectedColor;
     private Color unselectedColor;
 
-    /* Screen-space projection — updated on resize */
+    // Screen-space projection — updated on resize
     private Matrix4 screenProjection;
+
+    private SoundDevice sound;
 
     /* Constructor */
     public PauseScene() {
@@ -62,8 +55,6 @@ public class PauseScene extends Scene {
         this.unselectedColor = Color.WHITE;
     }
 
-    /* Scene Lifecycle Methods */
-
     @Override
     public void show() {
         // Initialize rendering resources
@@ -76,12 +67,12 @@ public class PauseScene extends Scene {
                 Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         // Initialize sound manager and load sounds
-        // soundManager = new SoundManager();
-        soundManager.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
-        soundManager.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
+        sound = ioManager.getSound();
+        sound.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
+        sound.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
 
-        Keyboard kb = ioManager.getInputs(Keyboard.class); // uses your IOManager generic getter
-
+        // Input Bindings
+        Keyboard kb = ioManager.getInputs(Keyboard.class);
         if (kb != null) {
             // Navigate Menu
             kb.addBind(Input.Keys.ESCAPE, this::resumeGame, true);
@@ -97,11 +88,9 @@ public class PauseScene extends Scene {
         Gdx.app.log("PauseScene", "Pause menu shown - ESC/Enter to resume, navigate with W/S or Up/Down");
     }
 
-    public void handleInput(float deltaTime) {}
+    public void handleInput(float deltaTime) { }
 
-    /**
-     * Executes the currently selected menu option.
-     */
+    /* Executes the currently selected menu option */
     private void executeSelectedOption() {
 
         switch (selectedOption) {
@@ -123,20 +112,17 @@ public class PauseScene extends Scene {
     @Override
     public void update(float deltaTime) {}
 
+    /*
+    * Rendering strategy (Liskov-safe — uses the base-class uiViewport):
+    * 1. Screen-space overlay → covers the ENTIRE window (incl. letterbox bars)
+    * 2. UI-viewport box+text → all layout in 1280×720 virtual coords;
+    * FitViewport scales automatically so the menu always fits any window.
+    */
     @Override
     public void render(SpriteBatch batch) {
-        /*
-         * Rendering strategy (Liskov-safe — uses the base-class uiViewport):
-         * 1. Screen-space overlay → covers the ENTIRE window (incl. letterbox bars)
-         * 2. UI-viewport box+text → all layout in 1280×720 virtual coords;
-         * FitViewport scales automatically so the menu always fits any window.
-         */
         int screenWidth = Gdx.graphics.getWidth();
         int screenHeight = Gdx.graphics.getHeight();
 
-        // ── 1. Full-screen darkening overlay (screen-space) ──
-        // Reset GL viewport to the FULL window so the overlay is not clipped
-        // to the FitViewport's letterboxed region left over from GameScene.
         Gdx.gl.glViewport(0, 0, screenWidth, screenHeight);
 
         Gdx.gl.glEnable(GL20.GL_BLEND);
@@ -231,30 +217,31 @@ public class PauseScene extends Scene {
         Gdx.app.log("PauseScene", "Pause scene disposed");
     }
 
+    /* Private method for key bindings */
     private void resumeGame() {
-        soundManager.playSound("selected", 1.0f);
+        sound.playSound("selected", 1.0f);
         sceneManager.pop();
     }
 
     private void moveUp() {
         selectedOption--;
         if (selectedOption < 0) selectedOption = menuOptions.length - 1;
-        soundManager.playSound("menu", 1.0f);
+        sound.playSound("menu", 1.0f);
     }
 
     private void moveDown() {
         selectedOption++;
         if (selectedOption >= menuOptions.length) selectedOption = 0;
-        soundManager.playSound("menu", 1.0f);
+        sound.playSound("menu", 1.0f);
     }
 
     private void confirm() {
-        soundManager.playSound("selected", 1.0f);
+        sound.playSound("selected", 1.0f);
         executeSelectedOption();
     }
 
     private void toggleMute() {
-        soundManager.toggleMute();
+        sound.toggleMute();
     }
 
 }

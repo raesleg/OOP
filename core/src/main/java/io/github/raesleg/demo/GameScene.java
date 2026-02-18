@@ -10,19 +10,23 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 
 import io.github.raesleg.engine.movement.AIControlled;
 import io.github.raesleg.engine.movement.MovementManager;
+import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.movement.UserControlled;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.collision.CollisionManager;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.entity.Shape;
+import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
-import io.github.raesleg.engine.physics.IPhysics;
+import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.Scene;
 
@@ -35,8 +39,8 @@ public class GameScene extends Scene {
     private float gameTime;
 
     // movable entities implementing box2d physics engine
-    private PhysicsWorld physicsWorld;
-    private IPhysics physics;
+    private PhysicsWorld world;
+    // private IPhysics physics;
     private MovableEntity bucket;
     private MovableEntity droplet;
 
@@ -49,6 +53,8 @@ public class GameScene extends Scene {
 
     private float zoneW = worldW * 0.12f;
     private float zoneH = worldH * 0.45f;
+
+    private SoundDevice sound;
 
     // Background music purposes
     private Music bgm;
@@ -73,39 +79,115 @@ public class GameScene extends Scene {
         font.setColor(Color.WHITE);
 
         // out of bound walls — use virtual resolution for consistent bounds
-        physicsWorld = new PhysicsWorld(new Vector2(0, 0));
+        world = new PhysicsWorld(new Vector2(0, 0));
 
-        physics = physicsWorld; //physicsWorld implements IPhysics
+        sound = ioManager.getSound();
 
-        physicsWorld.createBoundsPixels((int) VIRTUAL_WIDTH, (int) VIRTUAL_HEIGHT, Constants.PPM);
+        float w = VIRTUAL_WIDTH / Constants.PPM;
+        float h = VIRTUAL_HEIGHT / Constants.PPM;
+        float t = 0.2f;
 
-        // create friction zone, forces from box2d
-        physicsWorld.createMotionZone(worldW * 0.65f, worldH * 0.5f, zoneW * 0.5f, zoneH * 0.5f,
-                MotionTuning.LOW_TRACTION);
-        physicsWorld.createMotionZone(worldW * 0.35f, worldH * 0.5f, zoneW * 0.5f, zoneH * 0.5f,
-                MotionTuning.HIGH_FRICTION);
+        world.createBody(BodyDef.BodyType.StaticBody, w/2, t/2, w/2, t/2, 0, 0.4f, false, null);
+        world.createBody(BodyDef.BodyType.StaticBody, w/2, h+t/2, w/2, t/2, 0, 0.4f, false, null);
+        world.createBody(BodyDef.BodyType.StaticBody, t/2, h/2, t/2, h/2, 0, 0.4f, false, null);
+        world.createBody(BodyDef.BodyType.StaticBody, w+t/2, h/2, t/2, h/2, 0, 0.4f, false, null);
+
+        // world.createBody(
+        //     BodyDef.BodyType.StaticBody,
+        //     worldW * 0.65f, worldH * 0.5f,
+        //     zoneW * 0.5f, zoneH * 0.5f,
+        //     0f, 0f,
+        //     true,
+        //     MotionTuning.LOW_TRACTION   // userData can be MotionProfile
+        // );
+
+        // world.createBody(
+        //     BodyDef.BodyType.StaticBody,
+        //     worldW * 0.35f, worldH * 0.5f,
+        //     zoneW * 0.5f, zoneH * 0.5f,
+        //     0f, 0f,
+        //     true,
+        //     MotionTuning.HIGH_FRICTION
+        // );
+
+        PhysicsBody bucketBody = world.createBody(
+            BodyDef.BodyType.DynamicBody,
+            (200 + 64f/2f) / Constants.PPM,
+            (200 + 64f/2f) / Constants.PPM,
+            (64f / Constants.PPM) / 2f,
+            (64f / Constants.PPM) / 2f,
+            1f, 0.3f, false,
+            null
+        );
+
+        PhysicsBody dropletBody = world.createBody(
+            BodyDef.BodyType.DynamicBody,
+            (500 + 64f/2f) / Constants.PPM,
+            (300 + 64f/2f) / Constants.PPM,
+            (64f / Constants.PPM) / 2f,
+            (64f / Constants.PPM) / 2f,
+            1f, 0.3f, false,
+            null
+        );
+
+        MovementModel bucketMovement = new FrictionMovement(MotionTuning.DEFAULT);
+        MovementModel dropletMovement = new FrictionMovement(MotionTuning.DEFAULT);
+
+        // world.createBoundsPixels((int) VIRTUAL_WIDTH, (int) VIRTUAL_HEIGHT, Constants.PPM);
+
+        // // create friction zone, forces from box2d
+        // world.createMotionZone(worldW * 0.65f, worldH * 0.5f, zoneW * 0.5f, zoneH * 0.5f,
+        //         MotionTuning.LOW_TRACTION);
+        // world.createMotionZone(worldW * 0.35f, worldH * 0.5f, zoneW * 0.5f, zoneH * 0.5f,
+        //         MotionTuning.HIGH_FRICTION);
 
         shapeRenderer = new ShapeRenderer();
 
-        // low friction
-        zones.add(new Surfaces(
-                (worldW * 0.65f - zoneW * 0.5f) * Constants.PPM,
-                (worldH * 0.5f - zoneH * 0.5f) * Constants.PPM,
-                zoneW * Constants.PPM,
-                zoneH * Constants.PPM,
-                Color.BLUE));
+        // // low friction
+        // zones.add(new Surfaces(
+        //         (worldW * 0.65f - zoneW * 0.5f) * Constants.PPM,
+        //         (worldH * 0.5f - zoneH * 0.5f) * Constants.PPM,
+        //         zoneW * Constants.PPM,
+        //         zoneH * Constants.PPM,
+        //         Color.BLUE));
 
-        // high friction
-        zones.add(new Surfaces(
-                (worldW * 0.35f - zoneW * 0.5f) * Constants.PPM,
-                (worldH * 0.5f - zoneH * 0.5f) * Constants.PPM,
-                zoneW * Constants.PPM,
-                zoneH * Constants.PPM,
-                Color.RED // red
-        ));
+        // // high friction
+        // zones.add(new Surfaces(
+        //         (worldW * 0.35f - zoneW * 0.5f) * Constants.PPM,
+        //         (worldH * 0.5f - zoneH * 0.5f) * Constants.PPM,
+        //         zoneW * Constants.PPM,
+        //         zoneH * Constants.PPM,
+        //         Color.RED // red
+        // ));
 
         entityManager = new EntityManager();
-        movementManager = new MovementManager(physics, entityManager);
+        movementManager = new MovementManager(world, entityManager);
+
+
+        MotionZone low = new MotionZone(
+            world,
+            worldW * 0.65f, worldH * 0.5f,
+            zoneW * 0.5f, zoneH * 0.5f,
+            MotionTuning.LOW_TRACTION,
+            Color.BLUE
+        );
+
+        MotionZone high = new MotionZone(
+            world,
+            worldW * 0.35f, worldH * 0.5f,
+            zoneW * 0.5f, zoneH * 0.5f,
+            MotionTuning.HIGH_FRICTION,
+            Color.RED
+        );
+
+        System.out.println("LOW zone px: x=" + low.getX() + " y=" + low.getY() +
+                   " w=" + low.getW() + " h=" + low.getH());
+
+        // IMPORTANT: add to entityManager so CollisionManager -> listener receives Entity–Entity
+        entityManager.addEntity(low);
+        entityManager.addEntity(high);
+        zones.add(low);
+        zones.add(high);
 
         /* Key Binds for Game Scene Implementation */
         Keyboard kb = ioManager.getInputs(Keyboard.class);
@@ -122,29 +204,21 @@ public class GameScene extends Scene {
         kb.addBind(Input.Keys.M, this::toggleMute, true);
         
         // Collision Handler
-        GameCollisionHandler handler = new GameCollisionHandler(entityManager, soundManager);
-        new CollisionManager(physics, handler);
+        GameCollisionHandler handler = new GameCollisionHandler(entityManager, sound);
+        collisionManager = new CollisionManager(world, handler);
 
         // test entities
         bucket = new MovableEntity(
-                physics,
-                "bucket.png",
-                200,
-                200,
-                64f,
-                64f,
+                "bucket.png", 200, 200, 64f, 64f,
                 user,
-                MotionTuning.DEFAULT);
+                bucketMovement,
+                bucketBody);
 
         droplet = new MovableEntity(
-                physics,
-                "droplet.png",
-                500,
-                300,
-                64f,
-                64f,
+                "droplet.png", 500, 300, 64f, 64f,
                 ai,
-                MotionTuning.DEFAULT);
+                dropletMovement,
+                dropletBody);
 
         entityManager.addEntity(bucket);
         entityManager.addEntity(droplet);
@@ -155,11 +229,12 @@ public class GameScene extends Scene {
         bgm.setVolume(0.2f); // Set volume to 20%
         bgm.play();
 
+
         // Initialize sound manager and load sounds in the GameScene
-        soundManager.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
-        soundManager.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
-        soundManager.addSound("move", "moving_sound.wav"); // Add moving object sound
-        soundManager.addSound("explosion", "collide_sound.wav"); // Add collision sound
+        sound.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
+        sound.addSound("selected", "uiSelected_sound.wav"); // Add selection sound
+        sound.addSound("move", "moving_sound.wav"); // Add moving object sound
+        sound.addSound("explosion", "collide_sound.wav"); // Add collision sound
     }
 
     public void handleInput(float deltaTime) {}
@@ -167,7 +242,7 @@ public class GameScene extends Scene {
     @Override
     public void update(float deltaTime) {
         if (isPaused) {
-            soundManager.stopSound("move"); // Stop moving sound if paused
+            sound.stopSound("move"); // Stop moving sound if paused
             isMoving = false;
             return;
         }
@@ -259,7 +334,7 @@ public class GameScene extends Scene {
         shapeRenderer.dispose();
         zones.clear();
         entityManager.dispose();
-        physics.dispose();   
+        world.dispose();   
 
         if (bgm != null) {
             bgm.stop();
@@ -271,18 +346,18 @@ public class GameScene extends Scene {
     }
 
     private void stopMoveLoop() {
-        soundManager.stopSound("move");
+        sound.stopSound("move");
         isMoving = false;
     }
 
     private void updateMoveLoop(boolean objMoving) {
-        if (soundManager.isMuted() || !objMoving) {
+        if (sound.isMuted() || !objMoving) {
             stopMoveLoop();
             return;
         }
 
         if (!isMoving) {
-            soundManager.loopSound("move");
+            sound.loopSound("move");
             isMoving = true;
         }
     }
@@ -292,9 +367,9 @@ public class GameScene extends Scene {
     }
 
     private void toggleMute() {
-        soundManager.toggleMute();
+        sound.toggleMute();
 
-        if (bgm != null) bgm.setVolume(soundManager.isMuted() ? 0f : 0.2f);
+        if (bgm != null) bgm.setVolume(sound.isMuted() ? 0f : 0.2f);
 
         Vector2 v = bucket.getPhysicsBody().getVelocity();
         boolean objMoving = Math.abs(v.x) > 0.05f || Math.abs(v.y) > 0.05f;

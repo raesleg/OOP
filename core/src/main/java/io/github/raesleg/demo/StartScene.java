@@ -8,25 +8,23 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.scene.Scene;
 
-/**
+/*
  * StartScene - The initial menu scene (Stack Base).
- * 
- * This is the first scene shown when the game launches.
  * Acts as the main menu / title screen.
- * 
- * TRIGGER: Press ENTER -> Calls sceneManager.set(new GameScene())
- * 
- * IOManager is injected by SceneManager (never created here).
+ * Press ENTER -> Calls sceneManager.set(new GameScene())
  */
+
 public class StartScene extends Scene {
 
-    /* Private Variables */
     private BitmapFont font;
     private GlyphLayout layout;
     private String titleText;
     private String promptText;
+
+    private SoundDevice sound;
 
     /* Constructor */
     public StartScene() {
@@ -38,34 +36,26 @@ public class StartScene extends Scene {
     /* Scene Lifecycle Methods */
     @Override
     public void show() {
-
         // Initialize scene-specific resources
         font = new BitmapFont();
         font.setColor(Color.WHITE);
         layout = new GlyphLayout();
 
         // Initialize sound manager and load sounds
-        soundManager.addSound("selected", "uiSelected_sound.wav"); // add enter to start sound
+        sound = ioManager.getSound();
+        sound.addSound("selected", "uiSelected_sound.wav"); // add enter to start sound
 
+        // Input Bindings
         Keyboard kb = ioManager.getInputs(Keyboard.class); // uses your IOManager generic getter
         if (kb != null) {
-            // Start Navigation
             kb.addBind(Input.Keys.ENTER, this::confirm, true);
             kb.addBind(Input.Keys.NUMPAD_ENTER, this::confirm, true);
         }
-
         Gdx.app.log("StartScene", "Scene shown - Press ENTER to start the game");
     }
 
     @Override
-    public void handleInput(float deltaTime) {}
-
-    private void confirm() {
-        soundManager.playSound("selected", 1.0f); 
-        // Transition to GameScene using set() - clears stack and starts fresh
-        sceneManager.set(new GameScene());
-    }
-
+    public void handleInput(float deltaTime) { }
 
     @Override
     public void update(float deltaTime) {
@@ -116,4 +106,12 @@ public class StartScene extends Scene {
         font.dispose();
         Gdx.app.log("StartScene", "Scene disposed");
     }
+
+    /* Private method for key bindings */
+    private void confirm() {
+        sound.playSound("selected", 1.0f); 
+        // Transition to GameScene using set() - clears stack and starts fresh
+        sceneManager.set(new GameScene());
+    }
+
 }

@@ -22,13 +22,13 @@ public abstract class Shape extends Entity {
         return color;
     };
 
-    public void setSize(float w, float h) { 
-        w = getW(); 
-        h = getH();
-    }
-
     public void setColor(Color c) { 
         this.color = c; 
+    }
+
+    public void setSize(float w, float h) { 
+        setW(w);
+        setH(h);
     }
 
     @Override

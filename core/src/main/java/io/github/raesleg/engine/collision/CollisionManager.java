@@ -8,9 +8,7 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.WorldManifold;
 
 import io.github.raesleg.engine.entity.Entity;
-import io.github.raesleg.engine.movement.MotionZoneHandler;
-import io.github.raesleg.engine.physics.IPhysics;
-
+import io.github.raesleg.engine.physics.PhysicsWorld;
 
 /**
  * Engine-level collision detection using Box2D
@@ -22,17 +20,14 @@ import io.github.raesleg.engine.physics.IPhysics;
 public class CollisionManager implements ContactListener {
 
     private final ICollisionListener listener;
-    private final MotionZoneHandler zonehandler;
 
     private record Pair(Object a, Object b) {}
 
-
     // collision manager
-    public CollisionManager(IPhysics physics, ICollisionListener listener) {
+    public CollisionManager(PhysicsWorld world, ICollisionListener listener) {
         this.listener = listener;
-        this.zonehandler = new MotionZoneHandler();
         // contact listener for Box2D lib world
-        physics.setContactListener(this);
+        world.setContactListener(this);
     }
 
     /**
@@ -42,10 +37,9 @@ public class CollisionManager implements ContactListener {
     @Override
     public void beginContact(Contact contact) {
         Pair p = extractPair(contact);
-        zonehandler.handle(p.a, p.b, true);
 
         // notify listener if both are entities
-        if (listener != null && p.a instanceof Entity ea && p.b instanceof Entity eb) {
+        if (listener != null && p.a() instanceof Entity ea && p.b() instanceof Entity eb) {
             listener.onCollisionBegin(ea, eb);
         }
     }
@@ -53,12 +47,9 @@ public class CollisionManager implements ContactListener {
     @Override
     public void endContact(Contact contact) {
         Pair p = extractPair(contact);
-
-        // handle motion zones
-        zonehandler.handle(p.a(), p.b(), false);
-
+        
         // notify listener if both are entities
-        if (listener != null && p.a instanceof Entity ea && p.b instanceof Entity eb) {
+        if (listener != null && p.a() instanceof Entity ea && p.b() instanceof Entity eb) {
             listener.onCollisionEnd(ea, eb);
         }
     }

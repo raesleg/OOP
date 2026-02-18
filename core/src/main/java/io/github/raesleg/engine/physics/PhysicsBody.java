@@ -1,26 +1,30 @@
 package io.github.raesleg.engine.physics;
 
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.physics.box2d.Body;
 
 public class PhysicsBody {
 
-    private IPhysics physics;
+    private final PhysicsWorld world;
     private Body body;
 
-    PhysicsBody(IPhysics physics, Body body) {
-        this.physics = physics;
+    PhysicsBody(PhysicsWorld world, Body body) {
+        this.world = world;
         this.body = body;
     }
 
     // package-private: only PhysicsWorld should access raw body for destroy
-    Body _raw() { return body; }
-    void _clearRaw() { body = null; }
+    Body _raw() { 
+        return body; 
+    }
+    void _clearRaw() { 
+        body = null; 
+    }
 
-    // public API: game/entities call this
     public void destroy() {
         if (body != null) {
-            physics.destroy(this);
+            world.destroy(body);
+            _clearRaw();
         }
     }
 
