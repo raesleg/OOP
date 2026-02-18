@@ -184,8 +184,15 @@ public abstract class Scene {
      * @param height New screen height
      */
     public void resize(int width, int height) {
+        // Update world viewport and center the camera on the virtual center
         viewport.update(width, height, true);
+        camera.position.set(VIRTUAL_WIDTH * 0.5f, VIRTUAL_HEIGHT * 0.5f, 0f);
+        camera.update();
+
+        // Update UI viewport and ensure UI camera is also centred
         uiViewport.update(width, height, true);
+        uiCamera.position.set(VIRTUAL_WIDTH * 0.5f, VIRTUAL_HEIGHT * 0.5f, 0f);
+        uiCamera.update();
     }
 
     /**
