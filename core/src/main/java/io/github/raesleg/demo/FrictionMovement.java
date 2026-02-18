@@ -83,11 +83,11 @@ public class FrictionMovement implements MovementModel {
         float lateralSpeed = vel.dot(v1);
         v2.set(v1).scl(lateralSpeed);
 
-        float grip = tuning.getLateralGrip();
+        float grip = Math.min(tuning.getLateralGrip(), 1.0f);
 
         v2.scl(-body.getMass() * grip);
 
-        float maxImpulse = 1.5f * grip;
+        float maxImpulse = 1.5f * tuning.getLateralGrip();
         if (v2.len2() > maxImpulse * maxImpulse)
             v2.nor().scl(maxImpulse);
 
