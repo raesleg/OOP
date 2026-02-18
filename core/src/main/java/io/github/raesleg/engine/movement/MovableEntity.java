@@ -41,10 +41,6 @@ public class MovableEntity extends TextureObject implements IMovable {
         return body;
     }
 
-    public ControlSource getControls() {
-        return controls;
-    }
-
     /**
      * Delegates to ControlSource — avoids Law of Demeter violations
      * in callers that only need the input axis values.

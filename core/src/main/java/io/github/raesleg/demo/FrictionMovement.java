@@ -31,19 +31,13 @@ public class FrictionMovement implements MovementModel {
     public void onEnterZone(PhysicsBody body, Object zoneTuning) {
         if (zoneTuning instanceof MotionTuning mt) {
             zoneContacts++;
-            System.out.println("[ZONE ENTER] maxSpeed=" + mt.getMaxSpeed() + " damping=" + mt.getLinearDamping()
-                    + " contacts=" + zoneContacts);
             applyMotionProfile(body, mt);
-        } else {
-            System.out.println("[ZONE ENTER] FAILED instanceof check: "
-                    + (zoneTuning == null ? "null" : zoneTuning.getClass().getName()));
         }
     }
 
     @Override
     public void onExitZone(PhysicsBody body) {
         zoneContacts--;
-        System.out.println("[ZONE EXIT] contacts=" + zoneContacts);
         if (zoneContacts <= 0) {
             zoneContacts = 0;
             applyMotionProfile(body, base);

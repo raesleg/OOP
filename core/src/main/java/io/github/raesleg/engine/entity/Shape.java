@@ -7,11 +7,6 @@ public abstract class Shape extends Entity {
 
     private Color color;
 
-    public Shape() {
-        super(0, 0, 0, 0);
-        this.color = null;
-    };
-
     public Shape(float x, float y, float w, float h, Color c) {
         super(x, y, w, h);
         this.color = c;
@@ -23,11 +18,6 @@ public abstract class Shape extends Entity {
 
     public void setColor(Color c) {
         this.color = c;
-    }
-
-    public void setSize(float w, float h) {
-        setW(w);
-        setH(h);
     }
 
     public void draw(ShapeRenderer shape) {

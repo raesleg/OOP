@@ -7,7 +7,6 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import io.github.raesleg.engine.collision.CollisionManager;
 import io.github.raesleg.engine.entity.EntityManager;
-import io.github.raesleg.engine.io.ControlSource;
 import io.github.raesleg.engine.io.IOManager;
 import io.github.raesleg.engine.movement.MovementManager;
 
@@ -56,7 +55,6 @@ public abstract class Scene {
     private MovementManager movementManager;
     private CollisionManager collisionManager;
     private IOManager ioManager;
-    private ControlSource controls;
 
     /** Shared camera — subclasses use this for projection. */
     private OrthographicCamera camera;
@@ -212,10 +210,6 @@ public abstract class Scene {
         return ioManager;
     }
 
-    protected ControlSource getControls() {
-        return controls;
-    }
-
     protected OrthographicCamera getCamera() {
         return camera;
     }
@@ -240,10 +234,6 @@ public abstract class Scene {
         return movementManager;
     }
 
-    protected CollisionManager getCollisionManager() {
-        return collisionManager;
-    }
-
     /*
      * ── Protected Setters — Subclasses own their managers (Scene Sovereignty) ──
      */
@@ -258,10 +248,6 @@ public abstract class Scene {
 
     protected void setCollisionManager(CollisionManager cm) {
         this.collisionManager = cm;
-    }
-
-    protected void setControls(ControlSource cs) {
-        this.controls = cs;
     }
 
     /* Getters and Setters */

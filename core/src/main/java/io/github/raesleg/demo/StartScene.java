@@ -93,11 +93,6 @@ public class StartScene extends Scene {
     }
 
     @Override
-    public void resize(int width, int height) {
-        super.resize(width, height);
-    }
-
-    @Override
     public void dispose() {
         font.dispose();
         Gdx.app.log("StartScene", "Scene disposed");

@@ -49,9 +49,6 @@ public class GameCollisionHandler implements ICollisionListener {
             MovementModel model = zc.movable().getMovementModel();
             model.onEnterZone(zc.movable().getPhysicsBody(), zc.zone().getTuning());
         }
-        // logging
-        System.out.println("Collision detected between " + entityA.getClass().getSimpleName() + " and " +
-                entityB.getClass().getSimpleName());
     }
 
     @Override
@@ -65,8 +62,6 @@ public class GameCollisionHandler implements ICollisionListener {
 
     @Override
     public void onImpact(Entity entityA, Entity entityB, float impactForce, Vector2 impactPoint) {
-        System.out.println("Impact force: " + impactForce);
-
         // only trigger explosion if impact is strong enough
         if (impactForce < explosionForceThreshold) {
             return;
@@ -94,8 +89,6 @@ public class GameCollisionHandler implements ICollisionListener {
 
         // Game Rule: User hitting AI entity casues explosion
         if (aiEntity != null && userEntity != null) {
-            System.out.println("User entity hit AI entity - creating explosion!");
-
             if (soundManager != null) {
                 soundManager.playSound("explosion", 1.0f);
             }

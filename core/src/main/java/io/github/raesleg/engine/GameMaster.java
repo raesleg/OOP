@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.Box2D;
 
+import io.github.raesleg.engine.entity.TextureObject;
 import io.github.raesleg.engine.io.IOManager;
 import io.github.raesleg.engine.io.InputDevice;
 import io.github.raesleg.engine.io.SoundDevice;
@@ -85,6 +86,7 @@ public class GameMaster extends ApplicationAdapter {
         sceneManager.dispose();
         ioManager.dispose();
         batch.dispose();
+        TextureObject.disposeAllTextures(); // free shared GPU textures
         Gdx.app.log("Main", "Game disposed - all resources cleaned up");
     }
 }

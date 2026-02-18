@@ -9,9 +9,6 @@ public abstract class Entity {
     private float w;
     private float h;
 
-    public Entity() {
-    };
-
     public Entity(float x, float y, float w, float h) {
         this.x = x;
         this.y = y;

@@ -141,10 +141,6 @@ public class GameScene extends Scene {
                 MotionTuning.HIGH_FRICTION,
                 Color.RED);
 
-        // logging
-        System.out.println("LOW zone px: x=" + low.getX() + " y=" + low.getY() +
-                " w=" + low.getW() + " h=" + low.getH());
-
         // collision listener receives Entity–Entity
         getEntityManager().addEntity(low);
         getEntityManager().addEntity(high);
@@ -277,11 +273,6 @@ public class GameScene extends Scene {
         }
 
         Gdx.app.log("GameScene", "Scene resumed - Continuing gameplay");
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        super.resize(width, height);
     }
 
     @Override

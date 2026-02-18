@@ -201,12 +201,6 @@ public class PauseScene extends Scene {
     }
 
     @Override
-    public void resize(int width, int height) {
-        super.resize(width, height);
-        // screenProjection is updated each frame in render() to match current window
-    }
-
-    @Override
     public void dispose() {
         shapeRenderer.dispose();
         font.dispose();

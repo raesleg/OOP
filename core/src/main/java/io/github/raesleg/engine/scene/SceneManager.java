@@ -4,9 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import io.github.raesleg.engine.io.IOManager;
-// import io.github.raesleg.engine.io.Keyboard;
 
-// import java.security.Key;
 import java.util.Stack;
 
 /**
@@ -38,7 +36,7 @@ public class SceneManager {
     /**
      * Creates a new SceneManager with the provided SpriteBatch and shared
      * IOManager.
-    */
+     */
 
     public SceneManager(SpriteBatch batch, IOManager ioManager) {
         this.sceneStack = new Stack<>();
@@ -61,7 +59,7 @@ public class SceneManager {
 
         sceneStack.push(scene);
 
-        ioManager.pushInputContext(); //input device binding
+        ioManager.pushInputContext(); // input device binding
 
         scene.show();
         scene.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -147,16 +145,6 @@ public class SceneManager {
     }
 
     /**
-     * Handles input for the top scene only.
-     * Background scenes (paused) do not receive input events.
-     */
-    public void handleInput(float deltaTime) {
-        if (!sceneStack.isEmpty()) {
-            sceneStack.peek().handleInput(deltaTime);
-        }
-    }
-
-    /**
      * Resizes all scenes in the stack.
      * 
      * @param width  New screen width
@@ -178,41 +166,5 @@ public class SceneManager {
             scene.hide();
             scene.dispose();
         }
-    }
-
-    /**
-     * Returns the current top scene.
-     * 
-     * @return The scene at the top of the stack, or null if empty
-     */
-    public Scene getCurrentScene() {
-        return sceneStack.isEmpty() ? null : sceneStack.peek();
-    }
-
-    /**
-     * Returns the SpriteBatch for rendering.
-     * 
-     * @return The SpriteBatch instance
-     */
-    public SpriteBatch getBatch() {
-        return batch;
-    }
-
-    /**
-     * Returns the number of scenes currently on the stack.
-     * 
-     * @return Stack size
-     */
-    public int getStackSize() {
-        return sceneStack.size();
-    }
-
-    /**
-     * Checks if the stack is empty.
-     * 
-     * @return true if no scenes are on the stack
-     */
-    public boolean isEmpty() {
-        return sceneStack.isEmpty();
     }
 }

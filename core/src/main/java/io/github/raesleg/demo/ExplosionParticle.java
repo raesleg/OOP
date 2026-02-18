@@ -37,7 +37,7 @@ public class ExplosionParticle extends TextureObject implements IExpirable {
         lifetime -= deltaTime;
         alpha = Math.max(0, lifetime / maxLifetime); // 1.0 -> 0.0
 
-        System.out.println("Particle at (" + getX() + "," + getY() + ") alpha=" + alpha); // logging for debug
+        // debug logging removed — ran 12× per particle per frame, causing I/O stalls
     }
 
     @Override

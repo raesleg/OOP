@@ -13,12 +13,8 @@ public class PhysicsBody {
         this.body = body;
     }
 
-    // package-private: only PhysicsWorld should access raw body for destroy
-    Body _raw() { 
-        return body; 
-    }
-    void _clearRaw() { 
-        body = null; 
+    void _clearRaw() {
+        body = null;
     }
 
     public void destroy() {

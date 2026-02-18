@@ -522,3 +522,362 @@ All changes compile cleanly with zero errors. The runtime failure previously
 observed when running `:lwjgl3:run` (NullPointerException due to `Gdx.files`
 being accessed before LibGDX initialisation) was fixed by deferring sound
 registration until `GameMaster.create()`.
+
+
+===========================================================================
+PERFORMANCE FIXES (Round 4)
+===========================================================================
+
+
+21. FLYWEIGHT PATTERN — TextureObject loaded a new Texture per instance
+-----------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/entity/TextureObject.java
+      core/src/main/java/io/github/raesleg/engine/GameMaster.java
+
+What was wrong:
+  Every TextureObject constructor called "new Texture(filename)", which
+  reads the image from disk and uploads it to the GPU. When
+  ExplosionParticle.spawnExplosion() creates 12 particles, "droplet.png"
+  was loaded 12 separate times, causing a visible frame-time spike.
+
+Why it is a problem:
+  Disk I/O inside a game loop is one of the most expensive operations
+  possible. Duplicating the same GPU texture wastes VRAM and stalls
+  rendering while the file is read.
+
+How it was fixed:
+  Added a static HashMap<String, Texture> cache (Flyweight pattern) to
+  TextureObject. The constructor now calls
+  "textureCache.computeIfAbsent(filename, Texture::new)" so each file
+  is loaded exactly once. Individual dispose() is now a no-op; a new
+  static disposeAllTextures() method is called from GameMaster.dispose()
+  to free all cached textures at shutdown.
+
+
+22. RESOURCE LEAK — Expired entities were never disposed
+--------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/entity/EntityManager.java
+
+What was wrong:
+  When an IExpirable entity was removed from the entity list in
+  update(), the code simply called "it.remove()" without first calling
+  "e.dispose()". Any native resources held by the entity (GPU textures,
+  sound handles) were silently leaked.
+
+Why it is a problem:
+  In a LibGDX application, failing to dispose native resources causes
+  GPU memory to grow unboundedly. Over time, this leads to degraded
+  performance and eventual crashes.
+
+How it was fixed:
+  Added "e.dispose()" immediately before "it.remove()" in the expired-
+  entity cleanup loop. (With the texture cache from fix #21, disposal
+  of individual TextureObjects is a no-op, but the call is correct for
+  any future entity type that holds its own native resources.)
+
+
+23. GC PRESSURE — EntityManager.getSnapshot() allocated a new ArrayList every call
+----------------------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/entity/EntityManager.java
+
+What was wrong:
+  getSnapshot() returned "new ArrayList<>(entityList)" on every
+  invocation. It was called at least 4 times per frame (from update(),
+  MovementManager.update(), forEach(), and createExplosion()), creating
+  thousands of short-lived objects per second.
+
+Why it is a problem:
+  Excessive short-lived allocations increase garbage-collection pressure.
+  When the JVM's GC pauses to collect them, the game experiences micro-
+  stutters (dropped frames).
+
+How it was fixed:
+  Added a cached snapshot field with a dirty flag. The ArrayList copy
+  is only rebuilt when the entity list actually changes (add/remove).
+  The returned list is wrapped in Collections.unmodifiableList() to
+  prevent callers from accidentally mutating the cached copy.
+
+
+24. PERFORMANCE — System.out.println debug spam in the game loop
+----------------------------------------------------------------
+Files: core/src/main/java/io/github/raesleg/demo/ExplosionParticle.java
+       core/src/main/java/io/github/raesleg/demo/FrictionMovement.java
+       core/src/main/java/io/github/raesleg/demo/GameCollisionHandler.java
+
+What was wrong:
+  Multiple System.out.println calls fired every frame:
+  - ExplosionParticle.update() logged position and alpha for each of
+    12 particles, 60 times per second (720 prints/second per explosion).
+  - FrictionMovement.onEnterZone/onExitZone logged on every zone event.
+  - GameCollisionHandler logged every collision begin and every impact.
+
+Why it is a problem:
+  Console I/O is synchronous and surprisingly expensive. At high
+  frequency it competes with the render thread for CPU time and can
+  stall the frame.
+
+How it was fixed:
+  Removed all per-frame and per-event System.out.println calls from
+  the three files. One-time setup logging (e.g. GameScene zone creation)
+  was left in place as it only fires once.
+
+
+UPDATED SUMMARY TABLE (Round 4 additions)
+==========================================
+ #  | Issue                    | File(s) Changed
+----+--------------------------+------------------------------------------
+ 21 | Flyweight (Texture)      | TextureObject, GameMaster
+ 22 | Resource Leak            | EntityManager
+ 23 | GC Pressure (Snapshot)   | EntityManager
+ 24 | Debug I/O Spam           | ExplosionParticle, FrictionMovement,
+    |                          | GameCollisionHandler
+
+All changes compile cleanly with zero errors.
+
+
+================================================================================
+ROUND 5 — Dead Code / Bloat Removal
+================================================================================
+
+25. DEAD CODE — Unused constants PAUSE and MUTE in Constants.java
+-----------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/Constants.java
+
+What was wrong:
+  The constants PAUSE and MUTE were declared but never referenced
+  anywhere in the codebase. Key bindings are done directly via
+  Input.Keys constants.
+
+Why it violates OOP:
+  Dead constants add cognitive noise and suggest a public API contract
+  that does not actually exist, misleading future maintainers.
+
+How it was fixed:
+  Removed both constant declarations.
+
+
+26. DEAD CODE — Commented-out imports in SceneManager.java
+----------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/scene/SceneManager.java
+
+What was wrong:
+  Two commented-out import statements (Keyboard, java.security.Key)
+  were left in the file from earlier refactoring.
+
+Why it violates OOP:
+  Commented-out code is dead weight that clutters the source and
+  signals incomplete refactoring.
+
+How it was fixed:
+  Removed both commented-out import lines.
+
+
+27. DEAD CODE — Unreachable SceneManager.handleInput()
+------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/scene/SceneManager.java
+
+What was wrong:
+  The public method handleInput(float) was never called from
+  GameMaster or any other class.
+
+Why it violates OOP:
+  Unreachable public methods enlarge the class's surface area without
+  providing value, violating YAGNI and making the API harder to reason
+  about.
+
+How it was fixed:
+  Removed the entire method.
+
+
+28. DEAD CODE — Unused getters in SceneManager
+-----------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/scene/SceneManager.java
+
+What was wrong:
+  Four public methods — getCurrentScene(), getBatch(), getStackSize(),
+  isEmpty() — were never invoked from any call site.
+
+Why it violates OOP:
+  Exposes internal state (stack, batch) that no consumer needs,
+  violating Interface Segregation and increasing coupling surface.
+
+How it was fixed:
+  Removed all four methods.
+
+
+29. DEAD CODE — Scene.controls field, getControls(), setControls()
+------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/scene/Scene.java
+
+What was wrong:
+  The private field "controls" (type ControlSource) was never set or
+  read by any subclass. Its getter and setter were equally unused.
+  The ControlSource import was then also orphaned.
+
+Why it violates OOP:
+  Unused fields and accessors add coupling to a type (ControlSource)
+  that the class does not actually depend on, violating ISP and SRP.
+
+How it was fixed:
+  Removed the field, both accessors, and the ControlSource import.
+
+
+30. DEAD CODE — Scene.getCollisionManager() never called
+--------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/scene/Scene.java
+
+What was wrong:
+  The protected getter getCollisionManager() was never invoked by any
+  subclass. The field itself is retained because it holds the Box2D
+  ContactListener reference alive.
+
+Why it violates OOP:
+  Dead accessors widen the protected API surface needlessly.
+
+How it was fixed:
+  Removed the getter. Kept the field and setter (used by GameScene
+  to store the CollisionManager).
+
+
+31. DEAD CODE — Redundant resize() overrides in three scenes
+------------------------------------------------------------
+Files: StartScene.java, PauseScene.java, GameScene.java
+
+What was wrong:
+  Each scene overrode resize(int, int) only to call super.resize(),
+  adding no additional behaviour.
+
+Why it violates OOP:
+  Overrides that merely delegate to super are noise. They violate
+  DRY and can mask the fact that the base class already handles the
+  responsibility.
+
+How it was fixed:
+  Removed the resize() override from all three scene subclasses.
+
+
+32. DEAD CODE — Keyboard.unbindAction() never called
+-----------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/Keyboard.java
+
+What was wrong:
+  The public method unbindAction(int, String) was never invoked from
+  any call site.
+
+How it was fixed:
+  Removed the method.
+
+
+33. DEAD CODE — InputDevice.removeBind() and Keyboard.removeBind()
+------------------------------------------------------------------
+Files: core/.../engine/io/InputDevice.java, core/.../demo/Keyboard.java
+
+What was wrong:
+  The interface method removeBind(int) and its implementation in
+  Keyboard were never called.
+
+Why it violates OOP:
+  An interface method that no client invokes violates ISP — it forces
+  every implementor to carry dead code.
+
+How it was fixed:
+  Removed the method from the interface and its implementation.
+
+
+34. DEAD CODE — PhysicsBody._raw() never called
+------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/physics/PhysicsBody.java
+
+What was wrong:
+  The package-private method _raw() returning the Box2D Body was
+  never called by PhysicsWorld or any other class.
+
+How it was fixed:
+  Removed the method. _clearRaw() is retained (called during destroy).
+
+
+35. DEAD CODE — Entity no-arg constructor
+-----------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/entity/Entity.java
+
+What was wrong:
+  The public no-arg constructor Entity() was declared but never used
+  — all subclasses call super(x, y, w, h).
+
+How it was fixed:
+  Removed the no-arg constructor.
+
+
+36. DEAD CODE — Shape no-arg constructor and setSize()
+------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/entity/Shape.java
+
+What was wrong:
+  The no-arg constructor and the setSize(float, float) method were
+  never invoked from any call site.
+
+How it was fixed:
+  Removed both.
+
+
+37. DEAD CODE — EntityManager.removeEntity() and forEach()
+----------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/entity/EntityManager.java
+
+What was wrong:
+  removeEntity(Entity) was never called (removal is automatic via the
+  IExpirable dispose loop). forEach(Class<T>, Consumer<T>) was never
+  called. The Consumer import was then orphaned.
+
+How it was fixed:
+  Removed both methods and the unused import.
+
+
+38. DEAD CODE — MovableEntity.getControls() never called externally
+-------------------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/engine/movement/MovableEntity.java
+
+What was wrong:
+  The public getter getControls() was no longer invoked after Round 2
+  refactored callers to use getInputX()/getInputY() (Law of Demeter).
+
+How it was fixed:
+  Removed the method. The private field and ControlSource import are
+  retained because the field is still used internally.
+
+
+39. DEAD CODE — Remaining System.out.println in GameScene
+---------------------------------------------------------
+File: core/src/main/java/io/github/raesleg/demo/GameScene.java
+
+What was wrong:
+  A one-time System.out.println logging zone coordinates remained
+  from development. While it only fired once, it is debug output
+  that does not belong in production code.
+
+How it was fixed:
+  Removed the println call.
+
+
+UPDATED SUMMARY TABLE (Round 5 additions)
+==========================================
+ #  | Issue                    | File(s) Changed
+----+--------------------------+------------------------------------------
+ 25 | Unused constants         | Constants
+ 26 | Commented-out imports    | SceneManager
+ 27 | Dead handleInput()       | SceneManager
+ 28 | Dead getters (4 methods) | SceneManager
+ 29 | Dead controls field      | Scene
+ 30 | Dead getCollisionMgr()   | Scene
+ 31 | Redundant resize() (x3)  | StartScene, PauseScene, GameScene
+ 32 | Dead unbindAction()      | Keyboard
+ 33 | Dead removeBind()        | InputDevice, Keyboard
+ 34 | Dead _raw()              | PhysicsBody
+ 35 | Dead no-arg ctor         | Entity
+ 36 | Dead ctor + setSize()    | Shape
+ 37 | Dead removeEntity/forEach| EntityManager
+ 38 | Dead getControls()       | MovableEntity
+ 39 | Leftover println         | GameScene
+
+All changes compile cleanly with zero errors.
+Total violations documented: 39 across 5 rounds.
