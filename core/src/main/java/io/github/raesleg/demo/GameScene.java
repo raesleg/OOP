@@ -315,17 +315,11 @@ public class GameScene extends Scene {
         if (sound.isMuted() || !objMoving) {
             stopMoveLoop();
             return;
-<<<<<<< HEAD
         }
         // if moving and not already looping start it (query sound system — no duplicate
         // state)
         if (!sound.isLooping("move")) {
             sound.loopSound("move");
-=======
-        } else {
-            sound.loopSound("move");
-
->>>>>>> f7d0b5dfdc16c506a803ec743f037d7a6dc6c7da
         }
     }
 
