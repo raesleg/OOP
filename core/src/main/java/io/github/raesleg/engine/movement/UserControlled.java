@@ -5,7 +5,7 @@ import io.github.raesleg.engine.io.ActionInput;
 import io.github.raesleg.engine.io.ControlSource;
 
 public class UserControlled implements ControlSource {
-    private final ActionInput input;
+    private ActionInput input;
 
     public UserControlled(ActionInput input) {
         this.input = input;

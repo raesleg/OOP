@@ -16,16 +16,16 @@ public class MotionZone extends Shape {
 
     public MotionZone(
                 PhysicsWorld world,
-                float centerXM, float centerYM,
-                float halfWM, float halfHM,
+                float x, float y,
+                float w, float h,
                 MotionTuning tuning,
                 Color color) 
     {
         super( // in pixels
-            (centerXM - halfWM) * Constants.PPM,   
-            (centerYM - halfHM) * Constants.PPM,   
-            (halfWM * 2f) * Constants.PPM,         
-            (halfHM * 2f) * Constants.PPM,        
+            (x - w) * Constants.PPM,   
+            (y - h) * Constants.PPM,   
+            (w * 2f) * Constants.PPM,         
+            (h * 2f) * Constants.PPM,        
             color
         );
 
@@ -33,8 +33,8 @@ public class MotionZone extends Shape {
 
         this.body = world.createBody(
                 BodyDef.BodyType.StaticBody,
-                centerXM, centerYM,
-                halfWM, halfHM,
+                x, y,
+                w, h,
                 0f, 0f,
                 true,
                 this

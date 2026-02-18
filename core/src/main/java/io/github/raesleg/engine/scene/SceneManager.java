@@ -30,7 +30,7 @@ public class SceneManager {
     /* Private Variables */
     private final Stack<Scene> sceneStack;
     private final SpriteBatch batch;
-    private final IOManager ioManager;
+    private IOManager ioManager;
 
     /* Constructor */
     /**

@@ -5,7 +5,8 @@ public interface InputDevice {
 
     // bind to an action
     void addBind(int input, Runnable action, boolean isJustPressed);
-
+    void removeBind(int input);
+    
     void pushContext();
 
     void popContext();

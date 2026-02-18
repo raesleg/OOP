@@ -28,15 +28,9 @@ public class GameMaster extends ApplicationAdapter {
     private IOManager ioManager;
 
     private final Scene initialScene;
-    private final InputDevice inputDevice;
-    private final SoundDevice soundDevice;
+    private InputDevice inputDevice;
+    private SoundDevice soundDevice;
 
-    /**
-     * @param initialScene the first scene to push (e.g. a title screen)
-     * @param inputDevice  the input device to register (e.g. keyboard)
-     * @param soundDevice  a pre-configured sound device (sounds already
-     *                     registered by the composition root)
-     */
     public GameMaster(Scene initialScene, InputDevice inputDevice, SoundDevice soundDevice) {
         this.initialScene = initialScene;
         this.inputDevice = inputDevice;

@@ -33,7 +33,7 @@ public class MovableEntity extends TextureObject implements IMovable {
      * instead of storing a flag from instanceof.
      */
     public boolean isAIControlled() {
-        return !controls.isPlayerControlled();
+        return !controls.isUserControlled();
     }
 
     /* getter functions for collision handler and resolver */

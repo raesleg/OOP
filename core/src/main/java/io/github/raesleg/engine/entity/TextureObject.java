@@ -18,7 +18,7 @@ import java.util.Map;
 public abstract class TextureObject extends Entity {
 
     /* ── Shared texture cache (Flyweight) ── */
-    private static final Map<String, Texture> textureCache = new HashMap<>();
+    private static Map<String, Texture> textureCache = new HashMap<>();
 
     private Texture texture;
 

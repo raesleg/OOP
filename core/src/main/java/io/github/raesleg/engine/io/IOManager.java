@@ -5,8 +5,8 @@ import java.util.List;
 
 public class IOManager {
 
-    private final List<InputDevice> inputs = new ArrayList<>();
-    private final SoundDevice output;
+    private List<InputDevice> inputs = new ArrayList<>();
+    private SoundDevice output;
 
     public IOManager(SoundDevice output) {
         this.output = output;

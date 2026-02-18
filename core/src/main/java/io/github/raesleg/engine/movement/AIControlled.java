@@ -9,7 +9,7 @@ public class AIControlled implements ControlSource {
     }
 
     @Override
-    public boolean isPlayerControlled() {
+    public boolean isUserControlled() {
         return false;
     }
 

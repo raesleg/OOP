@@ -7,11 +7,8 @@ public interface ControlSource {
 
     boolean isAction(float deltaTime);
 
-    /**
-     * Returns whether this control source represents a human player.
-     * AI controllers override this to return false.
-     */
-    default boolean isPlayerControlled() {
+    // aiControls overrides to false
+    default boolean isUserControlled() {
         return true;
     }
 }

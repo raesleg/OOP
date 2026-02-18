@@ -66,6 +66,11 @@ public class Keyboard implements InputDevice, ActionInput {
     }
 
     @Override
+    public void removeBind(int keyOrButton) {
+        active().commandBinds.remove(keyOrButton);
+    }
+
+    @Override
     public void handleInput() {
         IntMap<Bind> binds = active().commandBinds;
         for (IntMap.Entry<Bind> e : binds.entries()) {
@@ -91,6 +96,7 @@ public class Keyboard implements InputDevice, ActionInput {
         }
         keys.add(key);
     }
+    
 
     @Override
     public boolean isHeld(String action) {
