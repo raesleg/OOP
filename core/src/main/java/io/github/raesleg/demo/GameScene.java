@@ -14,7 +14,6 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.audio.Music;
-import com.badlogic.gdx.audio.Sound;
 
 import io.github.raesleg.engine.movement.AIControlled;
 import io.github.raesleg.engine.movement.MovementManager;
@@ -38,27 +37,28 @@ public class GameScene extends Scene {
     private boolean isPaused;
     private float gameTime;
 
-    // movable entities implementing box2d physics engine
+    // Box2d physics engine
     private PhysicsWorld world;
-    // private IPhysics physics;
+
+    // Movable entities
     private MovableEntity bucket;
     private MovableEntity droplet;
 
-    // movement — use Constants.PPM for single source of truth
-    private ShapeRenderer shapeRenderer;
+    // Zone rendering
+    private ShapeRenderer shapeRenderer; // draw as colored rect.
     private ArrayList<Shape> zones = new ArrayList<>();
 
-    private float worldW = VIRTUAL_WIDTH / Constants.PPM;
-    private float worldH = VIRTUAL_HEIGHT / Constants.PPM;
+    // World size in meters (pixels/PPM)
+    private float w = VIRTUAL_WIDTH / Constants.PPM;
+    private float h = VIRTUAL_HEIGHT / Constants.PPM;
 
-    private float zoneW = worldW * 0.12f;
-    private float zoneH = worldH * 0.45f;
+    // Zone dimensions in meters (relative to world size)
+    private float zoneW = w * 0.12f;
+    private float zoneH = h * 0.45f;
 
+    // Audio
     private SoundDevice sound;
-
-    // Background music purposes
     private Music bgm;
-    // Condition to demo sound effect when object is moving or not moving
     private boolean isMoving = false;
 
     public GameScene() {
@@ -69,6 +69,7 @@ public class GameScene extends Scene {
 
     @Override
     protected Viewport createViewport(OrthographicCamera cam) {
+        // ExtendViewport keeps aspect ratio without cropping, shows more world on bigger screens
         return new ExtendViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, cam);
     }
 
@@ -78,38 +79,31 @@ public class GameScene extends Scene {
         font = new BitmapFont();
         font.setColor(Color.WHITE);
 
-        // out of bound walls — use virtual resolution for consistent bounds
+        shapeRenderer = new ShapeRenderer();
+
+        /* Physics world setup : uses METERS, (0,0) top-down movement*/
         world = new PhysicsWorld(new Vector2(0, 0));
 
-        sound = ioManager.getSound();
+        // (injected via abstract scene)
+        sound = ioManager.getSound(); 
 
-        float w = VIRTUAL_WIDTH / Constants.PPM;
-        float h = VIRTUAL_HEIGHT / Constants.PPM;
-        float t = 0.2f;
+        /* Managers */
+        entityManager = new EntityManager();
+        movementManager = new MovementManager(world, entityManager);
+        GameCollisionHandler handler = new GameCollisionHandler(entityManager, sound);
+        collisionManager = new CollisionManager(world, handler);
 
+        // wall thickness, static body use solid bounds
+        float t = 0.2f; 
+
+        // create 4 booundary walls, static fixtures, not sensors
         world.createBody(BodyDef.BodyType.StaticBody, w/2, t/2, w/2, t/2, 0, 0.4f, false, null);
         world.createBody(BodyDef.BodyType.StaticBody, w/2, h+t/2, w/2, t/2, 0, 0.4f, false, null);
         world.createBody(BodyDef.BodyType.StaticBody, t/2, h/2, t/2, h/2, 0, 0.4f, false, null);
         world.createBody(BodyDef.BodyType.StaticBody, w+t/2, h/2, t/2, h/2, 0, 0.4f, false, null);
 
-        // world.createBody(
-        //     BodyDef.BodyType.StaticBody,
-        //     worldW * 0.65f, worldH * 0.5f,
-        //     zoneW * 0.5f, zoneH * 0.5f,
-        //     0f, 0f,
-        //     true,
-        //     MotionTuning.LOW_TRACTION   // userData can be MotionProfile
-        // );
-
-        // world.createBody(
-        //     BodyDef.BodyType.StaticBody,
-        //     worldW * 0.35f, worldH * 0.5f,
-        //     zoneW * 0.5f, zoneH * 0.5f,
-        //     0f, 0f,
-        //     true,
-        //     MotionTuning.HIGH_FRICTION
-        // );
-
+        /* Dynamic bodies creation, passing into movableEntity */
+        // game scene controls where/how bodies are spawned
         PhysicsBody bucketBody = world.createBody(
             BodyDef.BodyType.DynamicBody,
             (200 + 64f/2f) / Constants.PPM,
@@ -130,43 +124,14 @@ public class GameScene extends Scene {
             null
         );
 
+        /* Movement models, defining how movement feels (friction) */
         MovementModel bucketMovement = new FrictionMovement(MotionTuning.DEFAULT);
         MovementModel dropletMovement = new FrictionMovement(MotionTuning.DEFAULT);
 
-        // world.createBoundsPixels((int) VIRTUAL_WIDTH, (int) VIRTUAL_HEIGHT, Constants.PPM);
-
-        // // create friction zone, forces from box2d
-        // world.createMotionZone(worldW * 0.65f, worldH * 0.5f, zoneW * 0.5f, zoneH * 0.5f,
-        //         MotionTuning.LOW_TRACTION);
-        // world.createMotionZone(worldW * 0.35f, worldH * 0.5f, zoneW * 0.5f, zoneH * 0.5f,
-        //         MotionTuning.HIGH_FRICTION);
-
-        shapeRenderer = new ShapeRenderer();
-
-        // // low friction
-        // zones.add(new Surfaces(
-        //         (worldW * 0.65f - zoneW * 0.5f) * Constants.PPM,
-        //         (worldH * 0.5f - zoneH * 0.5f) * Constants.PPM,
-        //         zoneW * Constants.PPM,
-        //         zoneH * Constants.PPM,
-        //         Color.BLUE));
-
-        // // high friction
-        // zones.add(new Surfaces(
-        //         (worldW * 0.35f - zoneW * 0.5f) * Constants.PPM,
-        //         (worldH * 0.5f - zoneH * 0.5f) * Constants.PPM,
-        //         zoneW * Constants.PPM,
-        //         zoneH * Constants.PPM,
-        //         Color.RED // red
-        // ));
-
-        entityManager = new EntityManager();
-        movementManager = new MovementManager(world, entityManager);
-
-
+        /* Motion zones (sensor areas) for collision entry detection */
         MotionZone low = new MotionZone(
             world,
-            worldW * 0.65f, worldH * 0.5f,
+            w * 0.65f, h * 0.5f,
             zoneW * 0.5f, zoneH * 0.5f,
             MotionTuning.LOW_TRACTION,
             Color.BLUE
@@ -174,18 +139,20 @@ public class GameScene extends Scene {
 
         MotionZone high = new MotionZone(
             world,
-            worldW * 0.35f, worldH * 0.5f,
+            w * 0.35f, h * 0.5f,
             zoneW * 0.5f, zoneH * 0.5f,
             MotionTuning.HIGH_FRICTION,
             Color.RED
         );
 
+        //logging
         System.out.println("LOW zone px: x=" + low.getX() + " y=" + low.getY() +
                    " w=" + low.getW() + " h=" + low.getH());
 
-        // IMPORTANT: add to entityManager so CollisionManager -> listener receives Entity–Entity
+        // collision listener receives Entity–Entity
         entityManager.addEntity(low);
         entityManager.addEntity(high);
+        // stored for debug rendering
         zones.add(low);
         zones.add(high);
 
@@ -203,11 +170,9 @@ public class GameScene extends Scene {
         kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
         kb.addBind(Input.Keys.M, this::toggleMute, true);
         
-        // Collision Handler
-        GameCollisionHandler handler = new GameCollisionHandler(entityManager, sound);
-        collisionManager = new CollisionManager(world, handler);
-
-        // test entities
+        /* Testing game objects 
+            - movableEntity have texture, controller, movement model and physicsbody (box2d)
+        */
         bucket = new MovableEntity(
                 "bucket.png", 200, 200, 64f, 64f,
                 user,
@@ -228,7 +193,6 @@ public class GameScene extends Scene {
         bgm.setLooping(true);
         bgm.setVolume(0.2f); // Set volume to 20%
         bgm.play();
-
 
         // Initialize sound manager and load sounds in the GameScene
         sound.addSound("menu", "uiMenu_sound.wav"); // Add menu navigation sound
@@ -325,7 +289,6 @@ public class GameScene extends Scene {
     @Override
     public void resize(int width, int height) {
         super.resize(width, height);
-        // Player stays in bounds — physics walls are based on VIRTUAL size, not window size
     }
 
     @Override
@@ -345,23 +308,26 @@ public class GameScene extends Scene {
         Gdx.app.log("GameScene", "Scene disposed - All managers and resources cleaned up");
     }
 
+    /* Private Helpers for movement SFX loop */
     private void stopMoveLoop() {
         sound.stopSound("move");
         isMoving = false;
     }
 
     private void updateMoveLoop(boolean objMoving) {
+        // if muted or not moving ensure loop is stopped
         if (sound.isMuted() || !objMoving) {
             stopMoveLoop();
             return;
         }
-
-        if (!isMoving) {
+        // if moving and not already looping start it
+        if (!isMoving) { 
             sound.loopSound("move");
             isMoving = true;
         }
     }
 
+    /* Private Scene controls */
     private void openPause() {
         sceneManager.push(new PauseScene());
     }
