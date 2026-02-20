@@ -6,15 +6,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Base class for every entity that renders a sprite.
- * <p>
- * Textures are loaded through a <b>static cache</b> (Flyweight pattern) so
- * that the same image file is read from disk and uploaded to the GPU only
- * once, no matter how many instances reference it. Without this cache,
- * creating 12&nbsp;{@code ExplosionParticle} objects would trigger 12
- * redundant disk reads &mdash; a major frame-time spike.
- */
 public abstract class TextureObject extends Entity {
 
     /* ── Shared texture cache (Flyweight) ── */

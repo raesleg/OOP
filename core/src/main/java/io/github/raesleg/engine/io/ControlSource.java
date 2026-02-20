@@ -8,7 +8,5 @@ public interface ControlSource {
     boolean isAction(float deltaTime);
 
     // aiControls overrides to false
-    default boolean isUserControlled() {
-        return true;
-    }
+    boolean isUserControlled();
 }

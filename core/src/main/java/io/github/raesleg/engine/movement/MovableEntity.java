@@ -65,7 +65,9 @@ public class MovableEntity extends TextureObject implements IMovable {
     @Override
     public void move(float dt) {
         if (movementModel != null) {
-            movementModel.step(this, dt);
+            float x = controls.getX(dt);
+            float y = controls.getY(dt);
+            movementModel.step(body, x, y, dt);
         }
     }
 

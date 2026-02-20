@@ -1,7 +1,6 @@
 package io.github.raesleg.demo;
 
 import com.badlogic.gdx.math.Vector2;
-import io.github.raesleg.engine.movement.IMovable;
 import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.physics.PhysicsBody;
 
@@ -18,13 +17,6 @@ public class FrictionMovement implements MovementModel {
     public FrictionMovement(MotionTuning base) {
         this.base = base;
         this.tuning = base;
-    }
-
-    private void applyMotionProfile(PhysicsBody body, MotionTuning t) {
-        if (t == null)
-            return;
-        this.tuning = t;
-        body.setLinearDamping(t.getLinearDamping());
     }
 
     @Override
@@ -45,13 +37,8 @@ public class FrictionMovement implements MovementModel {
     }
 
     @Override
-    public void step(IMovable e, float dt) {
-        PhysicsBody body = e.getPhysicsBody();
-
-        float xAxis = e.getInputX(dt);
-        float yAxis = e.getInputY(dt);
-
-        v1.set(xAxis, yAxis);
+    public void step(PhysicsBody body, float x, float y, float dt) {
+        v1.set(x, y);
         if (v1.len2() > 1f)
             v1.nor();
 
@@ -69,6 +56,14 @@ public class FrictionMovement implements MovementModel {
 
         applyLateralGrip(body);
     }
+
+    private void applyMotionProfile(PhysicsBody body, MotionTuning t) {
+        if (t == null)
+            return;
+        this.tuning = t;
+        body.setLinearDamping(t.getLinearDamping());
+    }
+
 
     private void applyLateralGrip(PhysicsBody body) {
         body.getWorldVector(v1.set(0, 1));

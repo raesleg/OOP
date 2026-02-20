@@ -1,7 +1,7 @@
 package io.github.raesleg.demo;
 
 public final class MotionTuning {
-    private final float maxSpeed, maxForce, lateralGrip, linearDamping;
+    private float maxSpeed, maxForce, lateralGrip, linearDamping;
 
     private MotionTuning(float maxSpeed, float maxForce, float lateralGrip, float linearDamping) {
         this.maxSpeed = maxSpeed;

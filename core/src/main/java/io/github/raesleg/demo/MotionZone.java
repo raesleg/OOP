@@ -11,8 +11,8 @@ import io.github.raesleg.engine.physics.PhysicsWorld;
 
 public class MotionZone extends Shape {
 
-    private final MotionTuning tuning;
-    private final PhysicsBody body;
+    private MotionTuning tuning;
+    private PhysicsBody body;
 
     public MotionZone(
                 PhysicsWorld world,

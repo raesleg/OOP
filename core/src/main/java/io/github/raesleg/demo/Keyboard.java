@@ -61,13 +61,13 @@ public class Keyboard implements InputDevice, ActionInput {
     /* ---------- InputDevice (commands) ---------- */
 
     @Override
-    public void addBind(int keyOrButton, Runnable action, boolean isJustPressed) {
-        active().commandBinds.put(keyOrButton, new Bind(action, isJustPressed));
+    public void addBind(int input, Runnable action, boolean isJustPressed) {
+        active().commandBinds.put(input, new Bind(action, isJustPressed));
     }
 
     @Override
-    public void removeBind(int keyOrButton) {
-        active().commandBinds.remove(keyOrButton);
+    public void removeBind(int input) {
+        active().commandBinds.remove(input);
     }
 
     @Override

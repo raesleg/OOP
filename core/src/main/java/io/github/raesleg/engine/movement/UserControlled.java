@@ -12,7 +12,12 @@ public class UserControlled implements ControlSource {
     }
 
     @Override
-    public float getX(float dt) {
+    public boolean isUserControlled() {
+        return true;
+    }
+
+    @Override
+    public float getX(float deltaTime) {
         float x = 0f;
         if (input.isHeld(Constants.LEFT))  x -= 1f;
         if (input.isHeld(Constants.RIGHT)) x += 1f;
@@ -20,7 +25,7 @@ public class UserControlled implements ControlSource {
     }
 
     @Override
-    public float getY(float dt) {
+    public float getY(float deltaTime) {
         float y = 0f;
         if (input.isHeld(Constants.UP))   y += 1f;
         if (input.isHeld(Constants.DOWN)) y -= 1f;
@@ -28,7 +33,7 @@ public class UserControlled implements ControlSource {
     }
 
     @Override
-    public boolean isAction(float dt) {
+    public boolean isAction(float deltaTime) {
         return input.justPressed(Constants.ACTION);
     }
 }
