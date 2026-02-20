@@ -5,28 +5,33 @@ The repository contains the engine code along with a demo application that shows
 
 The project is structured to separate:
 - Engine code (movement, physics, IO, entities, scenes)
-- Demo/game-specific code (scenes, test entities, tuning, assets)
+- Game-specific code 
 
----
 
 ## Requirements
 
-- Java JDK 8 or newer (JDK 11+ recommended)
+- Java JDK 8 or newer (JDK 21 recommended)
 - Gradle (or use the Gradle wrapper included in the project)
 - A desktop environment that supports OpenGL (for LibGDX)
 
----
 
-## Getting the Project
+## Installation
 
-Clone the repository:
+To set up and run the project locally, follow these steps:
 
+### 1. Clone the repository:
 ```bash
 git clone https://github.com/raesleg/OOP.git
-cd <your-repo-folder>
 ```
 
-## Running Gradle
+### 2. Running Gradle
+cd <your-repo-folder) before running:
+
 ```bash
-./gradlew desktop:run
+.\gradlew lwjgl3:run
+```
+
+### 3. (OPTIONAL) Build Gradle without running
+```bash
+.\gradlew build
 ```
