@@ -1,0 +1,485 @@
+# INF1009 OOP Abstract Engine — Coding Guidelines & Architectural Rules
+
+> **Purpose:** This document is the authoritative system prompt for all AI-assisted coding
+> sessions on this project. Any code generated, reviewed, or refactored **must** be
+> strictly evaluated against every rule below. Violations must be flagged and corrected
+> before the code is accepted.
+
+---
+
+## 1. Project Overview
+
+| Field              | Value                                                                 |
+|--------------------|-----------------------------------------------------------------------|
+| **Course**         | INF1009 — Object-Oriented Programming                                |
+| **Project Type**   | University team project (group)                                       |
+| **Genre**          | Top-down arcade car game (lane dodger / traffic simulator)            |
+| **Framework**      | LibGDX (Java) with Box2D physics                                      |
+| **Java Version**   | 21                                                                    |
+| **Build System**   | Gradle (multi-module: `core`, `lwjgl3`)                               |
+| **Resolution**     | 1280 × 720 virtual (FitViewport for UI, ExtendViewport for gameplay)  |
+| **Academic Focus** | Code quality, engine reusability, and OOP principles — **not** complex game mechanics |
+
+### What This Game Is
+
+A real-world-aligned traffic simulation presented as a top-down lane-dodging arcade game.
+The player drives a vehicle through traffic, dodging obstacles and other vehicles across
+multiple lanes. The emphasis is on demonstrating **clean architecture, SOLID design, and
+reusable engine code** that could power any 2D game — not just this one.
+
+---
+
+## 2. Architecture — Strict Engine / Game Separation
+
+### 2.1 The Two Layers
+
+```
+io.github.raesleg/
+├── engine/          ◄── REUSABLE ENGINE (abstract, generic, zero game knowledge)
+│   ├── GameMaster.java          Application entry point (ApplicationAdapter)
+│   ├── Constants.java           Action strings, PPM conversion
+│   ├── collision/               ICollisionListener, CollisionManager
+│   ├── entity/                  Entity, EntityManager, TextureObject, Shape, IExpirable
+│   ├── io/                      IOManager, InputDevice, ActionInput, ControlSource, SoundDevice
+│   ├── movement/                IMovable, MovementManager, MovementModel, MovableEntity,
+│   │                            UserControlled, AIControlled
+│   ├── physics/                 PhysicsWorld, PhysicsBody (Box2D facade)
+│   ├── scene/                   Scene (abstract), SceneManager (stack-based FSM)
+│   └── sound/                   SoundManager, SoundEffect
+│
+└── demo/            ◄── GAME LAYER (concrete implementation, uses engine)
+    ├── StartScene.java          Title / main menu
+    ├── GameScene.java           Main gameplay scene
+    ├── PauseScene.java          Transparent pause overlay
+    ├── Keyboard.java            Concrete InputDevice + ActionInput
+    ├── GameCollisionHandler.java  ICollisionListener implementation
+    ├── FrictionMovement.java    Concrete MovementModel (strategy)
+    ├── MotionTuning.java        Immutable configuration value object
+    ├── MotionZone.java          Sensor Shape with physics body
+    └── ExplosionParticle.java   Visual particle with IExpirable auto-cleanup
+```
+
+### 2.2 Hard Boundary Rules
+
+| Rule | Description |
+|------|-------------|
+| **E-1** | **Engine code must NEVER import from `demo/` (or any game package).** No class, interface, enum, or constant from the game layer may appear in any engine file. |
+| **E-2** | **Engine classes must be 100 % context-free.** They must not reference car names, lane counts, traffic rules, player scores, or any domain-specific concept. |
+| **E-3** | **Game code depends on Engine — never the reverse.** The dependency arrow is strictly one-way: `demo → engine`. |
+| **E-4** | **The engine must be transplantable.** A developer must be able to copy the entire `engine/` package into a different LibGDX project (e.g., a platformer, a tower-defence game) and use it without modification. |
+| **E-5** | **New engine features require abstraction.** If a gameplay need demands new engine capability, add it as an abstract interface or base class in `engine/`, then implement the concrete version in `demo/`. |
+
+### 2.3 Composition Root
+
+The **launcher** (`Lwjgl3Launcher`) is the single composition root — the only file that
+knows both concrete game types and engine types. It wires:
+
+```java
+new GameMaster(new StartScene(), new Keyboard(), new SoundManager())
+```
+
+`GameMaster` accepts its initial scene, input device, and sound device via **constructor
+injection**, never instantiating concrete game classes itself.
+
+---
+
+## 3. SOLID Principles — Mandatory Compliance
+
+Every class and interface **must** satisfy all five SOLID principles. The AI must verify
+each principle during code generation and review.
+
+### 3.1 Single Responsibility Principle (SRP)
+
+- Each class has **one reason to change**.
+- Managers manage one concern: `EntityManager` manages entity lifecycles, `MovementManager`
+  handles movement updates, `SceneManager` handles scene transitions.
+- **Example violation:** A Scene class that directly instantiates physics bodies AND handles
+  rendering AND processes collision responses — split into the Scene (orchestrator), a
+  collision handler, and use the existing `PhysicsWorld` API.
+
+### 3.2 Open/Closed Principle (OCP)
+
+- Classes are **open for extension, closed for modification**.
+- New movement styles → implement `MovementModel` (no changes to `MovementManager`).
+- New collision responses → implement `ICollisionListener` (no changes to `CollisionManager`).
+- New scenes → extend `Scene` (no changes to `SceneManager`).
+- New entity types → extend `Entity`, `TextureObject`, or `Shape` (no changes to `EntityManager`).
+
+### 3.3 Liskov Substitution Principle (LSP)
+
+- Any subclass must be safely substitutable for its parent.
+- `Entity.draw(SpriteBatch)` and `Entity.update(float)` are non-abstract with no-op
+  defaults so that entities not needing them aren't forced into meaningless overrides.
+- `Scene.handleInput(float)` defaults to no-op — menu scenes that don't poll input remain
+  valid Scene subtypes.
+
+### 3.4 Interface Segregation Principle (ISP)
+
+- Interfaces must be small and focused.
+- `IMovable` — only `move(float deltaTime)`.
+- `IExpirable` — only `isExpired()`.
+- `ICollisionListener` — collision callbacks only.
+- `ActionInput` — only `isHeld(String)` and `justPressed(String)`.
+- `InputDevice` — device polling and binding management only.
+- `ControlSource` — axis values and action state only.
+- `SoundDevice` — sound playback operations only.
+- **Never combine unrelated capabilities into a single interface.**
+
+### 3.5 Dependency Inversion Principle (DIP)
+
+- High-level modules depend on **abstractions**, not concrete classes.
+- `GameMaster` depends on `Scene`, `InputDevice`, `SoundDevice` — all interfaces/abstract
+  types. It never sees `StartScene`, `Keyboard`, or `SoundManager`.
+- `CollisionManager` delegates to `ICollisionListener` — it never sees `GameCollisionHandler`.
+- `MovableEntity` depends on `ControlSource` and `MovementModel` — it never sees
+  `UserControlled`, `AIControlled`, or `FrictionMovement`.
+
+---
+
+## 4. Required Design Patterns
+
+The project **must** implement and maintain at least the following design patterns. Each
+pattern has a designated location in the architecture. Do not remove or replace these; new
+patterns may be added where appropriate.
+
+### 4.1 Strategy Pattern
+
+| Where | Interface | Concrete Implementations |
+|-------|-----------|--------------------------|
+| Movement feel | `MovementModel` | `FrictionMovement` (game layer) — extensible to `DriftMovement`, `IceMovement`, etc. |
+| Input source | `ControlSource` | `UserControlled`, `AIControlled` — extensible to `NetworkControlled`, `ReplayControlled`, etc. |
+| Collision response | `ICollisionListener` | `GameCollisionHandler` — swap for different game rules without touching the engine. |
+
+**Rule:** When behaviour varies or needs to be swappable at runtime, use Strategy. Never
+use `if/else` chains or `instanceof` cascades to select behaviour.
+
+### 4.2 Observer Pattern
+
+| Where | Subject | Observer |
+|-------|---------|----------|
+| Physics collisions | `CollisionManager` (Box2D ContactListener) | `ICollisionListener` implementations |
+
+`CollisionManager` detects collision events via Box2D and **notifies** the registered
+`ICollisionListener`. The engine never knows what the game does in response (explosions,
+score changes, sound effects).
+
+**Rule:** Game-specific reactions to engine events must always go through observer/listener
+interfaces. Engine code must never call game code directly.
+
+### 4.3 State Pattern (Stack-Based Finite State Machine)
+
+| Where | Context | States |
+|-------|---------|--------|
+| Scene management | `SceneManager` (stack) | `StartScene`, `GameScene`, `PauseScene`, and any future scenes |
+
+- `push()` — overlay a new state (e.g., pause menu on top of gameplay).
+- `pop()` — return to previous state.
+- `set()` — replace entire stack (e.g., main menu → gameplay).
+- Only the **top** scene receives `update()` and `handleInput()` calls (Input Focus Rule).
+- Transparent scenes allow the scene below to render (overlay pattern).
+
+**Rule:** Scene transitions must always go through `SceneManager`. Scenes must never
+manage other scenes directly or hold references to sibling scenes.
+
+### 4.4 Flyweight Pattern
+
+| Where | Shared Resource | Cache |
+|-------|-----------------|-------|
+| Texture management | `Texture` objects | `TextureObject.textureCache` (static `HashMap`) |
+
+Multiple entities sharing the same sprite (e.g., 50 traffic cars using `"car_red.png"`)
+reuse a single GPU `Texture` instance via `computeIfAbsent`. Individual `dispose()` is a
+no-op; the cache is cleared once at shutdown via `TextureObject.disposeAllTextures()`.
+
+**Rule:** Never call `new Texture(filename)` directly. Always go through `TextureObject`
+(or extend it) to benefit from the shared cache.
+
+### 4.5 Facade Pattern
+
+| Where | Facade | Wrapped Complexity |
+|-------|--------|--------------------|
+| Physics | `PhysicsWorld` + `PhysicsBody` | Box2D `World`, `Body`, `BodyDef`, `FixtureDef`, `PolygonShape` |
+| I/O | `IOManager` | Multiple `InputDevice` instances + `SoundDevice` |
+| Sound | `SoundManager` | Individual `SoundEffect` instances (loop state, mute toggle) |
+
+**Rule:** Game code must never interact with Box2D types directly. All physics operations
+go through `PhysicsWorld` and `PhysicsBody`.
+
+### 4.6 Factory Method Pattern
+
+| Where | Factory | Product |
+|-------|---------|---------|
+| Viewport creation | `Scene.createViewport(OrthographicCamera)` | `FitViewport` (default) or `ExtendViewport` (gameplay override) |
+| Particle spawning | `ExplosionParticle.spawnExplosion(...)` | Batch of `ExplosionParticle` instances |
+
+**Rule:** Object creation that involves configuration logic or conditional construction
+should be encapsulated in factory methods, not scattered across calling code.
+
+---
+
+## 5. Core OOP Concepts — Required Usage
+
+### 5.1 Inheritance Hierarchy
+
+```
+Entity (abstract)
+├── TextureObject (abstract) — sprite-based entities with Flyweight texture cache
+│   ├── MovableEntity          — physics-driven, has ControlSource + MovementModel
+│   └── ExplosionParticle      — self-removing visual effect (IExpirable)
+└── Shape (abstract)           — ShapeRenderer-based entities (e.g., debug zones)
+    └── MotionZone             — sensor area with physics body
+```
+
+**Rules:**
+- Extend `TextureObject` for any entity that renders a sprite.
+- Extend `Shape` for any entity that renders via `ShapeRenderer`.
+- Implement `IExpirable` on any entity that should auto-remove after a condition.
+- Implement `IMovable` on any entity managed by `MovementManager`.
+
+### 5.2 Polymorphism
+
+- `EntityManager.update()` iterates `Entity` references and calls `update(deltaTime)` —
+  concrete type determines behaviour.
+- `MovementManager.update()` checks `instanceof IMovable` and calls `move(deltaTime)`.
+- `CollisionManager` callbacks pass `Entity` — game code uses pattern matching
+  (`instanceof` with binding) to determine concrete types.
+
+### 5.3 Encapsulation
+
+- All fields are `private`. Access is via getters/setters.
+- `Scene` exposes managers to subclasses via `protected` getters/setters only.
+- `SceneManager` injection methods (`setSceneManager`, `setIOManager`) are
+  **package-private** — only `SceneManager` (same package) can call them.
+- `PhysicsBody` hides the raw Box2D `Body` entirely.
+
+### 5.4 Abstraction
+
+- Engine classes depend on interfaces (`InputDevice`, `SoundDevice`, `ICollisionListener`,
+  `MovementModel`, `ControlSource`), never on concrete implementations.
+- `Scene` is abstract — all scenes must provide `show()`, `update()`, `render()`.
+
+---
+
+## 6. Scalability Requirements
+
+The codebase must be designed so that the following additions require **zero modification**
+to existing engine code:
+
+| Addition | How It's Achieved |
+|----------|-------------------|
+| **More players** | Create additional `MovableEntity` instances with different `ControlSource`/`PhysicsBody`. Add to `EntityManager`. |
+| **More enemy types** | Extend `TextureObject` or `MovableEntity`. Implement custom `MovementModel` for AI behaviour. |
+| **More levels / scenes** | Extend `Scene`. Push/set via `SceneManager`. |
+| **More menus** | Extend `Scene`. Use `push()` for overlays, `set()` for full transitions. |
+| **More input devices** | Implement `InputDevice` + `ActionInput`. Register with `IOManager.addInput()`. |
+| **More movement styles** | Implement `MovementModel`. Pass to `MovableEntity` at construction. |
+| **More collision rules** | Implement `ICollisionListener`. Pass to `CollisionManager` constructor. |
+| **More sound effects** | Call `SoundDevice.addSound(name, path)`. Play with `playSound(name, volume)`. |
+| **More surface types** | Create new `MotionTuning` presets. Assign to `MotionZone` instances. |
+
+**Rule:** If adding a new feature requires modifying an existing engine class (other than
+adding a genuinely missing abstract capability), the architecture is wrong — refactor first.
+
+---
+
+## 7. Low Coupling & High Cohesion
+
+### 7.1 Coupling Rules
+
+| Rule | Description |
+|------|-------------|
+| **C-1** | Engine classes must not import game-layer classes. |
+| **C-2** | Managers must not hold cross-references to each other unless strictly necessary (e.g., `MovementManager` needs `EntityManager` for iteration and `PhysicsWorld` for stepping). |
+| **C-3** | Scenes must not hold references to other scenes. Transitions are done by calling `SceneManager.push/pop/set` with a **new** scene instance. |
+| **C-4** | Entity subclasses must not depend on specific scene types. |
+| **C-5** | IOManager is the single shared I/O facade — scenes access it via `getIOManager()`, never by constructing their own. |
+| **C-6** | Sound registration happens at initialization boundaries (`GameMaster.create()` for shared UI sounds, `Scene.show()` for scene-specific sounds). |
+
+### 7.2 Cohesion Rules
+
+| Rule | Description |
+|------|-------------|
+| **H-1** | Each manager handles exactly one concern. |
+| **H-2** | Each interface groups only related operations. |
+| **H-3** | Entity subtypes bundle only the data and behaviour relevant to their role. |
+| **H-4** | Configuration is separated from behaviour (e.g., `MotionTuning` is a pure data object; `FrictionMovement` is the behaviour that uses it). |
+
+---
+
+## 8. Scene Sovereignty Principle
+
+Each `Scene` is the **absolute owner** of its game world:
+
+1. **Owns its managers:** Every Scene must create its own `EntityManager`, `MovementManager`,
+   and `CollisionManager` in `show()`.
+2. **Owns its entities:** Entities belong to the scene's `EntityManager`.
+3. **Owns its physics world:** Each gameplay scene creates its own `PhysicsWorld`.
+4. **Disposes everything:** `dispose()` must cascade to all owned managers and resources.
+5. **Shares only IOManager:** The single `IOManager` instance is injected by `SceneManager`
+   and is the only cross-scene shared resource.
+
+**Why:** This prevents leaked state between scenes, ensures clean transitions, and makes
+each scene independently testable.
+
+---
+
+## 9. Input Architecture
+
+### 9.1 Context Stack
+
+`Keyboard` (and any future `InputDevice`) maintains a **stack of binding contexts**:
+
+- `pushContext()` — new scene pushes a fresh context (isolates its bindings).
+- `popContext()` — scene removal restores the previous context.
+- `resetToBase()` — `SceneManager.set()` clears to the base context.
+
+This ensures pause-menu bindings don't interfere with gameplay bindings.
+
+### 9.2 Dual Interface
+
+`Keyboard` implements both:
+- **`InputDevice`** — low-level key-to-`Runnable` command bindings (for UI: menu navigation, pause toggle).
+- **`ActionInput`** — logical action polling (`isHeld("LEFT")`, `justPressed("ACTION")`) for gameplay movement.
+
+### 9.3 ControlSource Abstraction
+
+Movement code depends on `ControlSource`, not on `Keyboard` or `ActionInput` directly:
+- `UserControlled` adapts `ActionInput` → `ControlSource`.
+- `AIControlled` generates synthetic input.
+- Future: `NetworkControlled`, `ReplayControlled`, etc.
+
+---
+
+## 10. Physics Architecture
+
+- **`PhysicsWorld`** wraps Box2D `World`, provides a clean `createBody(...)` API.
+- **`PhysicsBody`** wraps Box2D `Body`, exposes only the operations needed (velocity,
+  position, impulse, damping, user data).
+- **`CollisionManager`** implements Box2D `ContactListener`, extracts entity pairs, and
+  delegates to `ICollisionListener`.
+- **Coordinate system:** Physics operates in **metres** (`pixels / Constants.PPM`).
+  Rendering operates in **pixels**. Conversion happens in `MovableEntity.syncPosition()`.
+
+**Rules:**
+- Game code must never touch `com.badlogic.gdx.physics.box2d.*` types directly.
+- All body creation goes through `PhysicsWorld.createBody(...)`.
+- All force/impulse application goes through `PhysicsBody` methods.
+
+---
+
+## 11. Resource Management
+
+| Resource | Lifecycle | Cleanup |
+|----------|-----------|---------|
+| Textures | Cached in `TextureObject.textureCache` (static, app-wide) | `TextureObject.disposeAllTextures()` in `GameMaster.dispose()` |
+| SpriteBatch | Created in `GameMaster.create()` | Disposed in `GameMaster.dispose()` |
+| BitmapFont | Created per-scene in `show()` | Disposed per-scene in `dispose()` |
+| ShapeRenderer | Created per-scene in `show()` | Disposed per-scene in `dispose()` |
+| SoundEffect | Created via `SoundManager.addSound()` | `SoundManager.dispose()` via `IOManager.dispose()` |
+| Music | Created per-scene in `show()` | Stopped and disposed per-scene in `dispose()` |
+| PhysicsWorld (Box2D) | Created per-scene in `show()` | Disposed per-scene in `dispose()` |
+| Entities | Managed by `EntityManager` per-scene | `EntityManager.dispose()` cascades to all entities |
+
+**Rules:**
+- Every `create`/`new` of a disposable resource must have a corresponding `dispose()`.
+- `IExpirable` entities are auto-removed and disposed by `EntityManager.update()`.
+- Never dispose shared textures individually — only via the cache at shutdown.
+
+---
+
+## 12. Code Style & Conventions
+
+| Convention | Rule |
+|------------|------|
+| **Package naming** | `io.github.raesleg.engine.*` for engine, `io.github.raesleg.demo.*` for game |
+| **Class naming** | PascalCase. Interfaces prefixed with `I` only for listener/callback types (`ICollisionListener`, `IMovable`, `IExpirable`) |
+| **Method naming** | camelCase. Getters: `getX()`. Booleans: `isExpired()`, `isMuted()` |
+| **Constants** | `UPPER_SNAKE_CASE` in a dedicated utility class (`Constants`) or as `static final` fields |
+| **Access modifiers** | Always use the most restrictive possible. `private` by default, `protected` for subclass access, package-private for framework injection, `public` for API |
+| **Immutability** | Prefer immutable objects for configuration/data (e.g., `MotionTuning`). Use `final` on fields that don't change after construction |
+| **No magic numbers** | Extract constants with meaningful names. Use `Constants.PPM` instead of `100f` |
+| **No God classes** | If a class exceeds ~200 lines, evaluate whether it violates SRP |
+
+---
+
+## 13. Error Handling & Defensive Coding
+
+| Rule | Description |
+|------|-------------|
+| **D-1** | Null-check injected dependencies at system boundaries (constructor parameters, `show()` initialisation). |
+| **D-2** | Use LibGDX logging (`Gdx.app.log(tag, message)`) for lifecycle events and errors — no `System.out.println`. |
+| **D-3** | Guard against concurrent modification: `EntityManager` uses a pending buffer for additions and safe iterator removal for deletions. New entity types must follow this pattern. |
+| **D-4** | Copy mutable data from Box2D callbacks (`impactPoint.cpy()`) to prevent use-after-free. |
+| **D-5** | Physics sensor collisions are filtered in `postSolve` to avoid spurious impact events. |
+| **D-6** | `Keyboard.popContext()` preserves the base context — can never pop below the root. |
+
+---
+
+## 14. AI Code Generation Rules
+
+When generating or reviewing code for this project, the AI **must**:
+
+1. **Verify engine purity.** Before writing any engine class, confirm it imports nothing
+   from `demo/` and references no game-specific concept.
+2. **Check SOLID compliance.** For every class: state its single responsibility, confirm it
+   can be extended without modification, verify interface segregation, and ensure
+   dependencies point toward abstractions.
+3. **Identify the design pattern.** If new code fits a pattern slot (Strategy, Observer,
+   State, Flyweight, Facade, Factory), implement it using the established interfaces.
+4. **Respect Scene Sovereignty.** Never create global/static mutable state that leaks
+   between scenes. Each scene owns its world.
+5. **Maintain scalability.** New features must be additive (new classes), not modifying
+   (changed engine classes).
+6. **Follow the resource lifecycle.** Every disposable resource created in `show()` must be
+   disposed in `dispose()`.
+7. **Use the physics facade.** Never import `com.badlogic.gdx.physics.box2d.*` in game
+   code — use `PhysicsWorld` and `PhysicsBody`.
+8. **Produce minimal, focused code.** No unnecessary abstractions, no speculative features,
+   no dead code.
+
+---
+
+## 15. Quick Reference — Where to Put New Code
+
+| I want to add...                     | Package       | Extends / Implements                    |
+|--------------------------------------|---------------|-----------------------------------------|
+| A new game entity (sprite)           | `demo/`       | `TextureObject` (+ `IMovable`/`IExpirable` as needed) |
+| A new game entity (shape)            | `demo/`       | `Shape`                                 |
+| A new movement style                 | `demo/`       | `MovementModel`                         |
+| A new AI behaviour                   | `demo/`       | `ControlSource`                         |
+| A new scene / level / menu           | `demo/`       | `Scene`                                 |
+| A new collision rule set             | `demo/`       | `ICollisionListener`                    |
+| A new input device (gamepad, touch)  | `demo/`       | `InputDevice` + `ActionInput`           |
+| A new engine capability (abstract)   | `engine/`     | New interface or abstract class          |
+| A new configuration preset           | `demo/`       | Value object (like `MotionTuning`)       |
+
+---
+
+*This document is the single source of truth for all architectural and coding decisions.
+All team members and AI tools must follow these rules without exception.*
++-----------------------------------------------------------------------+
+|  SCORE: 120       [S] ---------🚗------------------ [F]   WANTED: [ ] |
+|                                                                       |
+|                                                                       |
+|                                                                       |
+|                                 |   |                                 |
+|                                 |   |                                 |
+|                                 |🚘 |  <-- (Player Car)               |
+|                                 |   |                                 |
+|                                 |   |                                 |
+|                                                                       |
+|                                                                       |
+|                                                       SPEED: 80 KM/H  |
++-----------------------------------------------------------------------+
+
+Breakdown of the Screen Elements:
+SCORE: 120 (Top Left): * A simple text Label. It updates every second the player stays alive or when they successfully dodge a hazard.
+
+[S] ---------🚗------------------ [F] (Top Center - The "Mario" Meter): * For now, this is just a text string! You can literally have your code generate a string of dashes (-) and insert a car emoji or the letter "C" at the correct index based on the player's percentage of distance completed between Start [S] and Finish [F].
+
+WANTED: [ ] (Top Right - Rule Breaks): * A text Label showing how close the police are to chasing you. It could start as [ ], turn to [X] when you hit one pothole, and [X] [X] when you hit a second. Once it hits 3, Level 2 triggers the police chase!
+
+SPEED: 80 KM/H (Bottom Right): * A text Label that updates when you hold w (increases) or s (decreases).
+
+The Center (Gameplay): * This is where your engine's Render Manager draws the road, the player's car, the traffic lights, and eventually the police car.
+

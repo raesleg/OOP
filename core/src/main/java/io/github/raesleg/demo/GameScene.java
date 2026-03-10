@@ -1,12 +1,9 @@
 package io.github.raesleg.demo;
 
-import java.util.ArrayList;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
@@ -15,14 +12,12 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.audio.Music;
 
-import io.github.raesleg.engine.movement.AIControlled;
 import io.github.raesleg.engine.movement.MovementManager;
 import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.movement.UserControlled;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.collision.CollisionManager;
 import io.github.raesleg.engine.entity.EntityManager;
-import io.github.raesleg.engine.entity.Shape;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.PhysicsBody;
@@ -31,30 +26,37 @@ import io.github.raesleg.engine.scene.Scene;
 
 public class GameScene extends Scene {
 
-    private BitmapFont font;
+    // HUD
+    private DashboardUI dashboard;
 
     // Game state
     private boolean isPaused;
     private float gameTime;
+    private int score;
+    private int rulesBroken;
 
-    // Box2d physics engine
+    // Simulated forward speed (KM/H) and road scroll
+    private static final float MAX_SPEED = 200f;
+    private static final float ACCELERATION = 60f;
+    private static final float BRAKE_RATE = 80f;
+    private static final float SCROLL_FACTOR = 2.0f;
+    private static final float LEVEL_LENGTH = 50000f;
+    private float simulatedSpeed;
+    private float scrollOffset;
+
+    // Box2D physics engine
     private PhysicsWorld world;
 
-    // Movable entities
-    private MovableEntity bucket;
-    private MovableEntity droplet;
+    // Player car (bucket.png placeholder)
+    private MovableEntity playerCar;
 
-    // Zone rendering
-    private ShapeRenderer shapeRenderer; // draw as colored rect.
-    private ArrayList<Shape> zones = new ArrayList<>();
+    // Road rendering
+    private ShapeRenderer shapeRenderer;
+    private RoadRenderer roadRenderer;
 
-    // World size in meters (pixels/PPM)
+    // World size in metres (pixels / PPM)
     private float w = VIRTUAL_WIDTH / Constants.PPM;
     private float h = VIRTUAL_HEIGHT / Constants.PPM;
-
-    // Zone dimensions in meters (relative to world size)
-    private float zoneW = w * 0.12f;
-    private float zoneH = h * 0.45f;
 
     // Audio
     private SoundDevice sound;
@@ -64,6 +66,10 @@ public class GameScene extends Scene {
         super();
         this.isPaused = false;
         this.gameTime = 0f;
+        this.score = 0;
+        this.rulesBroken = 0;
+        this.simulatedSpeed = 0f;
+        this.scrollOffset = 0f;
     }
 
     @Override
@@ -75,16 +81,13 @@ public class GameScene extends Scene {
 
     @Override
     public void show() {
-        // Initialize rendering resources
-        font = new BitmapFont();
-        font.setColor(Color.WHITE);
-
         shapeRenderer = new ShapeRenderer();
+        roadRenderer = new RoadRenderer(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+        dashboard = new DashboardUI(getUiViewport());
 
-        /* Physics world setup : uses METERS, (0,0) top-down movement */
+        /* Physics world setup: zero gravity (top-down) */
         world = new PhysicsWorld(new Vector2(0, 0));
 
-        // (injected via abstract scene)
         sound = getIOManager().getSound();
 
         /* Managers */
@@ -93,163 +96,136 @@ public class GameScene extends Scene {
         GameCollisionHandler handler = new GameCollisionHandler(getEntityManager(), sound);
         setCollisionManager(new CollisionManager(world, handler));
 
-        // wall thickness, static body use solid bounds
+        /* Road boundary walls (in metres) */
         float t = 0.2f;
+        float roadLeftM = RoadRenderer.ROAD_LEFT / Constants.PPM;
+        float roadRightM = RoadRenderer.ROAD_RIGHT / Constants.PPM;
 
-        // create 4 booundary walls, static fixtures, not sensors
-        world.createBody(BodyDef.BodyType.StaticBody, w / 2, t / 2, w / 2, t / 2, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody, w / 2, h + t / 2, w / 2, t / 2, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody, t / 2, h / 2, t / 2, h / 2, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody, w + t / 2, h / 2, t / 2, h / 2, 0, 0.4f, false, null);
+        // Left road edge
+        world.createBody(BodyDef.BodyType.StaticBody,
+                roadLeftM - t / 2f, h / 2f, t / 2f, h / 2f, 0, 0.4f, false, null);
+        // Right road edge
+        world.createBody(BodyDef.BodyType.StaticBody,
+                roadRightM + t / 2f, h / 2f, t / 2f, h / 2f, 0, 0.4f, false, null);
+        // Bottom wall
+        world.createBody(BodyDef.BodyType.StaticBody,
+                w / 2f, -t / 2f, w / 2f, t / 2f, 0, 0.4f, false, null);
+        // Top wall
+        world.createBody(BodyDef.BodyType.StaticBody,
+                w / 2f, h + t / 2f, w / 2f, t / 2f, 0, 0.4f, false, null);
 
-        /* Dynamic bodies creation, passing into movableEntity */
-        // game scene controls where/how bodies are spawned
-        PhysicsBody bucketBody = world.createBody(
+        /* Player car — center lane, near bottom */
+        float carPixelX = RoadRenderer.ROAD_LEFT + RoadRenderer.ROAD_WIDTH / 2f;
+        float carPixelY = 100f;
+        float carW = 64f;
+        float carH = 64f;
+
+        PhysicsBody carBody = world.createBody(
                 BodyDef.BodyType.DynamicBody,
-                (200 + 64f / 2f) / Constants.PPM,
-                (200 + 64f / 2f) / Constants.PPM,
-                (64f / Constants.PPM) / 2f,
-                (64f / Constants.PPM) / 2f,
-                1f, 0.3f, false,
-                null);
+                carPixelX / Constants.PPM,
+                (carPixelY + carH / 2f) / Constants.PPM,
+                (carW / Constants.PPM) / 2f,
+                (carH / Constants.PPM) / 2f,
+                1f, 0.3f, false, null);
 
-        PhysicsBody dropletBody = world.createBody(
-                BodyDef.BodyType.DynamicBody,
-                (500 + 64f / 2f) / Constants.PPM,
-                (300 + 64f / 2f) / Constants.PPM,
-                (64f / Constants.PPM) / 2f,
-                (64f / Constants.PPM) / 2f,
-                1f, 0.3f, false,
-                null);
+        MovementModel carMovement = new FrictionMovement(MotionTuning.DEFAULT);
 
-        /* Movement models, defining how movement feels (friction) */
-        MovementModel bucketMovement = new FrictionMovement(MotionTuning.DEFAULT);
-        MovementModel dropletMovement = new FrictionMovement(MotionTuning.DEFAULT);
-
-        /* Motion zones (sensor areas) for collision entry detection */
-        MotionZone low = new MotionZone(
-                world,
-                w * 0.65f, h * 0.5f,
-                zoneW * 0.5f, zoneH * 0.5f,
-                MotionTuning.LOW_TRACTION,
-                Color.BLUE);
-
-        MotionZone high = new MotionZone(
-                world,
-                w * 0.35f, h * 0.5f,
-                zoneW * 0.5f, zoneH * 0.5f,
-                MotionTuning.HIGH_FRICTION,
-                Color.RED);
-
-        // collision listener receives Entity–Entity
-        getEntityManager().addEntity(low);
-        getEntityManager().addEntity(high);
-        // stored for debug rendering
-        zones.add(low);
-        zones.add(high);
-
-        /* Key Binds for Game Scene Implementation */
+        /* Input bindings */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         UserControlled user = new UserControlled(kb);
-        AIControlled ai = new AIControlled();
 
+        // Left / right steering (physics-driven via ControlSource)
         kb.bindAction(Input.Keys.A, Constants.LEFT);
         kb.bindAction(Input.Keys.LEFT, Constants.LEFT);
         kb.bindAction(Input.Keys.D, Constants.RIGHT);
         kb.bindAction(Input.Keys.RIGHT, Constants.RIGHT);
-        kb.bindAction(Input.Keys.W, Constants.UP);
-        kb.bindAction(Input.Keys.UP, Constants.UP);
-        kb.bindAction(Input.Keys.S, Constants.DOWN);
-        kb.bindAction(Input.Keys.DOWN, Constants.DOWN);
-        kb.bindAction(Input.Keys.SPACE, Constants.ACTION);
 
+        // Accelerate / brake — drives simulated speed, NOT physics vertical movement
+        kb.bindAction(Input.Keys.W, "ACCEL");
+        kb.bindAction(Input.Keys.UP, "ACCEL");
+        kb.bindAction(Input.Keys.S, "BRAKE");
+        kb.bindAction(Input.Keys.DOWN, "BRAKE");
+
+        kb.bindAction(Input.Keys.SPACE, Constants.ACTION);
         kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
         kb.addBind(Input.Keys.M, this::toggleMute, true);
 
-        /*
-         * Testing game objects
-         * - movableEntity have texture, controller, movement model and physicsbody
-         * (box2d)
-         */
-        bucket = new MovableEntity(
-                "bucket.png", 200, 200, 64f, 64f,
-                user,
-                bucketMovement,
-                bucketBody);
+        /* Player entity (bucket.png as car placeholder) */
+        playerCar = new MovableEntity(
+                "bucket.png",
+                carPixelX - carW / 2f, carPixelY,
+                carW, carH,
+                user, carMovement, carBody);
 
-        droplet = new MovableEntity(
-                "droplet.png", 500, 300, 64f, 64f,
-                ai,
-                dropletMovement,
-                dropletBody);
+        getEntityManager().addEntity(playerCar);
 
-        getEntityManager().addEntity(bucket);
-        getEntityManager().addEntity(droplet);
-
-        // Start background music
+        // Background music
         bgm = Gdx.audio.newMusic(Gdx.files.internal("bgm.ogg"));
         bgm.setLooping(true);
-        bgm.setVolume(0.2f); // Set volume to 20%
+        bgm.setVolume(0.2f);
         bgm.play();
 
-        // Initialize GameScene-specific sounds (shared UI sounds registered centrally)
-        sound.addSound("move", "moving_sound.wav"); // Add moving object sound
-        sound.addSound("explosion", "collide_sound.wav"); // Add collision sound
+        // Scene-specific sounds
+        sound.addSound("move", "moving_sound.wav");
+        sound.addSound("explosion", "collide_sound.wav");
     }
 
     @Override
     public void update(float deltaTime) {
         if (isPaused) {
-            sound.stopSound("move"); // Stop moving sound if paused
+            sound.stopSound("move");
             return;
         }
 
         gameTime += deltaTime;
 
+        // Speed control via action bindings (W / UP = accelerate, S / DOWN = brake)
+        Keyboard kb = getIOManager().getInputs(Keyboard.class);
+        if (kb.isHeld("ACCEL")) {
+            simulatedSpeed = Math.min(MAX_SPEED, simulatedSpeed + ACCELERATION * deltaTime);
+        } else if (kb.isHeld("BRAKE")) {
+            simulatedSpeed = Math.max(0f, simulatedSpeed - BRAKE_RATE * deltaTime);
+        }
+
+        // Advance road scroll
+        scrollOffset += simulatedSpeed * SCROLL_FACTOR * deltaTime;
+
         getEntityManager().update(deltaTime);
         getMovementManager().update(deltaTime);
 
-        // Use bucket.isMoving() — proper encapsulation instead of duplicating velocity
-        // check
-        updateMoveLoop(bucket.isMoving());
+        // Dashboard updates
+        score = (int) (gameTime * 10f);
+        float progress = Math.min(1f, scrollOffset / LEVEL_LENGTH);
+
+        dashboard.onScoreUpdated(score);
+        dashboard.onSpeedChanged((int) simulatedSpeed);
+        dashboard.onProgressUpdated(progress);
+        dashboard.act(deltaTime);
+
+        updateMoveLoop(playerCar.isMoving());
     }
 
     @Override
     public void render(SpriteBatch batch) {
-        Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1f);
+        Gdx.gl.glClearColor(0.1f, 0.1f, 0.12f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Apply the viewport so the GL viewport matches & apply camera
+        // Apply world viewport
         getViewport().apply();
         getCamera().update();
-        batch.setProjectionMatrix(getCamera().combined);
         shapeRenderer.setProjectionMatrix(getCamera().combined);
+        batch.setProjectionMatrix(getCamera().combined);
 
-        // movement texture zones demo
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        for (Shape z : zones)
-            z.draw(shapeRenderer);
-        shapeRenderer.end();
+        // Draw road background (grass, asphalt, scrolling lane dashes)
+        roadRenderer.draw(shapeRenderer, scrollOffset);
 
-        // --- World rendering (ExtendViewport) ---
+        // Draw entities (player car)
         batch.begin();
         getEntityManager().render(batch);
         batch.end();
 
-        // --- HUD rendering (FitViewport — pixel-stable, never distorted) ---
-        getUiViewport().apply();
-        getUiCamera().update();
-        batch.setProjectionMatrix(getUiCamera().combined);
-
-        batch.begin();
-        font.getData().setScale(2f);
-        font.draw(batch, "Game Time: " + String.format("%.1f", gameTime) + "s", 10, VIRTUAL_HEIGHT - 10);
-
-        String muteText = sound.isMuted() ? "M to unmute" : "M to mute";
-        font.draw(batch,
-                "Use WASD/Arrows to move | ESC to pause | " + muteText,
-                10, VIRTUAL_HEIGHT - 45);
-        batch.end();
+        // HUD overlay (DashboardUI owns its Stage / UI viewport)
+        dashboard.draw();
     }
 
     @Override
@@ -277,9 +253,8 @@ public class GameScene extends Scene {
 
     @Override
     public void dispose() {
-        font.dispose();
+        dashboard.dispose();
         shapeRenderer.dispose();
-        zones.clear();
         getEntityManager().dispose();
         world.dispose();
 
@@ -321,6 +296,6 @@ public class GameScene extends Scene {
             bgm.setVolume(sound.isMuted() ? 0f : 0.2f);
 
         // Use bucket.isMoving() — delegates to MovableEntity (Law of Demeter)
-        updateMoveLoop(bucket.isMoving());
+        updateMoveLoop(playerCar.isMoving());
     }
 }
