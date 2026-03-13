@@ -152,7 +152,7 @@ public class GameScene extends Scene {
 
         /* Player entity (bucket.png as car placeholder) */
         playerCar = new MovableEntity(
-                "car_game_8bit.png",
+                "car.png",
                 carPixelX - carW / 2f, carPixelY,
                 carW, carH,
                 user, carMovement, carBody);
