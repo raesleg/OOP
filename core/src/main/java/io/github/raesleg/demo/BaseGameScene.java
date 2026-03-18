@@ -278,7 +278,7 @@ public abstract class BaseGameScene extends Scene {
 
         /* Dashboard updates */
         score = (int) (gameTime * 10f);
-        float progress = Math.min(1f, scrollOffset / getLevelLength());
+        float progress = Math.min(1f, (-scrollOffset) / getLevelLength());
 
         dashboard.onScoreUpdated(score);
         dashboard.onSpeedChanged((int) simulatedSpeed);
