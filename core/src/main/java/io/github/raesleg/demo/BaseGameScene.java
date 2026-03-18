@@ -201,8 +201,8 @@ public abstract class BaseGameScene extends Scene {
         /* Player car — centre lane, near bottom */
         float carPixelX = RoadRenderer.ROAD_LEFT + RoadRenderer.ROAD_WIDTH / 2f;
         float carPixelY = 100f;
-        float carW = 64f;
-        float carH = 64f;
+        float carW = 80f; //64f
+        float carH = 140f; //64f
 
         PhysicsBody carBody = world.createBody(
                 BodyDef.BodyType.DynamicBody,
