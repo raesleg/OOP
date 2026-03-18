@@ -233,7 +233,7 @@ public abstract class BaseGameScene extends Scene {
         kb.addBind(Input.Keys.M, this::toggleMute, true);
 
         playerCar = new MovableEntity(
-                "bucket.png",
+                "car.png",
                 carPixelX - carW / 2f, carPixelY,
                 carW, carH,
                 user, carMovement, carBody);
@@ -271,7 +271,7 @@ public abstract class BaseGameScene extends Scene {
             simulatedSpeed = Math.max(0f, simulatedSpeed - getBrakeRate() * deltaTime);
         }
 
-        scrollOffset += simulatedSpeed * SCROLL_FACTOR * deltaTime;
+        scrollOffset -= simulatedSpeed * SCROLL_FACTOR * deltaTime;
 
         getEntityManager().update(deltaTime);
         getMovementManager().update(deltaTime);
