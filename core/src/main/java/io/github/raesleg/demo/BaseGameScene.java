@@ -24,6 +24,8 @@ import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.Scene;
 
+import io.github.raesleg.demo.PlayerCar;
+
 /**
  * BaseGameScene — Abstract template for all gameplay levels.
  * <p>
@@ -67,7 +69,8 @@ public abstract class BaseGameScene extends Scene {
     private PhysicsWorld world;
 
     /* ── Player ── */
-    private MovableEntity playerCar;
+    //private MovableEntity playerCar;
+    private PlayerCar playerCar;
 
     /* ── Rendering ── */
     private ShapeRenderer shapeRenderer;
@@ -232,7 +235,13 @@ public abstract class BaseGameScene extends Scene {
         kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
         kb.addBind(Input.Keys.M, this::toggleMute, true);
 
-        playerCar = new MovableEntity(
+        // playerCar = new MovableEntity(
+        //         "car.png",
+        //         carPixelX - carW / 2f, carPixelY,
+        //         carW, carH,
+        //         user, carMovement, carBody);
+
+        playerCar = new PlayerCar(
                 "car.png",
                 carPixelX - carW / 2f, carPixelY,
                 carW, carH,
@@ -358,7 +367,10 @@ public abstract class BaseGameScene extends Scene {
         return world;
     }
 
-    protected MovableEntity getPlayerCar() {
+    // protected MovableEntity getPlayerCar() {
+    //     return playerCar;
+    // }
+    protected PlayerCar getPlayerCar() {
         return playerCar;
     }
 
