@@ -16,13 +16,13 @@ import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.collision.CollisionManager;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.io.SoundDevice;
-import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.movement.MovementManager;
 import io.github.raesleg.engine.movement.UserControlled;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.Scene;
 import io.github.raesleg.game.collision.GameCollisionHandler;
+import io.github.raesleg.game.entities.misc.Trees;
 import io.github.raesleg.game.entities.vehicles.PlayerCar;
 import io.github.raesleg.game.io.Keyboard;
 import io.github.raesleg.game.state.DashboardUI;
@@ -69,6 +69,9 @@ public abstract class BaseGameScene extends Scene {
     /* ── Player ── */
     //private MovableEntity playerCar;
     private PlayerCar playerCar;
+
+    //trees
+    private Trees trees;
 
     /* ── Rendering ── */
     private ShapeRenderer shapeRenderer;
@@ -212,7 +215,7 @@ public abstract class BaseGameScene extends Scene {
                 (carW / Constants.PPM) / 2f,
                 (carH / Constants.PPM) / 2f,
                 1f, 0.3f, false, null);
-        
+
         /* Input bindings */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         UserControlled user = new UserControlled(kb);
@@ -245,6 +248,9 @@ public abstract class BaseGameScene extends Scene {
         kb.bindAction(Input.Keys.SPACE, Constants.ACTION);
         kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
         kb.addBind(Input.Keys.M, this::toggleMute, true);
+
+        //tree assets being made
+        trees = new Trees(8, getEntityManager());
 
         /* Background music */
         bgm = Gdx.audio.newMusic(Gdx.files.internal(getBgmPath()));
@@ -285,7 +291,10 @@ public abstract class BaseGameScene extends Scene {
 
         float scrollSpeed = getScrollSpeedPixelsPerSecond();
         scrollOffset -= scrollSpeed * deltaTime;
-        
+
+        //tree update to simulate scenery movement
+        trees.update(simulatedSpeed, deltaTime);
+
         /* Dashboard updates */
         score = (int) (gameTime * 10f);
         float progress = Math.min(1f, (-scrollOffset) / getLevelLength());
