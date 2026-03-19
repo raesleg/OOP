@@ -27,6 +27,8 @@ import io.github.raesleg.game.entities.vehicles.TestPlayerCar;
 import io.github.raesleg.game.io.Keyboard;
 import io.github.raesleg.game.state.DashboardUI;
 
+import io.github.raesleg.demo.PlayerCar;
+
 /**
  * BaseGameScene — Abstract template for all gameplay levels.
  * <p>
@@ -67,7 +69,8 @@ public abstract class BaseGameScene extends Scene {
     private PhysicsWorld world;
 
     /* ── Player ── */
-    private MovableEntity playerCar;
+    //private MovableEntity playerCar;
+    private PlayerCar playerCar;
 
     /* ── Rendering ── */
     private ShapeRenderer shapeRenderer;
@@ -367,7 +370,10 @@ public abstract class BaseGameScene extends Scene {
         return world;
     }
 
-    protected MovableEntity getPlayerCar() {
+    // protected MovableEntity getPlayerCar() {
+    //     return playerCar;
+    // }
+    protected PlayerCar getPlayerCar() {
         return playerCar;
     }
 

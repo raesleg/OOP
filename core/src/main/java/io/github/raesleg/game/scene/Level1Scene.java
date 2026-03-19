@@ -20,8 +20,9 @@ import com.badlogic.gdx.Gdx;
  * +---------------------------------------------------------------+
  * </pre>
  */
-public class Level1Scene extends BaseGameScene {
 
+public class Level1Scene extends BaseGameScene {
+    
     /* ── Level parameters ── */
     private static final float LEVEL_LENGTH = 50000f;
     private static final float MAX_SPEED = 60f;
@@ -33,6 +34,12 @@ public class Level1Scene extends BaseGameScene {
     protected float getMaxScrollPixelsPerSecond() {
         return MAX_SCROLL_PXPS;
     }
+    
+    /* ── NPC traffic configuration ── */
+    private static final float NPC_SPAWN_INTERVAL = 2.0f;
+    
+    /* ── Level-specific components ── */
+    private NPCCarSpawner npcSpawner;
 
     @Override
     protected float getLevelLength() {
@@ -59,43 +66,63 @@ public class Level1Scene extends BaseGameScene {
         return "bgm.ogg";
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Level-specific initialisation
-     * ══════════════════════════════════════════════════════════════
-     */
-
     @Override
     protected void initLevelData() {
-        // Level 1: Sunny road — normal traffic, no police
-        //
-        // TODO: Spawn AI traffic cars (MovableEntity + AIControlled + FrictionMovement)
-        // and add them to getEntityManager().
-        //
-        // TODO: Place MotionZone strips across lanes for surface variation
-        // (e.g. MotionTuning.HIGH_FRICTION potholes).
-        //
-        // TODO: Register level-specific sounds via getSound().addSound(...).
-
-        Gdx.app.log("Level1Scene", "Level 1 initialised — sunny road, no police");
+        Gdx.app.log("Level1Scene", "=== INIT LEVEL DATA START ===");
+        
+        // Create NPC car spawner
+        npcSpawner = new NPCCarSpawner(
+            getEntityManager(),
+            getWorld(),
+            VIRTUAL_HEIGHT,
+            NPC_SPAWN_INTERVAL
+        );
+        
+        Gdx.app.log("Level1Scene", "NPC spawner created");
+        
+        // Register collision sounds
+        // If you don't have these sound files, create placeholder files or comment these out
+        try {
+            getSound().addSound("boundary_hit", "hit_sound.wav");
+            Gdx.app.log("Level1Scene", "Registered boundary_hit sound");
+        } catch (Exception e) {
+            Gdx.app.log("Level1Scene", "WARNING: Could not load boundary_hit sound: " + e.getMessage());
+        }
+        
+        try {
+            getSound().addSound("crash", "crash_sound.wav");
+            Gdx.app.log("Level1Scene", "Registered crash sound");
+        } catch (Exception e) {
+            Gdx.app.log("Level1Scene", "WARNING: Could not load crash sound: " + e.getMessage());
+        }
+        
+        Gdx.app.log("Level1Scene", "=== INIT LEVEL DATA COMPLETE ===");
     }
-
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Level-specific per-frame logic
-     * ══════════════════════════════════════════════════════════════
-     */
 
     @Override
     protected void updateGame(float deltaTime) {
-        // TODO: Spawn traffic at timed intervals.
-        // TODO: Check level completion (progress >= 1.0) and transition
-        // to a results / next-level scene via getSceneManager().set(...).
+        // Update NPC spawner
+        if (npcSpawner != null) {
+            npcSpawner.update(deltaTime, getScrollOffset());
+        }
+        
+        // Check level completion
+        float progress = Math.min(1f, (-getScrollOffset()) / getLevelLength());
+        
+        if (progress >= 1.0f) {
+            Gdx.app.log("Level1Scene", "Level 1 complete! Score: " + getScore());
+            // TODO: Transition to results or next level
+        }
     }
 
-    /*
-     * Level 1 has no special visual effects — the default sunny road
-     * rendered by BaseGameScene is sufficient. renderLevelEffects() and
-     * disposeLevelData() use their inherited no-op defaults.
-     */
+    @Override
+    protected void disposeLevelData() {
+        // Clean up NPC spawner
+        if (npcSpawner != null) {
+            npcSpawner.clearAll();
+            npcSpawner = null;
+        }
+        
+        Gdx.app.log("Level1Scene", "Level 1 data disposed");
+    }
 }

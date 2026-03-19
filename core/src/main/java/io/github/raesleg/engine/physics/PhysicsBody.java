@@ -81,4 +81,11 @@ public class PhysicsBody {
     public void applyImpulseAtCenter(Vector2 impulse) {
         body.applyLinearImpulse(impulse, body.getWorldCenter(), true);
     }
+
+    // added method for NPC cars - TBC
+    public void setPosition(float x, float y) {
+    if (body != null) {
+        body.setTransform(x, y, body.getAngle());
+    }
+}
 }

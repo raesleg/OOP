@@ -64,7 +64,7 @@ public class ExplosionParticle extends TextureObject implements IExpirable {
      * Static factory — creates and registers a full ring of particles centred on
      * {@code impactPoint}.
      * <p>
-     * Encapsulating the visual spawn math here (Single Responsibility Principle)
+     * Encapsulating the visual spawn math here
      * keeps {@link GameCollisionHandler} free of presentation-layer concerns.
      *
      * @param entityManager the manager that will own the new particles
