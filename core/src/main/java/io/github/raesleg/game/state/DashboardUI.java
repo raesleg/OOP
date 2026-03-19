@@ -1,171 +1,231 @@
 package io.github.raesleg.game.state;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 /**
- * DashboardUI — Concrete text-based HUD for the lane-dodger game.
- * <p>
- * Implements {@link IDashboardObserver} so it reacts to game-state changes
- * pushed by the scene (Observer pattern). Owns a private Scene2D
- * {@link Stage} rendered on the UI viewport so all labels are pixel-stable
- * and independent of the world camera.
- * <p>
- * <b>Layout (1280 × 720 virtual coords):</b>
- * 
- * <pre>
- * +---------------------------------------------------------------+
- * | SCORE: 0       [S] ----------C---------- [F]   WANTED: [ ]    |
- * |                                                                |
- * |                        (gameplay area)                         |
- * |                                                                |
- * |                                                SPEED: 0 KM/H  |
- * +---------------------------------------------------------------+
- * </pre>
- * <p>
- * <b>Architectural notes (context.txt compliance):</b>
- * <ul>
- * <li>Lives in the {@code demo} package — pure game-layer UI, no engine imports
- * beyond
- * what Scene2D requires (LibGDX is a framework dependency, not engine
- * code).</li>
- * <li>Does <b>not</b> import any {@code engine.*} class — fully decoupled from
- * the
- * engine render loop.</li>
- * <li>The owning Scene ({@code GameScene}) calls {@link #act(float)},
- * {@link #draw()}, {@link #resize(int, int)}, and {@link #dispose()} at the
- * appropriate lifecycle points (Scene Sovereignty).</li>
- * </ul>
+ * DashboardUI — HUD with dashboard.png for speed, star.png for wanted,
+ * and an optional police-distance progress bar for Level 2.
  */
 public class DashboardUI implements IDashboardObserver, Disposable {
 
-    /* ── Constants ── */
-    private static final int PROGRESS_BAR_WIDTH = 20; // number of dash characters
-    private static final int MAX_WANTED_STARS = 3;
+    private static final int PROGRESS_BAR_WIDTH = 20;
+    private static final int MAX_WANTED_STARS = 5;
     private static final float LABEL_SCALE = 2f;
 
     /* ── Scene2D ── */
     private final Stage stage;
     private final BitmapFont font;
+    private final BitmapFont speedFont;
 
-    /* ── Labels ── */
+    /* ── Text labels ── */
     private final Label scoreLabel;
     private final Label progressLabel;
-    private final Label wantedLabel;
-    private final Label speedLabel;
 
-    /* ── Cached state (avoids rebuilding strings every frame) ── */
+    /* ── Textures ── */
+    private final Texture dashboardTex;
+    private final Texture starTex;
+    private final Texture carTex;
+    private final Texture policeTex;
+    private final Texture pixelTex;
+
+    /* ── Cached state ── */
     private int currentScore;
-    private float currentProgress; // 0.0 – 1.0
+    private float currentProgress;
     private int currentRulesBroken;
     private int currentSpeed;
 
-    /**
-     * Creates the HUD. The caller provides the <b>UI viewport</b>
-     * (typically {@code Scene.getUiViewport()}) so the Stage shares the
-     * same pixel-stable projection as the rest of the HUD layer.
-     *
-     * @param uiViewport the FitViewport used for UI rendering
-     */
+    /* ── Incremental score display ── */
+    private float displayScore;
+    private int targetScore;
+    private static final float SCORE_LERP_SPEED = 200f;
+
+    /* ── Score popups ── */
+    private final List<ScorePopup> popups = new ArrayList<>();
+    private BitmapFont popupFont;
+
+    private static class ScorePopup {
+        float x, y;
+        String text;
+        Color color;
+        float alpha;
+        float lifetime;
+        static final float MAX_LIFETIME = 1.2f;
+    }
+
+    /* ── Police distance mode (Level 2) ── */
+    private boolean policeDistanceMode;
+    private float policeDistance; // 0.0 = caught, 1.0 = far away
+
+    /* ── Layout constants ── */
+    private static final float DASHBOARD_W = 280f;
+    private static final float DASHBOARD_H = 140f;
+    private static final float STAR_SIZE = 28f;
+    private static final float ICON_SIZE = 28f;
+    private static final float BAR_WIDTH = 300f;
+    private static final float BAR_HEIGHT = 6f;
+
     public DashboardUI(Viewport uiViewport) {
         font = new BitmapFont();
         font.getData().setScale(LABEL_SCALE);
+        speedFont = new BitmapFont();
+        speedFont.getData().setScale(2.5f);
 
         Label.LabelStyle style = new Label.LabelStyle(font, Color.WHITE);
-
         scoreLabel = new Label("", style);
         progressLabel = new Label("", style);
-        wantedLabel = new Label("", style);
-        speedLabel = new Label("", style);
 
-        // Apply initial state
         currentScore = 0;
         currentProgress = 0f;
         currentRulesBroken = 0;
         currentSpeed = 0;
-        refreshAllLabels();
+        policeDistanceMode = false;
+        policeDistance = 1f;
+        displayScore = 0f;
+        targetScore = 0;
 
-        // Build layout
+        // Load textures
+        dashboardTex = new Texture("dashboard.png");
+        starTex = new Texture("star.png");
+        carTex = new Texture("car.png");
+        policeTex = new Texture("policecar_noflash.png");
+
+        // Popup font
+        popupFont = new BitmapFont();
+        popupFont.getData().setScale(2.5f);
+
+        // 1x1 white pixel for drawing lines/bars
+        Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pm.setColor(Color.WHITE);
+        pm.fill();
+        pixelTex = new Texture(pm);
+        pm.dispose();
+
+        // Build Scene2D layout (score + progress text on top)
         stage = new Stage(uiViewport);
-
         Table root = new Table();
         root.setFillParent(true);
         root.pad(10f);
 
-        // ── Top row: SCORE | progress bar | WANTED ──
         Table topRow = new Table();
         topRow.add(scoreLabel).left().expandX();
         topRow.add(progressLabel).center().expandX();
-        topRow.add(wantedLabel).right().expandX();
-
+        // Wanted area is handled by custom draw (star.png images)
+        topRow.add().right().expandX().width(200f);
         root.add(topRow).expandX().fillX().top();
         root.row();
-
-        // ── Spacer (gameplay area) ──
         root.add().expand().fill();
-        root.row();
-
-        // ── Bottom row: speed on the right ──
-        root.add(speedLabel).right().bottom().expandX();
 
         stage.addActor(root);
+
+        refreshAllLabels();
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * IDashboardObserver callbacks (Observer pattern)
-     * ══════════════════════════════════════════════════════════════
-     */
+    public void setPoliceDistanceMode(boolean enabled) {
+        this.policeDistanceMode = enabled;
+    }
+
+    public void onPoliceDistanceUpdated(float normalizedDistance) {
+        this.policeDistance = Math.max(0f, Math.min(1f, normalizedDistance));
+    }
+
+    /* ── IDashboardObserver ── */
 
     @Override
     public void onScoreUpdated(int score) {
-        currentScore = score;
-        scoreLabel.setText("SCORE: " + currentScore);
+        targetScore = score;
     }
 
     @Override
     public void onProgressUpdated(float percentage) {
         currentProgress = Math.max(0f, Math.min(1f, percentage));
-        progressLabel.setText(buildProgressBar(currentProgress));
+        progressLabel.setText(""); // drawn graphically
     }
 
     @Override
     public void onRuleBroken(int totalBroken) {
         currentRulesBroken = Math.max(0, Math.min(totalBroken, MAX_WANTED_STARS));
-        wantedLabel.setText(buildWantedString(currentRulesBroken));
+        // Stars drawn in custom draw, no label needed
     }
 
     @Override
     public void onSpeedChanged(int speed) {
         currentSpeed = speed;
-        speedLabel.setText("SPEED: " + currentSpeed + " KM/H");
+        // Speed drawn on dashboard.png, no label needed
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Lifecycle — called by the owning Scene
-     * ══════════════════════════════════════════════════════════════
-     */
+    /* ── Lifecycle ── */
 
-    /** Advance Scene2D actions/animations (call from Scene.update). */
     public void act(float deltaTime) {
+        // Incremental score lerp
+        if (displayScore < targetScore) {
+            displayScore = Math.min(targetScore, displayScore + SCORE_LERP_SPEED * deltaTime);
+        } else if (displayScore > targetScore) {
+            displayScore = Math.max(targetScore, displayScore - SCORE_LERP_SPEED * deltaTime);
+        }
+        currentScore = (int) displayScore;
+        scoreLabel.setText("SCORE: " + currentScore);
+
+        // Update popups
+        Iterator<ScorePopup> it = popups.iterator();
+        while (it.hasNext()) {
+            ScorePopup p = it.next();
+            p.lifetime -= deltaTime;
+            p.y += 60f * deltaTime;
+            p.alpha = Math.max(0f, p.lifetime / ScorePopup.MAX_LIFETIME);
+            if (p.lifetime <= 0)
+                it.remove();
+        }
+
         stage.act(deltaTime);
     }
 
-    /**
-     * Render all HUD labels (call from Scene.render, after applying the UI
-     * viewport).
-     */
     public void draw() {
+        // Draw Scene2D labels (score, progress text when not in police mode)
         stage.draw();
+
+        // Draw custom textures on the stage's batch
+        SpriteBatch batch = (SpriteBatch) stage.getBatch();
+        stage.getViewport().apply();
+        batch.setProjectionMatrix(stage.getCamera().combined);
+        batch.begin();
+
+        drawDashboardSpeed(batch);
+        drawWantedStars(batch);
+        if (policeDistanceMode) {
+            drawPoliceDistanceBar(batch);
+        } else {
+            drawProgressBar(batch);
+        }
+        drawScorePopups(batch);
+
+        batch.end();
     }
 
-    /** Forward resize events so the Stage viewport stays in sync. */
+    /** Spawns a floating score popup (e.g. "+50" or "-100"). */
+    public void showScorePopup(int delta) {
+        ScorePopup p = new ScorePopup();
+        p.x = 120f;
+        p.y = 680f;
+        p.text = (delta > 0 ? "+" : "") + delta;
+        p.color = delta > 0 ? Color.GREEN : Color.RED;
+        p.alpha = 1f;
+        p.lifetime = ScorePopup.MAX_LIFETIME;
+        popups.add(p);
+    }
+
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
     }
@@ -174,57 +234,115 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     public void dispose() {
         stage.dispose();
         font.dispose();
+        speedFont.dispose();
+        popupFont.dispose();
+        dashboardTex.dispose();
+        starTex.dispose();
+        carTex.dispose();
+        policeTex.dispose();
+        pixelTex.dispose();
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Helper methods
-     * ══════════════════════════════════════════════════════════════
-     */
+    /* ── Custom drawing ── */
+
+    private void drawDashboardSpeed(SpriteBatch batch) {
+        // Dashboard.png at bottom-right
+        float dx = 1280f - DASHBOARD_W - 10f;
+        float dy = 5f;
+        batch.draw(dashboardTex, dx, dy, DASHBOARD_W, DASHBOARD_H);
+
+        // Speed number in the yellow box area (right portion of dashboard)
+        String speedText = currentSpeed + "";
+        speedFont.setColor(Color.WHITE);
+        speedFont.draw(batch, speedText,
+                dx + DASHBOARD_W * 0.62f,
+                dy + DASHBOARD_H * 0.58f);
+        // "KM/H" label below speed
+        font.setColor(Color.LIGHT_GRAY);
+        font.draw(batch, "KM/H",
+                dx + DASHBOARD_W * 0.60f,
+                dy + DASHBOARD_H * 0.30f);
+        font.setColor(Color.WHITE);
+    }
+
+    private void drawWantedStars(SpriteBatch batch) {
+        // Position: top-right area
+        float startX = 1280f - 10f - (MAX_WANTED_STARS * (STAR_SIZE + 4f));
+        float y = 720f - 14f - STAR_SIZE;
+
+        // "WANTED:" text
+        font.draw(batch, "WANTED:", startX - 160f, y + STAR_SIZE - 2f);
+
+        for (int i = 0; i < MAX_WANTED_STARS; i++) {
+            float x = startX + i * (STAR_SIZE + 4f);
+            if (i < currentRulesBroken) {
+                // Filled star
+                batch.setColor(1f, 1f, 1f, 1f);
+            } else {
+                // Empty slot — dim star
+                batch.setColor(1f, 1f, 1f, 0.2f);
+            }
+            batch.draw(starTex, x, y, STAR_SIZE, STAR_SIZE);
+        }
+        batch.setColor(1f, 1f, 1f, 1f);
+    }
+
+    private void drawPoliceDistanceBar(SpriteBatch batch) {
+        // Centered at top, between score and wanted
+        float barX = (1280f - BAR_WIDTH) / 2f;
+        float barY = 720f - 30f;
+
+        // Draw bar background
+        batch.setColor(0.3f, 0.3f, 0.3f, 0.6f);
+        batch.draw(starTex, barX, barY - BAR_HEIGHT / 2f, BAR_WIDTH, BAR_HEIGHT); // reuse texture as rect
+        batch.setColor(1f, 1f, 1f, 1f);
+
+        // Car icon on the right (player)
+        float carX = barX + BAR_WIDTH - ICON_SIZE;
+        float carY = barY - ICON_SIZE / 2f;
+        batch.draw(carTex, carX, carY, ICON_SIZE, ICON_SIZE);
+
+        // Police icon position based on distance (left = far, right = close)
+        float policeX = barX + (1f - policeDistance) * (BAR_WIDTH - ICON_SIZE * 2f);
+        batch.draw(policeTex, policeX, carY, ICON_SIZE, ICON_SIZE);
+    }
 
     /**
-     * Builds the text-based progress bar:
-     * {@code [S] ----------C---------- [F]}
-     *
-     * @param percentage 0.0 (start) to 1.0 (finish)
-     * @return the formatted progress string
+     * Graphical progress bar — white line with car icon moving right towards GOAL.
      */
-    private String buildProgressBar(float percentage) {
-        int carIndex = Math.round(percentage * PROGRESS_BAR_WIDTH);
-        carIndex = Math.max(0, Math.min(carIndex, PROGRESS_BAR_WIDTH));
+    private void drawProgressBar(SpriteBatch batch) {
+        float barX = (1280f - BAR_WIDTH) / 2f;
+        float barY = 720f - 22f;
+        float lineH = 3f;
 
-        StringBuilder sb = new StringBuilder(PROGRESS_BAR_WIDTH + 10);
-        sb.append("[S] ");
-        for (int i = 0; i <= PROGRESS_BAR_WIDTH; i++) {
-            sb.append(i == carIndex ? 'C' : '-');
-        }
-        sb.append(" [F]");
-        return sb.toString();
+        // White line
+        batch.setColor(Color.WHITE);
+        batch.draw(pixelTex, barX, barY - lineH / 2f, BAR_WIDTH, lineH);
+
+        // "S" label at start
+        font.setColor(Color.LIGHT_GRAY);
+        font.draw(batch, "S", barX - 20f, barY + 10f);
+        // "F" label at finish
+        font.draw(batch, "F", barX + BAR_WIDTH + 6f, barY + 10f);
+        font.setColor(Color.WHITE);
+
+        // Car icon moving right along the bar
+        float carW = 24f;
+        float carH = 24f;
+        float carX = barX + currentProgress * (BAR_WIDTH - carW);
+        float carY = barY - carH / 2f;
+        batch.setColor(Color.WHITE);
+        batch.draw(carTex, carX, carY, carW, carH);
     }
 
-    /**
-     * Builds the wanted-level display:
-     * <ul>
-     * <li>0 broken → {@code WANTED: [ ]}</li>
-     * <li>1 broken → {@code WANTED: [X]}</li>
-     * <li>2 broken → {@code WANTED: [X] [X]}</li>
-     * <li>3 broken → {@code WANTED: [X] [X] [X]}</li>
-     * </ul>
-     */
-    private String buildWantedString(int rulesBroken) {
-        if (rulesBroken <= 0) {
-            return "WANTED: [ ]";
+    private void drawScorePopups(SpriteBatch batch) {
+        for (ScorePopup p : popups) {
+            popupFont.setColor(p.color.r, p.color.g, p.color.b, p.alpha);
+            popupFont.draw(batch, p.text, p.x, p.y);
         }
-        StringBuilder sb = new StringBuilder("WANTED: ");
-        for (int i = 0; i < rulesBroken; i++) {
-            if (i > 0)
-                sb.append(' ');
-            sb.append("[X]");
-        }
-        return sb.toString();
+        popupFont.setColor(Color.WHITE);
     }
 
-    /** Sets every label to match the current cached state. */
     private void refreshAllLabels() {
         onScoreUpdated(currentScore);
         onProgressUpdated(currentProgress);

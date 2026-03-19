@@ -11,6 +11,7 @@ public class SoundManager implements SoundDevice {
 
     // Static variable to track mute state
     private boolean muted = false;
+    private float masterVolume = 1.0f;
 
     public void toggleMute() {
         muted = !muted;
@@ -35,7 +36,7 @@ public class SoundManager implements SoundDevice {
             return;
         }
         if (sounds.containsKey(name)) {
-            sounds.get(name).play(volume);
+            sounds.get(name).play(volume * masterVolume);
         }
     }
 
@@ -45,7 +46,9 @@ public class SoundManager implements SoundDevice {
             return;
         }
         if (sounds.containsKey(name)) {
-            sounds.get(name).loop();
+            SoundEffect sfx = sounds.get(name);
+            sfx.loop();
+            sfx.setVolume(masterVolume);
         }
     }
 
@@ -56,12 +59,34 @@ public class SoundManager implements SoundDevice {
         }
     }
 
+    // Set volume on a currently playing/looping sound (scaled by master)
+    public void setSoundVolume(String name, float volume) {
+        if (sounds.containsKey(name)) {
+            sounds.get(name).setVolume(volume * masterVolume);
+        }
+    }
+
+    // Stop all registered sounds
+    public void stopAllSounds() {
+        for (SoundEffect sound : sounds.values()) {
+            sound.stop();
+        }
+    }
+
     // Check if a sound is currently looping
     public boolean isLooping(String name) {
         if (sounds.containsKey(name)) {
             return sounds.get(name).isLooping();
         }
         return false;
+    }
+
+    public float getMasterVolume() {
+        return masterVolume;
+    }
+
+    public void setMasterVolume(float volume) {
+        this.masterVolume = Math.max(0f, Math.min(1f, volume));
     }
 
     public void dispose() {

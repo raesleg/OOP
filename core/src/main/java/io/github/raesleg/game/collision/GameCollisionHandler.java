@@ -1,6 +1,8 @@
 package io.github.raesleg.game.collision;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.TimeUtils;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.collision.ICollisionListener;
@@ -11,8 +13,11 @@ import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.game.entities.Pedestrian;
+import io.github.raesleg.game.entities.Pickupable;
 import io.github.raesleg.game.entities.vehicles.NPCCar;
 import io.github.raesleg.game.entities.vehicles.npc.world.effects.ExplosionParticle;
+import io.github.raesleg.game.zone.CrosswalkZone;
 import io.github.raesleg.game.zone.MotionZone;
 
 /**
@@ -20,10 +25,15 @@ import io.github.raesleg.game.zone.MotionZone;
  * <p>
  * Handles four collision types:
  * <ol>
- * <li><b>MovableEntity vs MotionZone</b> — Apply/remove friction zones (EXISTING)</li>
+ * <li><b>MovableEntity vs MotionZone</b> — Apply/remove friction zones
+ * (EXISTING)</li>
  * <li><b>Player vs Road Boundary</b> — Flash effect + bounce back (NEW)</li>
  * <li><b>Player vs NPC Car</b> — Crash effect + knockback (NEW)</li>
  * <li><b>User vs AI Entity</b> — Explosion particles (EXISTING)</li>
+ * <li><b>Player vs CrosswalkZone</b> — Tracks whether player is inside a
+ * crossing (NEW)</li>
+ * <li><b>Player vs Pedestrian</b> — Rule-break penalty + flash effect
+ * (NEW)</li>
  * </ol>
  */
 public class GameCollisionHandler implements ICollisionListener {
@@ -31,10 +41,36 @@ public class GameCollisionHandler implements ICollisionListener {
     private final EntityManager entityManager;
     private final float explosionForceThreshold;
     private final SoundDevice soundManager;
-    
-    /* NEW: Collision thresholds for road boundaries and NPC crashes */
+
+    /* Collision thresholds for road boundaries and NPC crashes */
     private static final float BOUNDARY_BOUNCE_FORCE = 15f;
-    private static final float CRASH_KNOCKBACK_MULTIPLIER = 8f; // Reduced from 30f to prevent flying off screen
+    private static final float CRASH_KNOCKBACK_MULTIPLIER = 8f;
+
+    /** Minimum time (ms) between traffic crash penalty events (debounce). */
+    private static final long CRASH_COOLDOWN_MS = 1500;
+    private long lastCrashTimeMs = 0;
+
+    /**
+     * Callback interface for traffic violation events (Observer pattern).
+     * The owning scene implements this so the collision handler can
+     * notify it without depending on any specific scene type (DIP).
+     */
+    public interface TrafficViolationListener {
+        /** Called when the player enters a crosswalk while a pedestrian is crossing. */
+        void onCrosswalkViolation();
+
+        /** Called when the player collides with an NPC traffic vehicle. */
+        void onTrafficCrash();
+
+        /** Called when the player directly hits a pedestrian. */
+        void onPedestrianHit();
+
+        /** Called when the player picks up a collectible. */
+        default void onPickup() {
+        }
+    }
+
+    private TrafficViolationListener violationListener;
 
     /** Helper record to normalise the order of entity pairs (DRY). */
     private record ZoneCollision(MovableEntity movable, MotionZone zone) {
@@ -62,6 +98,11 @@ public class GameCollisionHandler implements ICollisionListener {
         this.explosionForceThreshold = explosionForceThreshold;
     }
 
+    /** Sets the listener notified on any traffic violation. */
+    public void setTrafficViolationListener(TrafficViolationListener listener) {
+        this.violationListener = listener;
+    }
+
     @Override
     public void onCollisionBegin(Entity entityA, Entity entityB) {
         // EXISTING: Handle motion zone entry
@@ -69,6 +110,41 @@ public class GameCollisionHandler implements ICollisionListener {
         if (zc != null) {
             MovementModel model = zc.movable().getMovementModel();
             model.onEnterZone(zc.movable().getPhysicsBody(), zc.zone().getTuning());
+        }
+
+        // NEW: Handle player entering a CrosswalkZone
+        CrosswalkZone cwZone = extractCrosswalkZone(entityA, entityB);
+        MovableEntity cwPlayer = getPlayerEntity(entityA, entityB);
+        if (cwZone != null && cwPlayer != null) {
+            cwZone.setPlayerInside(true);
+            // Only fire violation once per zone entry, and only while pedestrian is
+            // crossing
+            if (cwZone.isPedestrianCrossing() && cwZone.tryFireViolation()
+                    && violationListener != null) {
+                violationListener.onCrosswalkViolation();
+            }
+        }
+
+        // Handle player hitting a Pedestrian directly — instant fail
+        Pedestrian ped = extractPedestrian(entityA, entityB);
+        MovableEntity pedPlayer = getPlayerEntity(entityA, entityB);
+        if (ped != null && pedPlayer != null) {
+            if (pedPlayer instanceof IFlashable flashable) {
+                flashable.triggerDamageFlash();
+            }
+            if (violationListener != null) {
+                violationListener.onPedestrianHit();
+            }
+        }
+
+        // Handle player picking up a Pickupable
+        Pickupable pickup = extractPickupable(entityA, entityB);
+        MovableEntity pickupPlayer = getPlayerEntity(entityA, entityB);
+        if (pickup != null && pickupPlayer != null && !pickup.isExpired()) {
+            pickup.markExpired();
+            if (violationListener != null) {
+                violationListener.onPickup();
+            }
         }
     }
 
@@ -80,6 +156,13 @@ public class GameCollisionHandler implements ICollisionListener {
             MovementModel model = zc.movable().getMovementModel();
             model.onExitZone(zc.movable().getPhysicsBody());
         }
+
+        // NEW: Handle player leaving a CrosswalkZone
+        CrosswalkZone cwZone = extractCrosswalkZone(entityA, entityB);
+        MovableEntity cwPlayer = getPlayerEntity(entityA, entityB);
+        if (cwZone != null && cwPlayer != null) {
+            cwZone.setPlayerInside(false);
+        }
     }
 
     @Override
@@ -89,7 +172,7 @@ public class GameCollisionHandler implements ICollisionListener {
             handleRoadBoundaryCollision(getPlayerEntity(entityA, entityB), impactForce, impactPoint);
             return; // IMPORTANT: Exit here - don't process other collision types
         }
-        
+
         // NEW: Check for player vs NPC car collision
         if (isPlayerVsNPCCar(entityA, entityB)) {
             MovableEntity player = getPlayerEntity(entityA, entityB);
@@ -97,8 +180,9 @@ public class GameCollisionHandler implements ICollisionListener {
             handleCarCrashCollision(player, npc, impactForce, impactPoint);
             return; // IMPORTANT: Exit here - don't trigger explosion particles
         }
-        
-        // EXISTING: Explosion logic (AI vs User) - ONLY runs if above conditions are false
+
+        // EXISTING: Explosion logic (AI vs User) - ONLY runs if above conditions are
+        // false
         // Only trigger explosion if impact is strong enough
         if (impactForce < explosionForceThreshold) {
             return;
@@ -178,8 +262,43 @@ public class GameCollisionHandler implements ICollisionListener {
      * Returns the NPC car from the collision pair, or null if neither is an NPCCar.
      */
     private NPCCar getNPCCar(Entity a, Entity b) {
-        if (a instanceof NPCCar) return (NPCCar) a;
-        if (b instanceof NPCCar) return (NPCCar) b;
+        if (a instanceof NPCCar)
+            return (NPCCar) a;
+        if (b instanceof NPCCar)
+            return (NPCCar) b;
+        return null;
+    }
+
+    /**
+     * Returns the CrosswalkZone from the collision pair, or null if neither is one.
+     */
+    private CrosswalkZone extractCrosswalkZone(Entity a, Entity b) {
+        if (a instanceof CrosswalkZone cz)
+            return cz;
+        if (b instanceof CrosswalkZone cz)
+            return cz;
+        return null;
+    }
+
+    /**
+     * Returns the Pedestrian from the collision pair, or null if neither is one.
+     */
+    private Pedestrian extractPedestrian(Entity a, Entity b) {
+        if (a instanceof Pedestrian p)
+            return p;
+        if (b instanceof Pedestrian p)
+            return p;
+        return null;
+    }
+
+    /**
+     * Returns the Pickupable from the collision pair, or null if neither is one.
+     */
+    private Pickupable extractPickupable(Entity a, Entity b) {
+        if (a instanceof Pickupable p)
+            return p;
+        if (b instanceof Pickupable p)
+            return p;
         return null;
     }
 
@@ -198,28 +317,29 @@ public class GameCollisionHandler implements ICollisionListener {
      * This keeps the car within road bounds and provides visual/audio feedback.
      */
     private void handleRoadBoundaryCollision(MovableEntity player, float force, Vector2 impactPoint) {
-        if (player == null) return;
-        
+        if (player == null)
+            return;
+
         // Trigger flash effect if player supports it (PlayerCar implements IFlashable)
         if (player instanceof IFlashable flashable) {
             flashable.triggerDamageFlash();
         }
-        
+
         // Calculate bounce direction (away from impact point toward car center)
         PhysicsBody body = player.getPhysicsBody();
         Vector2 playerPos = body.getPosition();
         Vector2 bounceDirection = playerPos.cpy().sub(impactPoint).nor();
-        
+
         // Apply bounce impulse to push car back onto road
         Vector2 bounceImpulse = bounceDirection.scl(BOUNDARY_BOUNCE_FORCE);
         body.applyImpulseAtCenter(bounceImpulse);
-        
+
         // Play sound effect
         if (soundManager != null) {
             soundManager.playSound("boundary_hit", 0.8f);
         }
-        
-        System.out.println("Player hit road boundary - bounce applied");
+
+        Gdx.app.log("GameCollisionHandler", "Road boundary bounce applied");
     }
 
     /**
@@ -232,43 +352,52 @@ public class GameCollisionHandler implements ICollisionListener {
      * Visual effects (flash, particles) can be added later.
      */
     private void handleCarCrashCollision(MovableEntity player, NPCCar npc, float force, Vector2 impactPoint) {
-        if (player == null || npc == null) return;
-        
-        System.out.println("🚗💥 CAR CRASH DETECTED!");
-        
+        if (player == null || npc == null)
+            return;
+
+        // Debounce: ignore rapid-fire crash events from the same collision
+        long now = TimeUtils.millis();
+        boolean penaltyAllowed = (now - lastCrashTimeMs >= CRASH_COOLDOWN_MS);
+
+        Gdx.app.log("GameCollisionHandler", "Car crash detected (penalty: " + penaltyAllowed + ")");
+
         // Calculate knockback direction (opposite of player's velocity)
         PhysicsBody playerBody = player.getPhysicsBody();
         Vector2 playerVelocity = playerBody.getVelocity();
-        
+
         // Determine knockback direction
         Vector2 knockbackDirection;
         if (playerVelocity.len2() < 0.01f) {
             // Player moving very slowly - use position-based direction (away from NPC)
             Vector2 npcPosMeters = new Vector2(
-                (npc.getX() + npc.getW() / 2f) / Constants.PPM,
-                (npc.getY() + npc.getH() / 2f) / Constants.PPM
-            );
+                    (npc.getX() + npc.getW() / 2f) / Constants.PPM,
+                    (npc.getY() + npc.getH() / 2f) / Constants.PPM);
             knockbackDirection = playerBody.getPosition().cpy().sub(npcPosMeters).nor();
         } else {
             // Reverse player's movement direction
             knockbackDirection = playerVelocity.cpy().scl(-1).nor();
         }
-        
+
         // Apply knockback force (moderate strength to keep car on screen)
         float knockbackMagnitude = Math.max(force * CRASH_KNOCKBACK_MULTIPLIER, 15f);
         Vector2 knockbackImpulse = knockbackDirection.scl(knockbackMagnitude);
         playerBody.applyImpulseAtCenter(knockbackImpulse);
-        
-        System.out.println("  ↩️ Knockback direction: " + knockbackDirection);
-        System.out.println("  💪 Knockback force: " + knockbackMagnitude);
-        
-        // Play crash sound if available
+
+        // Play crash sound (collide_sound.wav registered as "explosion" in
+        // BaseGameScene)
         if (soundManager != null) {
             try {
-                soundManager.playSound("crash", 1.0f);
+                soundManager.playSound("explosion", 1.0f);
             } catch (Exception e) {
-                // Sound file might not exist yet - that's okay
+                // Sound file might not exist yet
             }
+        }
+
+        // Notify observer only if cooldown has elapsed (prevents multiple
+        // penalties from a single physical collision)
+        if (penaltyAllowed && violationListener != null) {
+            lastCrashTimeMs = now;
+            violationListener.onTrafficCrash();
         }
     }
 

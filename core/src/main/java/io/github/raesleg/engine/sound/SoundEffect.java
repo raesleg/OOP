@@ -41,6 +41,12 @@ public class SoundEffect {
     sound.dispose();
   }
 
+  public void setVolume(float volume) {
+    if (loopId != -1) {
+      sound.setVolume(loopId, volume);
+    }
+  }
+
   public boolean isLooping() {
     return loopId != -1;
   }

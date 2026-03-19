@@ -16,19 +16,17 @@ public class MotionZone extends Shape {
     private PhysicsBody body;
 
     public MotionZone(
-                PhysicsWorld world,
-                float x, float y,
-                float w, float h,
-                MotionTuning tuning,
-                Color color) 
-    {
+            PhysicsWorld world,
+            float x, float y,
+            float w, float h,
+            MotionTuning tuning,
+            Color color) {
         super( // in pixels
-            (x - w) * Constants.PPM,   
-            (y - h) * Constants.PPM,   
-            (w * 2f) * Constants.PPM,         
-            (h * 2f) * Constants.PPM,        
-            color
-        );
+                (x - w) * Constants.PPM,
+                (y - h) * Constants.PPM,
+                (w * 2f) * Constants.PPM,
+                (h * 2f) * Constants.PPM,
+                color);
 
         this.tuning = tuning;
 
@@ -38,12 +36,28 @@ public class MotionZone extends Shape {
                 w, h,
                 0f, 0f,
                 true,
-                this
-        );
+                this);
     }
 
-    public MotionTuning getTuning() { 
-        return tuning; 
+    /**
+     * Scrollable-subclass constructor — accepts an externally created
+     * PhysicsBody (kinematic) so subclasses can reposition it each frame.
+     */
+    protected MotionZone(float xPx, float yPx, float wPx, float hPx,
+            MotionTuning tuning, Color color, PhysicsBody body) {
+        super(xPx, yPx, wPx, hPx, color);
+        this.tuning = tuning;
+        this.body = body;
+        if (body != null)
+            body.setUserData(this);
+    }
+
+    public MotionTuning getTuning() {
+        return tuning;
+    }
+
+    protected PhysicsBody getBody() {
+        return body;
     }
 
     @Override
