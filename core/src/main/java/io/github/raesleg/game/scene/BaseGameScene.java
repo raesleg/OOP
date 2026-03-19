@@ -249,11 +249,11 @@ public abstract class BaseGameScene extends Scene {
         /* Background music */
         bgm = Gdx.audio.newMusic(Gdx.files.internal(getBgmPath()));
         bgm.setLooping(true);
-        bgm.setVolume(0.2f);
+        bgm.setVolume(0.5f);
         bgm.play();
 
         /* Common scene sounds */
-        sound.addSound("move", "moving_sound.wav");
+        sound.addSound("move", "car_sound.wav");
         sound.addSound("explosion", "collide_sound.wav");
 
         /* Level-specific setup (Template Method hook) */
@@ -446,7 +446,7 @@ public abstract class BaseGameScene extends Scene {
     private void toggleMute() {
         sound.toggleMute();
         if (bgm != null)
-            bgm.setVolume(sound.isMuted() ? 0f : 0.2f);
+            bgm.setVolume(sound.isMuted() ? 0f : 0.5f);
         updateMoveLoop(playerCar.isMoving());
     }
 }
