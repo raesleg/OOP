@@ -66,7 +66,7 @@ public class Level2Scene extends BaseGameScene {
 
     @Override
     protected String getBgmPath() {
-        return "bgm.ogg";
+        return "bgm.mp3";
     }
 
     /*
