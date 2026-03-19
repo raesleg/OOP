@@ -296,7 +296,7 @@ public abstract class BaseGameScene extends Scene {
         dashboard.onRuleBroken(rulesBroken);
         dashboard.act(deltaTime);
 
-        updateMoveLoop(playerCar.isMoving());
+        updateMoveLoop(kb.isHeld(Constants.UP) || simulatedSpeed > 0);
 
         /* Level-specific update (Template Method hook) */
         updateGame(deltaTime);
