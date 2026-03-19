@@ -1,4 +1,4 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.game.collision;
 
 import com.badlogic.gdx.math.Vector2;
 
@@ -9,6 +9,8 @@ import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.game.entities.vehicles.npc.world.effects.ExplosionParticle;
+import io.github.raesleg.game.zone.MotionZone;
 
 public class GameCollisionHandler implements ICollisionListener {
 

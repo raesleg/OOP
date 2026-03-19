@@ -53,6 +53,26 @@ public class PhysicsBody {
         body.applyLinearImpulse(impulse, body.getWorldCenter(), true);
     }
 
+    // public float getAngleRadians() {
+    //     return body.getAngle();
+    // }
+
+    // public void setTransform(float x, float y, float angleRadians) {
+    //     body.setTransform(x, y, angleRadians);
+    // }
+
+    // public void setAngularDamping(float damping) {
+    //     body.setAngularDamping(damping);
+    // }
+
+    public void setAngularVelocity(float angularVelocity) {
+        body.setAngularVelocity(angularVelocity); // added
+    }
+
+    public float getAngularVelocity() {
+        return body.getAngularVelocity(); // added
+    }
+
     /* methods for collision */
     public void setUserData(Object data) {
         body.setUserData(data);

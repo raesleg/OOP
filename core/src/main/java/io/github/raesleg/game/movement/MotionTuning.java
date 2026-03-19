@@ -1,7 +1,10 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.game.movement;
 
 public final class MotionTuning {
-    private float maxSpeed, maxForce, lateralGrip, linearDamping;
+    private final float maxSpeed;
+    private final float maxForce;
+    private final float lateralGrip;
+    private final float linearDamping;
 
     private MotionTuning(float maxSpeed, float maxForce, float lateralGrip, float linearDamping) {
         this.maxSpeed = maxSpeed;
@@ -26,9 +29,12 @@ public final class MotionTuning {
         return linearDamping;
     }
 
-    public static final MotionTuning LOW_TRACTION = new MotionTuning(4.5f, 2.0f, 0.03f, 0.02f);
+    public static final MotionTuning LOW_TRACTION =
+            new MotionTuning(90f, 16f, 0.05f, 0.35f);
 
-    public static final MotionTuning HIGH_FRICTION = new MotionTuning(3.0f, 25f, 1.5f, 2.0f);
+    public static final MotionTuning HIGH_FRICTION =
+            new MotionTuning(60f, 30f, 0.35f, 4.0f);
 
-    public static final MotionTuning DEFAULT = new MotionTuning(4.5f, 25f, 0.12f, 0.05f);
+    public static final MotionTuning DEFAULT =
+            new MotionTuning(90f, 24f, 0.18f, 2.2f);
 }

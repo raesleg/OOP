@@ -1,4 +1,4 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.game.scene;
 
 import com.badlogic.gdx.Gdx;
 
@@ -24,9 +24,15 @@ public class Level1Scene extends BaseGameScene {
 
     /* ── Level parameters ── */
     private static final float LEVEL_LENGTH = 50000f;
-    private static final float MAX_SPEED = 200f;
-    private static final float ACCELERATION = 60f;
-    private static final float BRAKE_RATE = 80f;
+    private static final float MAX_SPEED = 60f;
+    private static final float ACCELERATION = 95f;
+    private static final float BRAKE_RATE = 160f;
+    private static final float MAX_SCROLL_PXPS = 850f;
+
+    @Override
+    protected float getMaxScrollPixelsPerSecond() {
+        return MAX_SCROLL_PXPS;
+    }
 
     @Override
     protected float getLevelLength() {

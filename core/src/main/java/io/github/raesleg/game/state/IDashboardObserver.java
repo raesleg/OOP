@@ -1,5 +1,4 @@
-package io.github.raesleg.demo;
-
+package io.github.raesleg.game.state;
 /**
  * Observer interface for the in-game HUD dashboard.
  * <p>

@@ -12,6 +12,7 @@ public class MovableEntity extends TextureObject implements IMovable {
     private ControlSource controls;
     private PhysicsBody body;
     private MovementModel movementModel;
+    private MovementStrategy movementStrategy;
 
     public MovableEntity(
             String filename,
@@ -57,6 +58,14 @@ public class MovableEntity extends TextureObject implements IMovable {
         return movementModel;
     }
 
+    public void setMovementStrategy(MovementStrategy movementStrategy) {
+        this.movementStrategy = movementStrategy; // added 
+    }
+
+    public MovementStrategy getMovementStrategy() {
+        return movementStrategy; // added
+    }
+
     public boolean isMoving() {
         Vector2 v = body.getVelocity();
         return Math.abs(v.x) > 0.05f || Math.abs(v.y) > 0.05f;
@@ -64,11 +73,20 @@ public class MovableEntity extends TextureObject implements IMovable {
 
     @Override
     public void move(float dt) {
-        if (movementModel != null) {
-            float x = controls.getX(dt);
-            float y = controls.getY(dt);
-            movementModel.step(body, x, y, dt);
+        if (movementModel == null) return;
+
+        float x;
+        float y;
+
+        if (movementStrategy != null) { // added
+            x = movementStrategy.getX(this, dt);
+            y = movementStrategy.getY(this, dt);
+        } else {
+            x = controls.getX(dt);
+            y = controls.getY(dt);
         }
+
+        movementModel.step(body, x, y, dt);
     }
 
     @Override
@@ -79,6 +97,8 @@ public class MovableEntity extends TextureObject implements IMovable {
 
     /* private methods */
     private void syncPosition() {
+        if (body == null) return;
+
         Vector2 p = body.getPosition();
         setX(p.x * Constants.PPM - getW() / 2f);
         setY(p.y * Constants.PPM - getH() / 2f);

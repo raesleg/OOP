@@ -1,8 +1,7 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.game.scene;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-
 /**
  * RoadRenderer — Draws the lane-dodger road background using ShapeRenderer.
  * <p>

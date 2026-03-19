@@ -1,4 +1,4 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.game.scene;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
@@ -26,16 +26,22 @@ public class Level2Scene extends BaseGameScene {
 
     /* ── Level parameters ── */
     private static final float LEVEL_LENGTH = 80000f;
-    private static final float MAX_SPEED = 250f;
+    private static final float MAX_SPEED = 90f;
     private static final float ACCELERATION = 50f;
     private static final float BRAKE_RATE = 70f;
     private static final int WANTED_THRESHOLD = 3;
+    private static final float MAX_SCROLL_PXPS = 1050f;
 
     private boolean policeChaseActive;
 
     public Level2Scene() {
         super();
         this.policeChaseActive = false;
+    }
+
+    @Override
+    protected float getMaxScrollPixelsPerSecond() {
+        return MAX_SCROLL_PXPS;
     }
 
     @Override

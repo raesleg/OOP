@@ -1,4 +1,4 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.game.scene;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -18,11 +18,14 @@ import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.movement.MovementManager;
-import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.movement.UserControlled;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.Scene;
+import io.github.raesleg.game.collision.GameCollisionHandler;
+import io.github.raesleg.game.entities.vehicles.TestPlayerCar;
+import io.github.raesleg.game.io.Keyboard;
+import io.github.raesleg.game.state.DashboardUI;
 
 /**
  * BaseGameScene — Abstract template for all gameplay levels.
@@ -48,10 +51,6 @@ import io.github.raesleg.engine.scene.Scene;
  * IOManager is injected by SceneManager.
  */
 public abstract class BaseGameScene extends Scene {
-
-    /* ── Shared constant ── */
-    private static final float SCROLL_FACTOR = 2.0f;
-
     /* ── Common state ── */
     private DashboardUI dashboard;
     private boolean isPaused;
@@ -62,6 +61,7 @@ public abstract class BaseGameScene extends Scene {
     /* ── Speed & scroll ── */
     private float simulatedSpeed;
     private float scrollOffset;
+    private static final float PASSIVE_DECEL = 18f;
 
     /* ── Physics ── */
     private PhysicsWorld world;
@@ -89,8 +89,8 @@ public abstract class BaseGameScene extends Scene {
         this.gameTime = 0f;
         this.score = 0;
         this.rulesBroken = 0;
-        this.simulatedSpeed = 0f;
         this.scrollOffset = 0f;
+        this.simulatedSpeed = 0f;
     }
 
     /*
@@ -211,34 +211,39 @@ public abstract class BaseGameScene extends Scene {
                 (carW / Constants.PPM) / 2f,
                 (carH / Constants.PPM) / 2f,
                 1f, 0.3f, false, null);
-
-        MovementModel carMovement = new FrictionMovement(MotionTuning.DEFAULT);
-
+        
         /* Input bindings */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         UserControlled user = new UserControlled(kb);
 
+        /* Testing Purposes for Movement */
+        playerCar = new TestPlayerCar(
+            "car.png",
+            carPixelX - carW / 2f, carPixelY,
+            carW, carH,
+            user, carBody
+        );
+        getEntityManager().addEntity(playerCar);
+
+        /* Input bindings */
         kb.bindAction(Input.Keys.A, Constants.LEFT);
         kb.bindAction(Input.Keys.LEFT, Constants.LEFT);
         kb.bindAction(Input.Keys.D, Constants.RIGHT);
         kb.bindAction(Input.Keys.RIGHT, Constants.RIGHT);
 
-        kb.bindAction(Input.Keys.W, "ACCEL");
-        kb.bindAction(Input.Keys.UP, "ACCEL");
-        kb.bindAction(Input.Keys.S, "BRAKE");
-        kb.bindAction(Input.Keys.DOWN, "BRAKE");
+        kb.bindAction(Input.Keys.W, Constants.UP);
+        kb.bindAction(Input.Keys.UP, Constants.UP);
+        kb.bindAction(Input.Keys.S, Constants.DOWN);
+        kb.bindAction(Input.Keys.DOWN, Constants.DOWN);
+
+        // kb.bindAction(Input.Keys.W, "ACCEL");
+        // kb.bindAction(Input.Keys.UP, "ACCEL");
+        // kb.bindAction(Input.Keys.S, "BRAKE");
+        // kb.bindAction(Input.Keys.DOWN, "BRAKE");
 
         kb.bindAction(Input.Keys.SPACE, Constants.ACTION);
         kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
         kb.addBind(Input.Keys.M, this::toggleMute, true);
-
-        playerCar = new MovableEntity(
-                "car.png",
-                carPixelX - carW / 2f, carPixelY,
-                carW, carH,
-                user, carMovement, carBody);
-
-        getEntityManager().addEntity(playerCar);
 
         /* Background music */
         bgm = Gdx.audio.newMusic(Gdx.files.internal(getBgmPath()));
@@ -263,25 +268,29 @@ public abstract class BaseGameScene extends Scene {
 
         gameTime += deltaTime;
 
-        /* Speed control via action bindings */
-        Keyboard kb = getIOManager().getInputs(Keyboard.class);
-        if (kb.isHeld("ACCEL")) {
-            simulatedSpeed = Math.min(getMaxSpeed(), simulatedSpeed + getAcceleration() * deltaTime);
-        } else if (kb.isHeld("BRAKE")) {
-            simulatedSpeed = Math.max(0f, simulatedSpeed - getBrakeRate() * deltaTime);
-        }
-
-        scrollOffset -= simulatedSpeed * SCROLL_FACTOR * deltaTime;
-
         getEntityManager().update(deltaTime);
         getMovementManager().update(deltaTime);
 
+        /* Speed control via action bindings */
+        Keyboard kb = getIOManager().getInputs(Keyboard.class);
+
+        if (kb.isHeld(Constants.UP)) {
+            simulatedSpeed = Math.min(getMaxSpeed(), simulatedSpeed + getAcceleration() * deltaTime);
+        } else if (kb.isHeld(Constants.DOWN)) {
+            simulatedSpeed = Math.max(0f, simulatedSpeed - getBrakeRate() * deltaTime);
+        } else {
+            simulatedSpeed = Math.max(0f, simulatedSpeed - PASSIVE_DECEL * deltaTime);
+        }
+
+        float scrollSpeed = getScrollSpeedPixelsPerSecond();
+        scrollOffset -= scrollSpeed * deltaTime;
+        
         /* Dashboard updates */
         score = (int) (gameTime * 10f);
         float progress = Math.min(1f, (-scrollOffset) / getLevelLength());
 
         dashboard.onScoreUpdated(score);
-        dashboard.onSpeedChanged((int) simulatedSpeed);
+        dashboard.onSpeedChanged(Math.round(simulatedSpeed));
         dashboard.onProgressUpdated(progress);
         dashboard.onRuleBroken(rulesBroken);
         dashboard.act(deltaTime);
@@ -378,14 +387,6 @@ public abstract class BaseGameScene extends Scene {
         return shapeRenderer;
     }
 
-    protected float getSimulatedSpeed() {
-        return simulatedSpeed;
-    }
-
-    protected void setSimulatedSpeed(float speed) {
-        this.simulatedSpeed = speed;
-    }
-
     protected float getScrollOffset() {
         return scrollOffset;
     }
@@ -400,6 +401,18 @@ public abstract class BaseGameScene extends Scene {
 
     protected void setRulesBroken(int n) {
         this.rulesBroken = n;
+    }
+
+    protected abstract float getMaxScrollPixelsPerSecond();
+
+    protected float getScrollSpeedPixelsPerSecond() {
+        float t = simulatedSpeed / getMaxSpeed();
+        t = Math.max(0f, Math.min(1f, t));
+        return t * getMaxScrollPixelsPerSecond();
+    }
+
+    protected float getSimulatedSpeedKmh() {
+        return simulatedSpeed;
     }
 
     /*

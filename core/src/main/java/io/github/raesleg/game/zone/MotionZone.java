@@ -1,4 +1,4 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.game.zone;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -8,6 +8,7 @@ import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.Shape;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
+import io.github.raesleg.game.movement.MotionTuning;
 
 public class MotionZone extends Shape {
 

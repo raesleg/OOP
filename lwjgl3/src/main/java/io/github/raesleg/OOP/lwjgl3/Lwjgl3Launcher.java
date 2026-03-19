@@ -3,10 +3,10 @@ package io.github.raesleg.OOP.lwjgl3;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 
-import io.github.raesleg.demo.Keyboard;
-import io.github.raesleg.demo.StartScene;
 import io.github.raesleg.engine.GameMaster;
 import io.github.raesleg.engine.sound.SoundManager;
+import io.github.raesleg.game.io.Keyboard;
+import io.github.raesleg.game.scene.StartScene;
 
 /**
  * Launches the desktop (LWJGL3) application.
