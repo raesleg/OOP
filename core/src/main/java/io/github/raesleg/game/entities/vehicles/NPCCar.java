@@ -1,10 +1,11 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.game.entities.vehicles;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import io.github.raesleg.engine.entity.IExpirable;
 import io.github.raesleg.engine.entity.TextureObject;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.game.scene.RoadRenderer;
 
 /**
  * NPCCar — Non-player traffic vehicle entity.

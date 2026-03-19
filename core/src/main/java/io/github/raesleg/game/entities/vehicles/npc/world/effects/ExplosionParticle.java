@@ -1,4 +1,4 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.game.entities.vehicles.npc.world.effects;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;

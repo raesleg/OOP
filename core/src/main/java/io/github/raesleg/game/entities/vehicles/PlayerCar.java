@@ -1,4 +1,4 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.game.entities.vehicles;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -8,6 +8,8 @@ import io.github.raesleg.engine.io.ControlSource;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.game.movement.PlayerMovement;
+import io.github.raesleg.game.movement.PlayerMovementModel;
 
 /**
  * PlayerCar — Extended MovableEntity with damage flash capability.
@@ -46,9 +48,16 @@ public class PlayerCar extends MovableEntity implements IFlashable {
      * @param movement Movement model (friction, etc.)
      * @param body Physics body
      */
-    public PlayerCar(String filename, float x, float y, float w, float h,
-                     ControlSource controls, MovementModel movement, PhysicsBody body) {
-        super(filename, x, y, w, h, controls, movement, body);
+    public PlayerCar(
+        String filename, 
+        float x, float y, 
+        float w, float h,
+        ControlSource controls, 
+        PhysicsBody body) {
+
+        super(filename, x, y, w, h, controls, new PlayerMovementModel(), body);
+
+        setMovementStrategy(new PlayerMovement());
         
         this.flashTimer = 0f;
         this.isFlashing = false;

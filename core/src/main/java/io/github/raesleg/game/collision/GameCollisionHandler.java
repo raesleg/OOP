@@ -11,6 +11,7 @@ import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.game.entities.vehicles.NPCCar;
 import io.github.raesleg.game.entities.vehicles.npc.world.effects.ExplosionParticle;
 import io.github.raesleg.game.zone.MotionZone;
 

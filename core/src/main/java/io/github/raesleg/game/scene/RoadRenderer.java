@@ -15,9 +15,9 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 public class RoadRenderer {
 
     /* ── Road geometry (pixels, 1280×720 virtual coords) ── */
-    static final float ROAD_LEFT = 340f;
-    static final float ROAD_RIGHT = 940f;
-    static final float ROAD_WIDTH = ROAD_RIGHT - ROAD_LEFT; // 600
+    public static final float ROAD_LEFT = 340f;
+    public static final float ROAD_RIGHT = 940f;
+    public static final float ROAD_WIDTH = ROAD_RIGHT - ROAD_LEFT; // 600
     static final int LANE_COUNT = 3;
     static final float LANE_WIDTH = ROAD_WIDTH / LANE_COUNT; // 200
 

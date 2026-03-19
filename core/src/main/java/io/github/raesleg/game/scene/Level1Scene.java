@@ -2,6 +2,8 @@ package io.github.raesleg.game.scene;
 
 import com.badlogic.gdx.Gdx;
 
+import io.github.raesleg.game.factory.NPCCarSpawner;
+
 /**
  * Level1Scene — Sunny road (normal traffic, no police).
  * <p>

@@ -23,11 +23,9 @@ import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.Scene;
 import io.github.raesleg.game.collision.GameCollisionHandler;
-import io.github.raesleg.game.entities.vehicles.TestPlayerCar;
+import io.github.raesleg.game.entities.vehicles.PlayerCar;
 import io.github.raesleg.game.io.Keyboard;
 import io.github.raesleg.game.state.DashboardUI;
-
-import io.github.raesleg.demo.PlayerCar;
 
 /**
  * BaseGameScene — Abstract template for all gameplay levels.
@@ -220,7 +218,7 @@ public abstract class BaseGameScene extends Scene {
         UserControlled user = new UserControlled(kb);
 
         /* Testing Purposes for Movement */
-        playerCar = new TestPlayerCar(
+        playerCar = new PlayerCar(
             "car.png",
             carPixelX - carW / 2f, carPixelY,
             carW, carH,

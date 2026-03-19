@@ -1,4 +1,4 @@
-package io.github.raesleg.demo;
+package io.github.raesleg.game.factory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +9,8 @@ import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
+import io.github.raesleg.game.entities.vehicles.NPCCar;
+import io.github.raesleg.game.scene.RoadRenderer;
 
 /**
  * NPCCarSpawner — Manages spawning and lifecycle of NPC traffic cars.
