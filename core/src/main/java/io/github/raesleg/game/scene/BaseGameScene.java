@@ -310,11 +310,12 @@ public abstract class BaseGameScene extends Scene {
         }
 
         /* Common scene sounds */
-        sound.addSound("move", "car_sound.wav");
-        sound.addSound("explosion", "collide_sound.wav");
-        sound.addSound("explosion_big", "explosionsound.wav");
+        sound.addSound("drive", "car_sound.wav");
+        sound.addSound("explosion", "crash_sound.wav");
+        sound.addSound("explosion_big", "explosion.wav");
         sound.addSound("reward", "rewardsound.mp3");
         sound.addSound("negative", "negativesound.mp3");
+        sound.addSound("gameover", "gameover_sound.wav");
 
         /* Level-specific setup (Template Method hook) */
         initLevelData();
@@ -323,7 +324,7 @@ public abstract class BaseGameScene extends Scene {
     @Override
     public final void update(float deltaTime) {
         if (isPaused) {
-            sound.stopSound("move");
+            sound.stopSound("drive");
             return;
         }
 
@@ -610,7 +611,7 @@ public abstract class BaseGameScene extends Scene {
                 new io.github.raesleg.game.entities.ExplosionOverlay(
                         "explode.png", px - 100f, py - 100f, 200f, 200f, EXPLOSION_DELAY));
 
-        sound.playSound("explosion_big", 1.0f);
+        sound.playSound("explosion_big", 0.5f);
         stopMoveLoop();
         if (bgm != null)
             bgm.setVolume(0.05f);
@@ -623,7 +624,7 @@ public abstract class BaseGameScene extends Scene {
      */
 
     private void stopMoveLoop() {
-        sound.stopSound("move");
+        sound.stopSound("drive");
     }
 
     private void updateMoveLoop(boolean moving) {
@@ -631,8 +632,8 @@ public abstract class BaseGameScene extends Scene {
             stopMoveLoop();
             return;
         }
-        if (!sound.isLooping("move")) {
-            sound.loopSound("move");
+        if (!sound.isLooping("drive")) {
+            sound.loopSound("drive");
         }
     }
 
