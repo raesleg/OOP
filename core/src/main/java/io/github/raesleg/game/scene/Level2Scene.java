@@ -4,11 +4,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.io.CommandHistory;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.game.collision.GameCollisionHandler;
+import io.github.raesleg.game.entities.Pedestrian;
 import io.github.raesleg.game.entities.PoliceCar;
 import io.github.raesleg.game.factory.NPCCarSpawner;
 import io.github.raesleg.game.factory.PickupableSpawner;
@@ -135,7 +138,7 @@ public class Level2Scene extends BaseGameScene {
 
         // Wire traffic violation listener — traffic crashes increase wanted stars
         getCollisionHandler().setTrafficViolationListener(
-                new io.github.raesleg.game.collision.GameCollisionHandler.TrafficViolationListener() {
+                new GameCollisionHandler.TrafficViolationListener() {
                     @Override
                     public void onCrosswalkViolation() {
                         // No crosswalks in Level 2
@@ -148,9 +151,9 @@ public class Level2Scene extends BaseGameScene {
                         incrementCrashCount();
                         addScore(-100);
                     }
-
+                    
                     @Override
-                    public void onPedestrianHit() {
+                    public void onPedestrianHit(Pedestrian pedestrian, Vector2 knockbackDirection, float knockbackForce) {
                         // No pedestrians in Level 2
                     }
 

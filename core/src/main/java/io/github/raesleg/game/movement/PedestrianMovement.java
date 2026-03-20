@@ -29,11 +29,11 @@ public class PedestrianMovement {
     }
 
     public void activate() {
-        this.active = true;
+        active = true;
     }
 
     public void deactivate() {
-        this.active = false;
+        active = false;
     }
 
     public void update(Pedestrian pedestrian, PedestrianIntent intent, float deltaTime) {
@@ -49,6 +49,7 @@ public class PedestrianMovement {
             float bodyX = (nextX + pedestrian.getW() / 2f) / Constants.PPM;
             float bodyY = (pedestrian.getY() + pedestrian.getH() / 2f) / Constants.PPM;
             body.setPosition(bodyX, bodyY);
+            body.setVelocity(0f, 0f);
         }
     }
 
@@ -61,15 +62,15 @@ public class PedestrianMovement {
     }
 
     public void markFinishedSuccessfully() {
-        this.finished = true;
-        this.crossedSuccessfully = true;
-        this.active = false;
+        finished = true;
+        crossedSuccessfully = true;
+        active = false;
     }
 
     public void markFinishedUnsuccessfully() {
-        this.finished = true;
-        this.crossedSuccessfully = false;
-        this.active = false;
+        finished = true;
+        crossedSuccessfully = false;
+        active = false;
     }
 
     public boolean isActive() {

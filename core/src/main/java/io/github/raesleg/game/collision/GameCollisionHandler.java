@@ -64,7 +64,7 @@ public class GameCollisionHandler implements ICollisionListener {
         void onTrafficCrash();
 
         /** Called when the player directly hits a pedestrian. */
-        void onPedestrianHit();
+        void onPedestrianHit(Pedestrian pedestrian, Vector2 knockbackDirection, float knockbackForce);
 
         /** Called when the player picks up a collectible. */
         default void onPickup() {
@@ -135,42 +135,39 @@ public class GameCollisionHandler implements ICollisionListener {
             }
         }
 
-        // UPDATED: Handle player hitting a Pedestrian directly
+        // Handle player hitting a Pedestrian directly
         Pedestrian ped = extractPedestrian(entityA, entityB);
         MovableEntity pedPlayer = getPlayerEntity(entityA, entityB);
-        if (ped != null && pedPlayer != null && !ped.isFlying()) { // Only if not already flying
-            // Trigger flash on player
+        if (ped != null && pedPlayer != null && !ped.isExpired()) {
             if (pedPlayer instanceof IFlashable flashable) {
                 flashable.triggerDamageFlash();
             }
-            
-            // Calculate knockback direction for pedestrian
+
             PhysicsBody playerBody = pedPlayer.getPhysicsBody();
             Vector2 playerVelocity = playerBody.getVelocity();
-            
+
             Vector2 knockbackDir;
             if (playerVelocity.len2() > 0.01f) {
-                // Send pedestrian in player's movement direction
                 knockbackDir = playerVelocity.cpy().nor();
             } else {
-                // If player stationary, use position-based direction
-                Vector2 pedPos = ped.getPhysicsBody().getPosition();
-                Vector2 playerPos = playerBody.getPosition();
-                knockbackDir = pedPos.cpy().sub(playerPos).nor();
+                PhysicsBody pedBody = ped.getPhysicsBody();
+                if (pedBody != null) {
+                    Vector2 pedPos = pedBody.getPosition();
+                    Vector2 playerPos = playerBody.getPosition();
+                    knockbackDir = pedPos.cpy().sub(playerPos).nor();
+                } else {
+                    knockbackDir = new Vector2(0f, 1f);
+                }
             }
-            
-            // Make pedestrian fly away!
+
             float knockbackForce = Math.max(20f, playerVelocity.len() * 15f);
-            ped.startFlying(knockbackDir, knockbackForce);
-            
-            // Play impact sound
+
             if (soundManager != null) {
                 soundManager.playSound("explosion", 1.0f);
             }
-            
-            // Notify observer (will handle delayed game over)
+
             if (violationListener != null) {
-                violationListener.onPedestrianHit();
+                violationListener.onPedestrianHit(ped, knockbackDir, knockbackForce);
             }
         }
 

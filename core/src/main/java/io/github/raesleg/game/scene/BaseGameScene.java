@@ -282,7 +282,7 @@ public abstract class BaseGameScene extends Scene {
                 new PlayerMovement(),
                 new PlayerMovementModel(),
                 carBody);
-                
+
         getEntityManager().addEntity(playerCar);
 
         /* Input bindings */
