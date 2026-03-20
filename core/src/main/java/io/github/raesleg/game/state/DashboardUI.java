@@ -34,6 +34,10 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     private final Label scoreLabel;
     private final Label progressLabel;
 
+    //start finish flags
+    private final Texture finishIcon;
+    private final Texture startIcon;
+
     /* ── Textures ── */
     private final Texture dashboardTex;
     private final Texture starTex;
@@ -101,6 +105,8 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         starTex = new Texture("star.png");
         carTex = new Texture("car.png");
         policeTex = new Texture("policecar_noflash.png");
+        finishIcon = new Texture("finish_flag.png");
+        startIcon = new Texture("start_flag.png");
 
         // Popup font
         popupFont = new BitmapFont();
@@ -241,6 +247,9 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         carTex.dispose();
         policeTex.dispose();
         pixelTex.dispose();
+        finishIcon.dispose();
+        startIcon.dispose();
+
     }
 
     /* ── Custom drawing ── */
@@ -337,11 +346,19 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         batch.draw(pixelTex, barX, barY - lineH / 2f, BAR_WIDTH, lineH);
 
         // "S" label at start
-        font.setColor(Color.LIGHT_GRAY);
-        font.draw(batch, "S", barX - 20f, barY + 10f);
-        // "F" label at finish
-        font.draw(batch, "F", barX + BAR_WIDTH + 6f, barY + 10f);
-        font.setColor(Color.WHITE);
+        float sflagWidth = 50f;
+        float sflagheight = 30f;
+        float sflagX = barX  - 50f;
+        float sflagY = barY - sflagWidth / 2f + 10f;
+
+        batch.draw(startIcon, sflagX, sflagY, sflagWidth, sflagheight);
+
+        // "Finish_flag.png" picture at finish
+        float fflagSize = 28f;
+        float fflagX = barX + BAR_WIDTH + 6f;
+        float fflagY = barY - fflagSize / 2f - 6f;
+
+        batch.draw(finishIcon, fflagX, fflagY, fflagSize, fflagSize);
 
         // Car icon moving right along the bar
         float carW = 24f;
