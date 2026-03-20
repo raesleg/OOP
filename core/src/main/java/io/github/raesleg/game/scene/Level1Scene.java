@@ -79,6 +79,8 @@ public class Level1Scene extends BaseGameScene {
     private final List<Pedestrian> pedestrians = new ArrayList<>();
     private final List<StopSign> stopSigns = new ArrayList<>();
 
+    private Pedestrian hitPedestrian;
+
     /** Max wanted stars before game over. */
     private static final int MAX_STARS = 5;
 
@@ -170,9 +172,10 @@ public class Level1Scene extends BaseGameScene {
 
                     @Override
                     public void onPedestrianHit() {
+                        // Wait for flying animation before fail
                         commandHistory.executeAndRecord(
                                 new PedestrianHitCommand(ruleManager));
-                        setInstantFail(true, "Hit a pedestrian and caused an accident");
+                        //setInstantFail(true, "Hit a pedestrian and caused an accident");
                     }
 
                     @Override
@@ -206,11 +209,18 @@ public class Level1Scene extends BaseGameScene {
             float pedHalfW = 40f / Constants.PPM / 2f;
             float pedHalfH = 40f / Constants.PPM / 2f;
             PhysicsBody pedBody = getWorld().createBody(
-                    BodyDef.BodyType.KinematicBody,
-                    ROAD_CENTRE_X / Constants.PPM,
-                    worldY / Constants.PPM,
-                    pedHalfW, pedHalfH,
-                    0f, 0f, true, null);
+                BodyDef.BodyType.DynamicBody, // Changed to dynamic for physics response
+                ROAD_CENTRE_X / Constants.PPM,
+                worldY / Constants.PPM,
+                pedHalfW, pedHalfH,
+                1f,     // density (gives it mass)
+                0f,     // friction
+                false,  // NOT a sensor - creates real collision
+                null
+            );
+            // Set high damping (test)
+            pedBody.setLinearDamping(999f);
+
             Pedestrian ped = new Pedestrian(worldY, direction, CROSSING_SPEED, pedBody);
             pedestrians.add(ped);
             getEntityManager().addEntity(ped);
@@ -227,18 +237,19 @@ public class Level1Scene extends BaseGameScene {
 
         // Collision sounds
         try {
-            getSound().addSound("boundary_hit", "hit_sound.wav");
+            getSound().addSound("boundary_hit", "collide_sound.wav");
         } catch (Exception e) {
             Gdx.app.log("Level1Scene", "Could not load boundary_hit sound: " + e.getMessage());
         }
         try {
-            getSound().addSound("crash", "crash_sound.wav");
+            getSound().addSound("crash", "collide_sound.wav");
         } catch (Exception e) {
             Gdx.app.log("Level1Scene", "Could not load crash sound: " + e.getMessage());
         }
 
         Gdx.app.log("Level1Scene", "=== INIT LEVEL DATA COMPLETE ===");
     }
+
 
     @Override
     protected void updateGame(float deltaTime) {
@@ -281,9 +292,21 @@ public class Level1Scene extends BaseGameScene {
                     addScore(200);
                     getSound().playSound("reward", 1.0f);
                 }
+                // Check if this was a hit pedestrian finishing their flight
+                else if (ped.isFlying() && ped == hitPedestrian) {
+                    // Flying animation complete, trigger game over NOW
+                    setInstantFail(true, "Hit a pedestrian and caused an accident");
+                    hitPedestrian = null;
+                }
                 pedIter.remove();
                 continue;
             }
+            
+            // Track which pedestrian is flying ( for delayed game over )
+            if (ped.isFlying() && hitPedestrian == null) {
+                hitPedestrian = ped;
+            }
+
             ped.updatePosition(scroll, deltaTime);
         }
 
@@ -300,9 +323,9 @@ public class Level1Scene extends BaseGameScene {
 
         // Sync WANTED meter
         setRulesBroken(ruleManager.getRulesBroken());
-        if (ruleManager.isInstantFail()) {
-            setInstantFail(true, "Hit a pedestrian and caused an accident");
-        }
+        // if (ruleManager.isInstantFail()) {
+        //     setInstantFail(true, "Hit a pedestrian and caused an accident");
+        // }
     }
 
     @Override
