@@ -21,7 +21,6 @@ import java.util.List;
  */
 public class DashboardUI implements IDashboardObserver, Disposable {
 
-    private static final int PROGRESS_BAR_WIDTH = 20;
     private static final int MAX_WANTED_STARS = 5;
     private static final float LABEL_SCALE = 2f;
 
@@ -33,6 +32,10 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     /* ── Text labels ── */
     private final Label scoreLabel;
     private final Label progressLabel;
+
+    //start finish flags
+    private final Texture finishIcon;
+    private final Texture startIcon;
 
     /* ── Textures ── */
     private final Texture dashboardTex;
@@ -75,7 +78,6 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     private static final float STAR_SIZE = 28f;
     private static final float ICON_SIZE = 28f;
     private static final float BAR_WIDTH = 300f;
-    private static final float BAR_HEIGHT = 6f;
 
     public DashboardUI(Viewport uiViewport) {
         font = new BitmapFont();
@@ -101,6 +103,8 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         starTex = new Texture("star.png");
         carTex = new Texture("car.png");
         policeTex = new Texture("policecar_noflash.png");
+        finishIcon = new Texture("finish_flag.png");
+        startIcon = new Texture("start_flag.png");
 
         // Popup font
         popupFont = new BitmapFont();
@@ -241,6 +245,9 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         carTex.dispose();
         policeTex.dispose();
         pixelTex.dispose();
+        finishIcon.dispose();
+        startIcon.dispose();
+
     }
 
     /* ── Custom drawing ── */
@@ -291,13 +298,23 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         // Centered at top, between score and wanted
         float barX = (1280f - BAR_WIDTH) / 2f;
         float barY = 720f - 30f;
+        float lineH = 6f;
 
-        // Draw bar background
+        // Draw bar track (dark background)
         batch.setColor(0.3f, 0.3f, 0.3f, 0.6f);
-        batch.draw(starTex, barX, barY - BAR_HEIGHT / 2f, BAR_WIDTH, BAR_HEIGHT); // reuse texture as rect
+        batch.draw(pixelTex, barX, barY - lineH / 2f, BAR_WIDTH, lineH);
+
+        // Draw colored fill: green (safe) on the right, red (danger) on the left
+        // policeDistance: 1 = far (safe), 0 = caught (danger)
+        // Fill from left to (1 - policeDistance) to show danger zone
+        float dangerWidth = (1f - policeDistance) * BAR_WIDTH;
+        if (dangerWidth > 0) {
+            batch.setColor(0.9f, 0.2f, 0.2f, 0.7f);
+            batch.draw(pixelTex, barX, barY - lineH / 2f, dangerWidth, lineH);
+        }
         batch.setColor(1f, 1f, 1f, 1f);
 
-        // Car icon on the right (player)
+        // Car icon on the right (player — fixed position)
         float carX = barX + BAR_WIDTH - ICON_SIZE;
         float carY = barY - ICON_SIZE / 2f;
         batch.draw(carTex, carX, carY, ICON_SIZE, ICON_SIZE);
@@ -305,6 +322,13 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         // Police icon position based on distance (left = far, right = close)
         float policeX = barX + (1f - policeDistance) * (BAR_WIDTH - ICON_SIZE * 2f);
         batch.draw(policeTex, policeX, carY, ICON_SIZE, ICON_SIZE);
+
+        // Labels
+        font.setColor(Color.LIGHT_GRAY);
+        font.getData().setScale(1.2f);
+        font.draw(batch, "POLICE", barX - 100f, barY + 8f);
+        font.getData().setScale(LABEL_SCALE);
+        font.setColor(Color.WHITE);
     }
 
     /**
@@ -320,11 +344,19 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         batch.draw(pixelTex, barX, barY - lineH / 2f, BAR_WIDTH, lineH);
 
         // "S" label at start
-        font.setColor(Color.LIGHT_GRAY);
-        font.draw(batch, "S", barX - 20f, barY + 10f);
-        // "F" label at finish
-        font.draw(batch, "F", barX + BAR_WIDTH + 6f, barY + 10f);
-        font.setColor(Color.WHITE);
+        float sflagWidth = 50f;
+        float sflagheight = 30f;
+        float sflagX = barX  - 50f;
+        float sflagY = barY - sflagWidth / 2f + 10f;
+
+        batch.draw(startIcon, sflagX, sflagY, sflagWidth, sflagheight);
+
+        // "Finish_flag.png" picture at finish
+        float fflagSize = 28f;
+        float fflagX = barX + BAR_WIDTH + 6f;
+        float fflagY = barY - fflagSize / 2f - 6f;
+
+        batch.draw(finishIcon, fflagX, fflagY, fflagSize, fflagSize);
 
         // Car icon moving right along the bar
         float carW = 24f;

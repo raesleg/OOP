@@ -1,9 +1,8 @@
 package io.github.raesleg.game.entities;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.Texture;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.Entity;
@@ -11,20 +10,21 @@ import io.github.raesleg.engine.entity.IExpirable;
 import io.github.raesleg.engine.physics.PhysicsBody;
 
 /**
- * Pickupable — A collectable yellow square that awards +50 score.
- * Uses a sensor physics body so the player drives through it.
+ * Pickupable — A collectable battery that awards +50 score.
+ * Uses a DYNAMIC sensor body for reliable collision detection.
+ * The body is manually positioned every frame (like NPCs) to simulate kinematic
+ * behavior while maintaining solid collision detection from all angles.
  * Implements IExpirable for automatic removal by EntityManager.
  */
 public class Pickupable extends Entity implements IExpirable {
 
     private static Texture sharedTex;
-
     private final PhysicsBody body;
     private final float relativeY;
     private boolean expired;
 
     public Pickupable(PhysicsBody body, float centreXPx, float relativeY,
-                      float wPx, float hPx) {
+            float wPx, float hPx) {
         super(centreXPx - wPx / 2f, 0, wPx, hPx);
         this.body = body;
         this.relativeY = relativeY;
@@ -34,9 +34,9 @@ public class Pickupable extends Entity implements IExpirable {
             body.setUserData(this);
         }
 
-        // Load coin texture once
+        // Load battery texture once (shared across all pickups)
         if (sharedTex == null) {
-            sharedTex = new Texture("coin.png"); // <-- make sure it's in assets
+            sharedTex = new Texture("battery.png");
         }
     }
 
@@ -44,12 +44,16 @@ public class Pickupable extends Entity implements IExpirable {
         float screenY = relativeY + scrollOffset;
         setY(screenY);
 
+        // Manually set body position every frame (kinematic-like behavior)
         if (body != null) {
-            body.setPosition(
-                (getX() + getW() / 2f) / Constants.PPM,
-                (screenY + getH() / 2f) / Constants.PPM);
+            float bodyX = (getX() + getW() / 2f) / Constants.PPM;
+            float bodyY = (screenY + getH() / 2f) / Constants.PPM;
+            
+            body.setPosition(bodyX, bodyY);
+            body.setVelocity(0f, 0f); // Zero velocity to prevent drift
         }
 
+        // Expire when scrolled off screen
         if (screenY < -getH() * 3f) {
             expired = true;
         }
@@ -58,7 +62,7 @@ public class Pickupable extends Entity implements IExpirable {
     @Override
     public void draw(SpriteBatch batch) {
         if (sharedTex != null && !expired) {
-            batch.setColor(Color.WHITE); // no tint needed
+            batch.setColor(Color.WHITE);
             batch.draw(sharedTex, getX(), getY(), getW(), getH());
         }
     }

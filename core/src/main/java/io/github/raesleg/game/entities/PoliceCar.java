@@ -1,5 +1,6 @@
 package io.github.raesleg.game.entities;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import io.github.raesleg.engine.Constants;
@@ -25,8 +26,20 @@ import io.github.raesleg.engine.physics.PhysicsBody;
  */
 public class PoliceCar extends TextureObject {
 
-    private static final float BASE_APPROACH_SPEED = 40f;
-    private static final float AGGRESSION_BONUS = 160f;
+    private static final float BASE_APPROACH_SPEED = 70f;
+    private static final float AGGRESSION_BONUS = 130f;
+
+    /* ── Siren flash animation ── */
+    private static final float FLASH_INTERVAL = 0.15f;
+    private static final String[] FLASH_FRAMES = {
+            "policecar_noflash.png",
+            "policecar_leftflash.png",
+            "policecar_noflash.png",
+            "policecar_rightflash.png"
+    };
+    private static Texture[] flashTextures;
+    private float flashTimer;
+    private int flashIndex;
 
     private final PhysicsBody body;
     private float screenY;
@@ -40,8 +53,19 @@ public class PoliceCar extends TextureObject {
     public PoliceCar(PhysicsBody body) {
         super("policecar_noflash.png", 0, 0, 80f, 140f);
         this.body = body;
-        this.screenY = -200f;
+        this.screenY = -50f;
         this.caught = false;
+        this.flashTimer = 0f;
+        this.flashIndex = 0;
+
+        // Load flash frame textures once (shared across all instances)
+        if (flashTextures == null) {
+            flashTextures = new Texture[FLASH_FRAMES.length];
+            for (int i = 0; i < FLASH_FRAMES.length; i++) {
+                flashTextures[i] = new Texture(FLASH_FRAMES[i]);
+            }
+        }
+
         if (body != null) {
             body.setUserData(this);
         }
@@ -92,6 +116,13 @@ public class PoliceCar extends TextureObject {
         // Live check — recomputed each frame so knockback recovery
         // clears a false-positive "caught" within the same second.
         caught = (screenY + getH() >= playerY);
+
+        // Advance siren flash animation
+        flashTimer += deltaTime;
+        if (flashTimer >= FLASH_INTERVAL) {
+            flashTimer -= FLASH_INTERVAL;
+            flashIndex = (flashIndex + 1) % FLASH_FRAMES.length;
+        }
     }
 
     /** True while the police car overlaps the player vertically. */
@@ -106,8 +137,9 @@ public class PoliceCar extends TextureObject {
 
     @Override
     public void draw(SpriteBatch batch) {
-        if (getTexture() != null) {
-            batch.draw(getTexture(), getX(), getY(), getW(), getH());
+        Texture frame = (flashTextures != null) ? flashTextures[flashIndex] : getTexture();
+        if (frame != null) {
+            batch.draw(frame, getX(), getY(), getW(), getH());
         }
     }
 

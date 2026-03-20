@@ -36,10 +36,15 @@ public class CollisionManager implements ContactListener {
 
     @Override
     public void beginContact(Contact contact) {
+        // debug logging
+        System.out.println("=== BOX2D CONTACT BEGIN ===");
+
         Pair p = extractPair(contact);
 
-        // notify listener if both are entities
-        if (listener != null && p.a() instanceof Entity ea && p.b() instanceof Entity eb) {
+        // notify listener if both are entities ( UPDATE : allow null entities for wall)
+        if (listener != null) {
+            Entity ea = p.a() instanceof Entity ? (Entity) p.a() : null;
+            Entity eb = p.b() instanceof Entity ? (Entity) p.b() : null;
             listener.onCollisionBegin(ea, eb);
         }
     }
@@ -48,8 +53,10 @@ public class CollisionManager implements ContactListener {
     public void endContact(Contact contact) {
         Pair p = extractPair(contact);
         
-        // notify listener if both are entities
-        if (listener != null && p.a() instanceof Entity ea && p.b() instanceof Entity eb) {
+        // notify listener if both are entities (UPDATE: Allow null entities)
+        if (listener != null) {
+            Entity ea = p.a() instanceof Entity ? (Entity) p.a() : null;
+            Entity eb = p.b() instanceof Entity ? (Entity) p.b() : null;
             listener.onCollisionEnd(ea, eb);
         }
     }

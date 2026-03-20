@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 
 import io.github.raesleg.engine.Constants;
@@ -56,13 +55,16 @@ public class NPCCarSpawner {
      */
     private final List<float[]> exclusionZones;
 
+    /** Optional reference to puddle spawner for lane-overlap prevention. */
+    private PuddleSpawner puddleSpawner;
+
     /* NPC car dimensions (pixels) */
     private static final float NPC_WIDTH = 70f;
     private static final float NPC_HEIGHT = 120f;
 
     /**
      * Creates an NPC car spawner.
-     * 
+     *
      * @param entityManager EntityManager to add/remove cars from
      * @param world         PhysicsWorld for creating collision bodies
      * @param screenHeight  Screen height in pixels
@@ -84,12 +86,18 @@ public class NPCCarSpawner {
         this.spawnTimer = 0f;
         this.activeNPCs = new ArrayList<>();
         this.exclusionZones = (exclusionZones != null) ? exclusionZones : new ArrayList<>();
+        this.puddleSpawner = null;
+    }
+
+    /** Sets the puddle spawner reference for lane-overlap prevention. */
+    public void setPuddleSpawner(PuddleSpawner puddleSpawner) {
+        this.puddleSpawner = puddleSpawner;
     }
 
     /**
      * Updates the spawner — spawns new cars and updates positions.
      * Call this every frame from your level's updateGame().
-     * 
+     *
      * Note: Off-screen NPCs are automatically removed by EntityManager
      * via the IExpirable interface, so no manual cleanup needed here.
      * 
@@ -134,6 +142,12 @@ public class NPCCarSpawner {
 
         // Determine which lanes are already occupied near the spawn Y
         Set<Integer> occupied = getOccupiedLanesNear(relativeY, NPC_HEIGHT * 2.5f);
+
+        // Also check puddle lanes to prevent visual overlap
+        if (puddleSpawner != null) {
+            occupied.addAll(puddleSpawner.getOccupiedLanesNear(relativeY, 400f));
+        }
+
         if (occupied.size() >= 2) {
             return; // already 2 lanes blocked — leave at least 1 free
         }
@@ -151,20 +165,23 @@ public class NPCCarSpawner {
         float bodyY = (relativeY + NPC_HEIGHT / 2f) / Constants.PPM;
 
         PhysicsBody body = world.createBody(
-                BodyDef.BodyType.KinematicBody, // Changed from StaticBody - allows collision response
+                BodyDef.BodyType.DynamicBody, // Changed from KinematicBody - prevent phasing
                 bodyX,
                 bodyY,
-                (NPC_WIDTH / Constants.PPM) / 2f,
-                (NPC_HEIGHT / Constants.PPM) / 2f,
-                1f, // density (matters for collision response)
+                (NPC_WIDTH / Constants.PPM) / 2f * 0.3f,
+                (NPC_HEIGHT / Constants.PPM) / 2f * 0.3f,
+                50f, // density (matters for collision response)
                 0f, // friction
                 false, // Changed from true - NOT a sensor, creates real collisions
                 null // userData will be set by NPCCar constructor
         );
 
+        // set NPC body to have very high damping
+        body.setLinearDamping(999f);
+
         // Create NPC car entity
         NPCCar npc = new NPCCar(
-                "car.png", // Using same texture as player car for now - can change later
+                "car2.png", // Using same texture as player car for now - can change later
                 laneIndex,
                 relativeY,
                 NPC_WIDTH,
@@ -175,12 +192,12 @@ public class NPCCarSpawner {
         entityManager.addEntity(npc);
         activeNPCs.add(npc);
 
-        Gdx.app.log("NPCCarSpawner", "NPC car spawned in lane " + laneIndex);
+        System.out.println("NPC car spawned in lane " + laneIndex);
     }
 
     /**
      * Changes the spawn rate (useful for difficulty scaling).
-     * 
+     *
      * @param newInterval New time between spawns (seconds)
      */
     public void setSpawnInterval(float newInterval) {
@@ -189,7 +206,7 @@ public class NPCCarSpawner {
 
     /**
      * Gets the number of currently active NPC cars.
-     * 
+     *
      * @return Number of NPCs in the scene
      */
     public int getActiveCount() {
