@@ -24,7 +24,7 @@ public class Pickupable extends Entity implements IExpirable {
     private boolean expired;
 
     public Pickupable(PhysicsBody body, float centreXPx, float relativeY,
-            float wPx, float hPx) {
+                      float wPx, float hPx) {
         super(centreXPx - wPx / 2f, 0, wPx, hPx);
         this.body = body;
         this.relativeY = relativeY;
@@ -34,23 +34,22 @@ public class Pickupable extends Entity implements IExpirable {
             body.setUserData(this);
         }
 
+        // Load coin texture once
         if (sharedTex == null) {
-            Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-            pm.setColor(Color.YELLOW);
-            pm.fill();
-            sharedTex = new Texture(pm);
-            pm.dispose();
+            sharedTex = new Texture("coin.png"); // <-- make sure it's in assets
         }
     }
 
     public void updatePosition(float scrollOffset) {
         float screenY = relativeY + scrollOffset;
         setY(screenY);
+
         if (body != null) {
             body.setPosition(
-                    (getX() + getW() / 2f) / Constants.PPM,
-                    (screenY + getH() / 2f) / Constants.PPM);
+                (getX() + getW() / 2f) / Constants.PPM,
+                (screenY + getH() / 2f) / Constants.PPM);
         }
+
         if (screenY < -getH() * 3f) {
             expired = true;
         }
@@ -59,9 +58,8 @@ public class Pickupable extends Entity implements IExpirable {
     @Override
     public void draw(SpriteBatch batch) {
         if (sharedTex != null && !expired) {
-            batch.setColor(Color.YELLOW);
+            batch.setColor(Color.WHITE); // no tint needed
             batch.draw(sharedTex, getX(), getY(), getW(), getH());
-            batch.setColor(Color.WHITE);
         }
     }
 

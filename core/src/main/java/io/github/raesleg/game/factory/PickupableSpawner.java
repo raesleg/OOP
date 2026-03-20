@@ -29,7 +29,7 @@ public class PickupableSpawner {
     private final float spawnInterval;
     private final List<Pickupable> activePickups = new ArrayList<>();
 
-    private static final float PICKUP_SIZE = 30f;
+    private static final float PICKUP_SIZE = 80f; //changed for coin.png
 
     public PickupableSpawner(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float spawnInterval,
