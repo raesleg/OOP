@@ -135,7 +135,7 @@ public class Level2Scene extends BaseGameScene {
 
         // Wire traffic violation listener — traffic crashes increase wanted stars
         getCollisionHandler().setTrafficViolationListener(
-                new io.github.raesleg.game.collision.GameCollisionHandler.TrafficViolationListener() {
+                new io.github.raesleg.game.collision.listeners.TrafficViolationListener() {
                     @Override
                     public void onCrosswalkViolation() {
                         // No crosswalks in Level 2

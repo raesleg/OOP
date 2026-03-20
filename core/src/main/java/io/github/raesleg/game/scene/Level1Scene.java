@@ -153,7 +153,7 @@ public class Level1Scene extends BaseGameScene {
 
         // Wire traffic violation listener (Observer pattern via DIP)
         getCollisionHandler().setTrafficViolationListener(
-                new io.github.raesleg.game.collision.GameCollisionHandler.TrafficViolationListener() {
+                new io.github.raesleg.game.collision.listeners.TrafficViolationListener() {
                     @Override
                     public void onCrosswalkViolation() {
                         commandHistory.executeAndRecord(

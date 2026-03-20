@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.raesleg.engine.entity.IFlashable;
 import io.github.raesleg.engine.io.ControlSource;
 import io.github.raesleg.engine.movement.MovableEntity;
-import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.game.movement.PlayerMovement;
 import io.github.raesleg.game.movement.PlayerMovementModel;
