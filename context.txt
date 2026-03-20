@@ -490,7 +490,7 @@ All team members and AI tools must follow these rules without exception.*
 |                                                                       |
 |                                 |   |                                 |
 |                                 |   |                                 |
-|                                 |🚘 |  <-- (Player Car)               |
+|                                 |🚘|  <-- (Player Car)               |
 |                                 |   |                                 |
 |                                 |   |                                 |
 |                                                                       |
