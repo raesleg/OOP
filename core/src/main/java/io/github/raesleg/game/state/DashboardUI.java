@@ -291,13 +291,23 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         // Centered at top, between score and wanted
         float barX = (1280f - BAR_WIDTH) / 2f;
         float barY = 720f - 30f;
+        float lineH = 6f;
 
-        // Draw bar background
+        // Draw bar track (dark background)
         batch.setColor(0.3f, 0.3f, 0.3f, 0.6f);
-        batch.draw(starTex, barX, barY - BAR_HEIGHT / 2f, BAR_WIDTH, BAR_HEIGHT); // reuse texture as rect
+        batch.draw(pixelTex, barX, barY - lineH / 2f, BAR_WIDTH, lineH);
+
+        // Draw colored fill: green (safe) on the right, red (danger) on the left
+        // policeDistance: 1 = far (safe), 0 = caught (danger)
+        // Fill from left to (1 - policeDistance) to show danger zone
+        float dangerWidth = (1f - policeDistance) * BAR_WIDTH;
+        if (dangerWidth > 0) {
+            batch.setColor(0.9f, 0.2f, 0.2f, 0.7f);
+            batch.draw(pixelTex, barX, barY - lineH / 2f, dangerWidth, lineH);
+        }
         batch.setColor(1f, 1f, 1f, 1f);
 
-        // Car icon on the right (player)
+        // Car icon on the right (player — fixed position)
         float carX = barX + BAR_WIDTH - ICON_SIZE;
         float carY = barY - ICON_SIZE / 2f;
         batch.draw(carTex, carX, carY, ICON_SIZE, ICON_SIZE);
@@ -305,6 +315,13 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         // Police icon position based on distance (left = far, right = close)
         float policeX = barX + (1f - policeDistance) * (BAR_WIDTH - ICON_SIZE * 2f);
         batch.draw(policeTex, policeX, carY, ICON_SIZE, ICON_SIZE);
+
+        // Labels
+        font.setColor(Color.LIGHT_GRAY);
+        font.getData().setScale(1.2f);
+        font.draw(batch, "POLICE", barX - 100f, barY + 8f);
+        font.getData().setScale(LABEL_SCALE);
+        font.setColor(Color.WHITE);
     }
 
     /**

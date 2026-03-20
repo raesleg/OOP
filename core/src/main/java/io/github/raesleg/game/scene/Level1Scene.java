@@ -132,6 +132,9 @@ public class Level1Scene extends BaseGameScene {
                 npcSpawner,
                 crosswalkExclusions);
 
+        // Cross-link: NPC spawner also avoids puddle lanes
+        npcSpawner.setPuddleSpawner(puddleSpawner);
+
         // Pickupable spawner — collectible yellow squares
         pickupSpawner = new PickupableSpawner(
                 getEntityManager(), getWorld(),
@@ -163,7 +166,6 @@ public class Level1Scene extends BaseGameScene {
                                 new BreakRuleCommand(ruleManager, "TRAFFIC_CRASH", 1));
                         incrementCrashCount();
                         addScore(-100);
-                        getSound().playSound("negative", 1.0f);
                     }
 
                     @Override
@@ -274,6 +276,11 @@ public class Level1Scene extends BaseGameScene {
         while (pedIter.hasNext()) {
             Pedestrian ped = pedIter.next();
             if (ped.isExpired()) {
+                // Reward the player when a pedestrian crosses safely
+                if (ped.hasCrossedSuccessfully()) {
+                    addScore(200);
+                    getSound().playSound("reward", 1.0f);
+                }
                 pedIter.remove();
                 continue;
             }

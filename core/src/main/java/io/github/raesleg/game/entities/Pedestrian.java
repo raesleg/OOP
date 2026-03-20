@@ -35,6 +35,7 @@ public class Pedestrian extends TextureObject implements IExpirable {
     private boolean expired;
     private boolean activated;
     private float currentCrossingX;
+    private boolean crossedSuccessfully;
 
     /**
      * Creates a pedestrian entity.
@@ -53,6 +54,7 @@ public class Pedestrian extends TextureObject implements IExpirable {
         this.body = body;
         this.expired = false;
         this.activated = false;
+        this.crossedSuccessfully = false;
 
         // Start on the appropriate side of the road
         if (crossingDirection > 0) {
@@ -101,8 +103,10 @@ public class Pedestrian extends TextureObject implements IExpirable {
         // Also expire if fully crossed to the other side
         if (activated) {
             if (crossingDirection > 0 && currentCrossingX > RoadRenderer.ROAD_RIGHT + getW() * 2f) {
+                crossedSuccessfully = true;
                 expired = true;
             } else if (crossingDirection < 0 && currentCrossingX < RoadRenderer.ROAD_LEFT - getW() * 2f) {
+                crossedSuccessfully = true;
                 expired = true;
             }
         }
@@ -111,6 +115,11 @@ public class Pedestrian extends TextureObject implements IExpirable {
     /** True while the pedestrian is on-screen and still crossing the road. */
     public boolean isCrossing() {
         return activated && !expired;
+    }
+
+    /** True if the pedestrian made it across the road without being hit. */
+    public boolean hasCrossedSuccessfully() {
+        return crossedSuccessfully;
     }
 
     @Override

@@ -116,6 +116,9 @@ public class Level2Scene extends BaseGameScene {
                 VIRTUAL_HEIGHT, 3.5f,
                 npcSpawner, null);
 
+        // Cross-link: NPC spawner also avoids puddle lanes
+        npcSpawner.setPuddleSpawner(puddleSpawner);
+
         // Pickupable spawner — collectible yellow squares
         pickupSpawner = new PickupableSpawner(
                 getEntityManager(), getWorld(),
@@ -144,7 +147,6 @@ public class Level2Scene extends BaseGameScene {
                                 new BreakRuleCommand(ruleManager, "TRAFFIC_CRASH", 1));
                         incrementCrashCount();
                         addScore(-100);
-                        getSound().playSound("negative", 1.0f);
                     }
 
                     @Override
@@ -231,10 +233,10 @@ public class Level2Scene extends BaseGameScene {
         }
     }
 
-    /** Spawns the police car below the screen at level start. */
+    /** Spawns the police car just below the visible screen. */
     private void spawnPolice() {
         float centreX = ROAD_CENTRE_X / Constants.PPM;
-        float startY = -200f;
+        float startY = -50f;
         PhysicsBody policeBody = getWorld().createBody(
                 BodyDef.BodyType.KinematicBody,
                 centreX,

@@ -88,6 +88,7 @@ public abstract class BaseGameScene extends Scene {
     /* ── Audio ── */
     private SoundDevice sound;
     private Music bgm;
+    private static final float BGM_BASE_VOLUME = 0.2f;
 
     /* ── Explosion game-over delay ── */
     private boolean gameOverPending;
@@ -261,6 +262,7 @@ public abstract class BaseGameScene extends Scene {
                 (carW / Constants.PPM) / 2f,
                 (carH / Constants.PPM) / 2f,
                 1f, 0.3f, false, null);
+        carBody.setBullet(true);
 
         /* Input bindings */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
@@ -299,7 +301,7 @@ public abstract class BaseGameScene extends Scene {
         if (bgmPath != null) {
             bgm = Gdx.audio.newMusic(Gdx.files.internal(bgmPath));
             bgm.setLooping(true);
-            bgm.setVolume(0.2f);
+            syncBgmVolume();
             bgm.play();
         }
 
@@ -366,6 +368,9 @@ public abstract class BaseGameScene extends Scene {
 
         updateMoveLoop(playerCar.isMoving());
 
+        /* Sync BGM volume with master volume (may have changed in pause menu) */
+        syncBgmVolume();
+
         /* Level-specific update (Template Method hook) */
         updateGame(deltaTime);
 
@@ -410,8 +415,10 @@ public abstract class BaseGameScene extends Scene {
     @Override
     public void resume() {
         isPaused = false;
-        if (bgm != null)
+        if (bgm != null) {
+            syncBgmVolume();
             bgm.play();
+        }
         Gdx.app.log(getClass().getSimpleName(), "Scene resumed");
     }
 
@@ -630,8 +637,18 @@ public abstract class BaseGameScene extends Scene {
 
     private void toggleMute() {
         sound.toggleMute();
-        if (bgm != null)
-            bgm.setVolume(sound.isMuted() ? 0f : 0.2f);
+        syncBgmVolume();
         updateMoveLoop(playerCar.isMoving());
+    }
+
+    /** Keeps the BGM Music object in sync with mute state and master volume. */
+    private void syncBgmVolume() {
+        if (bgm != null) {
+            if (sound.isMuted()) {
+                bgm.setVolume(0f);
+            } else {
+                bgm.setVolume(BGM_BASE_VOLUME * sound.getMasterVolume());
+            }
+        }
     }
 }
