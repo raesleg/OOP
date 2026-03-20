@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 
 import io.github.raesleg.engine.Constants;

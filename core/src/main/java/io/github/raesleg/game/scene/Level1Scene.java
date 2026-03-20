@@ -157,7 +157,7 @@ public class Level1Scene extends BaseGameScene {
         commandHistory = new CommandHistory();
 
         getCollisionHandler().setTrafficViolationListener(
-                new GameCollisionHandler.TrafficViolationListener() {
+                new io.github.raesleg.game.collision.listeners.TrafficViolationListener() {
                     @Override
                     public void onCrosswalkViolation() {
                         commandHistory.executeAndRecord(

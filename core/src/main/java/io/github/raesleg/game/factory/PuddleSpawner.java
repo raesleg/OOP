@@ -2,13 +2,11 @@ package io.github.raesleg.game.factory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.physics.PhysicsWorld;
-import io.github.raesleg.game.entities.vehicles.NPCCar;
 import io.github.raesleg.game.scene.RoadRenderer;
 import io.github.raesleg.game.zone.Puddle;
 
