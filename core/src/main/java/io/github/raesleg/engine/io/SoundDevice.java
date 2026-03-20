@@ -9,11 +9,19 @@ public interface SoundDevice {
 
     void stopSound(String name);
 
+    void setSoundVolume(String name, float volume);
+
+    void stopAllSounds();
+
     void toggleMute();
 
     boolean isMuted();
 
     boolean isLooping(String name);
+
+    float getMasterVolume();
+
+    void setMasterVolume(float volume);
 
     void dispose();
 }

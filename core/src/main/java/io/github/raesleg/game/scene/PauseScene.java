@@ -47,7 +47,7 @@ public class PauseScene extends Scene {
         // Mark as transparent so GameScene renders behind this overlay
         setTransparent(true);
 
-        this.menuOptions = new String[] { "Resume", "Exit to Main Menu" };
+        this.menuOptions = new String[] { "Resume", "Volume", "Exit to Main Menu" };
         this.selectedOption = 0;
 
         // Styling
@@ -79,6 +79,10 @@ public class PauseScene extends Scene {
             kb.addBind(Input.Keys.UP, this::moveUp, true);
             kb.addBind(Input.Keys.S, this::moveDown, true);
             kb.addBind(Input.Keys.DOWN, this::moveDown, true);
+            kb.addBind(Input.Keys.A, this::volumeDown, true);
+            kb.addBind(Input.Keys.LEFT, this::volumeDown, true);
+            kb.addBind(Input.Keys.D, this::volumeUp, true);
+            kb.addBind(Input.Keys.RIGHT, this::volumeUp, true);
             kb.addBind(Input.Keys.ENTER, this::confirm, true);
             kb.addBind(Input.Keys.NUMPAD_ENTER, this::confirm, true);
             kb.addBind(Input.Keys.M, this::toggleMute, true);
@@ -96,7 +100,10 @@ public class PauseScene extends Scene {
                 getSceneManager().pop();
                 break;
 
-            case 1: // Exit to Main Menu
+            case 1: // Volume — left/right adjusts, enter does nothing
+                break;
+
+            case 2: // Exit to Main Menu
                 // Set new StartScene - clears entire stack including paused GameScene
                 getSceneManager().set(new StartScene());
                 break;
@@ -176,13 +183,21 @@ public class PauseScene extends Scene {
         float optionSpacing = 60f;
 
         for (int i = 0; i < menuOptions.length; i++) {
+            String label = menuOptions[i];
+
+            // Show volume percentage for the Volume option
+            if (i == 1) {
+                int volPercent = Math.round(sound.getMasterVolume() * 100f);
+                label = "< Volume: " + volPercent + "% >";
+            }
+
             String text;
             if (i == selectedOption) {
                 font.setColor(selectedColor);
-                text = "> " + menuOptions[i] + " <";
+                text = "> " + label + " <";
             } else {
                 font.setColor(unselectedColor);
-                text = menuOptions[i];
+                text = label;
             }
             layout.setText(font, text);
             float optionX = (VIRTUAL_WIDTH - layout.width) / 2f;
@@ -192,7 +207,7 @@ public class PauseScene extends Scene {
         // Instructions
         font.getData().setScale(1.2f);
         font.setColor(Color.GRAY);
-        String instructions = "W/S to navigate  |  Enter to select  |  Esc to resume";
+        String instructions = "W/S to navigate  |  A/D to adjust volume  |  Enter to select  |  Esc to resume";
         layout.setText(font, instructions);
         float instrX = (VIRTUAL_WIDTH - layout.width) / 2f;
         float instrY = boxY + 40f;
@@ -232,6 +247,18 @@ public class PauseScene extends Scene {
     private void confirm() {
         sound.playSound("selected", 1.0f);
         executeSelectedOption();
+    }
+
+    private void volumeUp() {
+        float vol = Math.min(1f, sound.getMasterVolume() + 0.1f);
+        sound.setMasterVolume(vol);
+        sound.playSound("menu", 1.0f);
+    }
+
+    private void volumeDown() {
+        float vol = Math.max(0f, sound.getMasterVolume() - 0.1f);
+        sound.setMasterVolume(vol);
+        sound.playSound("menu", 1.0f);
     }
 
     private void toggleMute() {

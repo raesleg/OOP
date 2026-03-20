@@ -5,6 +5,32 @@
 > strictly evaluated against every rule below. Violations must be flagged and corrected
 > before the code is accepted.
 
+ROLE AND CORE MANDATE
+Act as the Lead Java Software Architect and a rigorous enforcer of Object-Oriented Programming (OOP) principles for the INF1009 university project. Your primary directive is to ensure that any code generated, reviewed, or refactored maintains a flawless, impenetrable boundary between the abstract, reusable game engine and the concrete game implementation.
+
+You are being graded on code quality, appropriate use of OOP concepts (polymorphism, encapsulation, inheritance), and low-coupling/high-cohesion architecture. The complexity of the game mechanics is secondary; the architectural purity of the engine is paramount.
+
+THE "DO NOT DO THIS" LIST (HARD FAIL CONDITIONS)
+Under no circumstances may you violate the following rules:
+1. Engine Contamination: NEVER import any class, interface, enum, or constant from the `demo/` package (or any game-specific package) into the `engine/` package. Engine classes must be 100% context-free (no mention of cars, pedestrians, scores, etc.).
+2. Dependency Inversion Violation: NEVER make high-level engine modules depend on concrete game classes. The dependency arrow is strictly one-way: `demo` → `engine`.
+3. Box2D Leakage: NEVER import `com.badlogic.gdx.physics.box2d.*` directly into game-layer code. All physics operations MUST go through the `PhysicsWorld` and `PhysicsBody` facades.
+4. Scene State Leakage: NEVER allow scenes to manage other scenes directly or hold cross-references. Transitions must be handled via `SceneManager.set()` or `push()`.
+5. Anti-Patterns: NEVER use `if/else` chains or `instanceof` cascades to select varying behaviors. You must use Strategy, State, or Polymorphism.
+
+THE "MUST DO" LIST (EXECUTION RULES)
+1. SOLID Compliance: Every class and interface you design must demonstrably satisfy all five SOLID principles.
+2. Design Patterns: Actively utilize and clearly label the implementation of Object Pools, Builders, Commands, Decorators, and Template Methods as outlined in the project blueprints. You must implement at least three design patterns clearly to meet the grading criteria.
+3. Scene Sovereignty: Ensure every `Scene` is the absolute owner of its game world. It must instantiate its own `EntityManager`, `MovementManager`, `CollisionManager`, and `PhysicsWorld`, and properly cascade `dispose()` to all of them to prevent memory leaks.
+4. Scalability: Design code so that adding new entities, rules, or inputs requires zero modification to existing engine classes (adhering to the Open/Closed Principle).
+
+YOUR RESPONSE PROTOCOL
+For every coding task or architectural problem presented to you, you must follow this sequence:
+1. <thinking> Block: Before writing any Java code, open a <thinking> tag. Verbally evaluate the request against the Engine/Game boundary rules. If a requested feature threatens to pollute the engine with game logic, propose an abstraction (interface/base class) in the engine and a concrete implementation in the game layer.
+2. Pattern Identification: Explicitly state which design pattern(s) you are deploying to solve the problem and why it fits the architecture.
+3. Code Generation: Output clean, production-ready Java code. You must include the exact package path at the top of every file (e.g., `package io.github.raesleg.demo;` or `package io.github.raesleg.engine.io;`).
+4. No Fluff: Do not provide conversational filler or basic Java tutorials. Output professional, strictly compliant architectural solutions.
+
 ---
 
 ## 1. Project Overview
@@ -482,4 +508,361 @@ WANTED: [ ] (Top Right - Rule Breaks): * A text Label showing how close the poli
 SPEED: 80 KM/H (Bottom Right): * A text Label that updates when you hold w (increases) or s (decreases).
 
 The Center (Gameplay): * This is where your engine's Render Manager draws the road, the player's car, the traffic lights, and eventually the police car.
+
+---
+
+## 16. Part 2 — Design Pattern Blueprint (Concrete Game Implementation)
+
+> **Purpose:** This section is the architectural plan for transitioning from the abstract
+> engine (Part 1) to a fully playable top-down arcade game (Part 2). It identifies **five
+> design patterns** that integrate naturally into the existing architecture without
+> violating the Engine/Game boundary. No existing engine class is modified — every pattern
+> is implemented through **new classes** or by **extending existing abstractions**.
+
+---
+
+### 16.1 Pattern 1 — Object Pool (Engine Abstraction + Game Concrete)
+
+#### Problem It Solves
+
+Level 1 and Level 2 both require continuous spawning of AI traffic cars that scroll past
+the player and leave the screen. Naively calling `new MovableEntity(...)` plus
+`PhysicsWorld.createBody(...)` every few seconds (and disposing them when off-screen)
+creates a GC-heavy allocation/deallocation cycle. The traffic car textures are already
+Flyweight-cached, but the **physics bodies and entity objects themselves** are not reused.
+The same problem applies to `ExplosionParticle` — twelve particles per collision, each
+allocated and GC'd immediately after expiry.
+
+#### Where It Is Implemented
+
+| Class / Interface          | Package    | Role                                   |
+|----------------------------|------------|----------------------------------------|
+| `IPoolable` (interface)    | `engine/entity/` | Marker interface: `void reset()`, `boolean isAvailable()`. Engine-level, context-free. |
+| `ObjectPool<T extends Entity & IPoolable>` | `engine/entity/` | Generic pool. Pre-allocates a fixed batch of `T`; `obtain()` returns an available instance, `release(T)` resets and returns it. Never creates beyond the ceiling. |
+| `TrafficCarPool`           | `demo/`    | Concrete pool. Factory method inside creates pre-configured `MovableEntity` instances (AI-controlled, with `PhysicsBody` set to inactive). `obtain()` repositions and reactivates; `release()` deactivates physics and hides off-screen. |
+
+#### Why It Demonstrates OOP Mastery
+
+- **OCP:** `ObjectPool` is generic and closed for modification — any new poolable entity
+  type (e.g., `BulletEntity` in a different game) only needs to implement `IPoolable`.
+- **ISP:** `IPoolable` is a tiny, focused interface (`reset()` + `isAvailable()`) — does
+  not pollute `Entity` or `IExpirable`.
+- **DIP:** `ObjectPool` depends on `IPoolable` (abstraction), never on `MovableEntity` or
+  any concrete game type.
+- **Engine purity:** `IPoolable` and `ObjectPool` live in `engine/entity/` with zero game
+  knowledge. `TrafficCarPool` with its car textures, AI behaviour, and lane positions
+  lives in `demo/`.
+- **Scalability:** Adding pooled obstacles, power-ups, or projectiles requires only a new
+  concrete pool in `demo/` — no engine changes.
+
+---
+
+### 16.2 Pattern 2 — Builder Pattern (Game Layer — Traffic Entity Construction)
+
+#### Problem It Solves
+
+Constructing a traffic car currently requires coordinating **six collaborating objects** in
+the correct order: texture path, pixel position → physics body (via `PhysicsWorld`), a
+`ControlSource` (`AIControlled`), a `MovementModel` (`FrictionMovement` with the correct
+`MotionTuning`), and finally the `MovableEntity` itself. This multi-step construction is
+error-prone when scattered across `initLevelData()` in each level scene — different levels
+need different speeds, different AI behaviours, and different tuning presets, leading to
+duplicated and divergent construction code.
+
+#### Where It Is Implemented
+
+| Class                      | Package    | Role                                   |
+|----------------------------|------------|----------------------------------------|
+| `TrafficCarBuilder`        | `demo/`    | Fluent builder. Methods: `.texture(String)`, `.lane(int)`, `.yPosition(float)`, `.tuning(MotionTuning)`, `.aiSpeed(float)`, `.build(PhysicsWorld, EntityManager)` → `MovableEntity`. Validates required fields before construction, applies sensible defaults for optional ones. |
+
+#### Why It Demonstrates OOP Mastery
+
+- **SRP:** Construction logic is extracted into a dedicated builder class — level scenes
+  only declare *what* they want, not *how* to wire the six dependencies.
+- **OCP:** New car configurations (police car, ambulance, truck) are created by chaining
+  different builder calls — the builder itself never needs modification.
+- **Encapsulation:** The intricate physics-body creation, PPM conversion, and
+  ControlSource/MovementModel wiring are hidden behind a clean fluent API.
+- **Engine/Game boundary:** The builder lives entirely in `demo/`. It *uses* engine types
+  (`PhysicsWorld`, `MovableEntity`, `ControlSource`, `MovementModel`) through their public
+  APIs but never modifies them.
+- **Directly addresses TODOs:** Every `initLevelData()` TODO ("Spawn AI traffic cars")
+  resolves to a handful of builder calls instead of 15+ lines of manual wiring.
+
+**Example usage sketch (Level1Scene.initLevelData):**
+
+```
+TrafficCarBuilder builder = new TrafficCarBuilder();
+MovableEntity traffic = builder
+    .texture("car_red.png")
+    .lane(2)
+    .yPosition(600f)
+    .tuning(MotionTuning.DEFAULT)
+    .aiSpeed(3.0f)
+    .build(getWorld(), getEntityManager());
+```
+
+---
+
+### 16.3 Pattern 3 — Command Pattern (Engine Interface + Game Implementations)
+
+#### Problem It Solves
+
+The current `Keyboard` binds keys directly to `Runnable` lambdas. This works for simple
+fire-and-forget actions (open pause, toggle mute), but Part 2 introduces actions that
+need to be **undoable, queueable, or logged** — for example:
+
+- **Rule-break tracking:** When the player hits a pothole or collides with traffic, the
+  game increments `rulesBroken`. If we later add a "grace period" or "undo last penalty"
+  power-up, we need reversible commands.
+- **Replay system:** Recording a sequence of player commands for a post-level replay or
+  ghost car requires serialisable, self-contained command objects rather than anonymous
+  lambdas.
+- **Input rebinding:** Commands as first-class objects make it trivial to rebind keys at
+  runtime (settings menu) by swapping which command a key maps to.
+
+#### Where It Is Implemented
+
+| Class / Interface           | Package    | Role                                  |
+|-----------------------------|------------|---------------------------------------|
+| `ICommand` (interface)      | `engine/io/` | `void execute()`, `void undo()`. Engine-level, context-free. |
+| `BreakRuleCommand`          | `demo/`    | Increments `rulesBroken` counter on the scene; `undo()` decrements. |
+| `ActivatePoliceCommand`     | `demo/`    | Triggers the police-chase state in Level 2; `undo()` deactivates. |
+| `CommandHistory`            | `engine/io/` | Stack of executed `ICommand` instances. `executeAndRecord(ICommand)`, `undoLast()`. Engine-level utility, game-agnostic. |
+
+#### Why It Demonstrates OOP Mastery
+
+- **SRP:** Each command encapsulates exactly one reversible action.
+- **OCP:** New game actions (speed boost, shield activation) become new `ICommand`
+  implementations — `CommandHistory` and `ICommand` never change.
+- **DIP:** `CommandHistory` depends on `ICommand` (abstraction), never on any concrete
+  game command.
+- **ISP:** `ICommand` has only two methods — `execute()` and `undo()` — no bloat.
+- **Engine purity:** `ICommand` and `CommandHistory` are in `engine/io/` with zero game
+  references. All concrete commands live in `demo/`.
+- **Addresses Level 2 TODO:** The "police chase activation" can be modelled as a
+  command object that is triggered when `rulesBroken >= WANTED_THRESHOLD`, and
+  potentially reversed if the game design later adds a "bribe" mechanic.
+
+---
+
+### 16.4 Pattern 4 — Decorator Pattern (Engine Abstraction + Game Concrete)
+
+#### Problem It Solves
+
+`AIControlled` currently provides a single sinusoidal steering behaviour for all AI
+traffic. Part 2 needs **composable AI variations** without creating an explosive
+inheritance hierarchy:
+
+- **Lane-locked traffic:** AI that only drives straight in its lane (Y axis only, X = 0).
+- **Swerving traffic:** AI that occasionally drifts between lanes (current sine wave).
+- **Pursuit AI (police):** AI that steers toward the player car's position.
+- **Speed-limited AI:** Any of the above but capped to a maximum axis magnitude.
+
+Using inheritance (`LaneLockedAI extends AIControlled`, `PursuitAI extends AIControlled`,
+`SpeedLimitedLaneLockedAI extends LaneLockedAI`...) would create a combinatorial explosion
+of subclasses. Decorators allow **stacking behaviours at runtime**.
+
+#### Where It Is Implemented
+
+| Class / Interface              | Package    | Role                                  |
+|--------------------------------|------------|---------------------------------------|
+| `ControlSourceDecorator` (abstract) | `engine/io/` | Implements `ControlSource`, wraps another `ControlSource`. Delegates all methods to the wrapped instance by default. Engine-level, context-free. |
+| `SpeedLimitDecorator`          | `demo/`    | Clamps `getX()` and `getY()` return values to a configurable maximum magnitude. |
+| `PursuitDecorator`             | `demo/`    | Overrides `getX()` / `getY()` to steer toward a target `Entity`'s position. Wraps any base `ControlSource` so pursuit can be layered on top of lane-locked or swerving AI. |
+| `LaneLockDecorator`            | `demo/`    | Overrides `getX()` to return `0f`, forcing the wrapped AI to stay in its lane. |
+
+#### Why It Demonstrates OOP Mastery
+
+- **OCP:** New AI modifiers (e.g., `DrunkenSwerveDecorator`, `FreezeDecorator`) are new
+  classes — no modification to existing AI code.
+- **LSP:** Every decorator is a valid `ControlSource` — `MovableEntity` cannot
+  distinguish a decorated source from a plain one.
+- **DIP:** `ControlSourceDecorator` depends only on the `ControlSource` interface.
+  `MovableEntity` is wired to a `ControlSource` and has no knowledge of decoration.
+- **Composition over inheritance:** Two or three simple decorator classes replace an
+  entire combinatorial hierarchy of AI subclasses.
+- **Engine purity:** The abstract decorator base lives in `engine/io/`. Concrete
+  decorators with game-specific targeting logic live in `demo/`.
+- **Addresses Level 2 TODO:** Police pursuit is simply:
+  `new PursuitDecorator(new SpeedLimitDecorator(new AIControlled(), 6f), playerCar)`.
+
+---
+
+### 16.5 Pattern 5 — Template Method (Already Present — Extended for Level Completion)
+
+#### Problem It Solves
+
+`BaseGameScene` already uses Template Method for level initialization and per-frame
+updates. However, there is a **critical missing hook**: level-completion and game-over
+transitions. Both `Level1Scene.updateGame()` and `Level2Scene.updateGame()` contain
+identical TODO comments for checking `progress >= 1.0` and transitioning to a results
+scene. Without a template hook, each level will duplicate the same completion-check
+boilerplate, violating DRY and SRP.
+
+Additionally, Part 2 needs a **results / game-over scene** that receives a summary of the
+completed level (score, time, rules broken). This data transfer between scenes must be
+clean and not leak game state.
+
+#### Where It Is Implemented
+
+| Class / Interface              | Package    | Role                                  |
+|--------------------------------|------------|---------------------------------------|
+| `LevelResult` (value object)  | `demo/`    | Immutable record: `score`, `time`, `rulesBroken`, `levelName`, `completed` (boolean). Passed to results scene via constructor. |
+| `ResultsScene`                 | `demo/`    | Extends `Scene`. Displays final score, time, grade. Buttons: "Retry" (`set(new Level1Scene())`), "Next Level" (`set(new Level2Scene())`), "Main Menu" (`set(new StartScene())`). |
+| `BaseGameScene` (modification) | `demo/`   | Add a `protected final` method `checkLevelEnd()` called at the end of `update()`. It checks `progress >= 1.0` (win) or a new abstract hook `isGameOver()` (loss). On trigger, transitions to `ResultsScene` with a `LevelResult` snapshot. Subclasses define `isGameOver()` — Level 2 returns `true` when police catch the player; Level 1 returns `false` (no lose condition). |
+
+#### Why It Demonstrates OOP Mastery
+
+- **Template Method (refined):** The completion check is a **fixed algorithm step** in
+  the base class that calls an **abstract hook** (`isGameOver()`) for level-specific lose
+  conditions. This is textbook Template Method — the skeleton is locked, the variant
+  parts are deferred to subclasses.
+- **OCP:** Adding a Level 3 with a different game-over condition (e.g., fuel runs out)
+  requires only overriding `isGameOver()` — no changes to `BaseGameScene` or `ResultsScene`.
+- **SRP:** Level-completion logic lives in exactly one place (`BaseGameScene.checkLevelEnd`),
+  not duplicated across every level scene.
+- **Encapsulation:** `LevelResult` is an immutable value object — no mutable state leaks
+  between scenes. `ResultsScene` receives all the data it needs via constructor injection.
+- **Scene Sovereignty maintained:** `ResultsScene` creates its own Stage and managers.
+  The completed level's scene is disposed normally by `SceneManager.set()`.
+
+---
+
+### 16.6 Implementation Priority & Dependency Order
+
+The patterns should be implemented in this order to minimize rework:
+
+| Priority | Pattern            | Reason                                              |
+|----------|--------------------|-----------------------------------------------------|
+| **1**    | Builder            | Unblocks all `initLevelData()` TODOs immediately — traffic spawning is the critical path. |
+| **2**    | Decorator          | Required to differentiate AI behaviours (lane-locked vs. pursuit) before spawning traffic makes sense. |
+| **3**    | Template Method ext.| Adds level-completion and game-over flow — depends on having traffic to collide with.  |
+| **4**    | Object Pool        | Performance optimisation for traffic recycling — refactor spawning after it works naively. |
+| **5**    | Command            | Adds undo/replay capability — lowest priority for MVP but highest SOLID demonstration value. |
+
+---
+
+### 16.7 Pattern Integration Map
+
+```
+                    ┌─────────────────────────────────────────────────────────────┐
+                    │                     ENGINE LAYER                            │
+                    │                                                             │
+                    │  ┌──────────────┐  ┌─────────────┐  ┌──────────────────┐   │
+                    │  │ IPoolable    │  │ ICommand    │  │ ControlSource-   │   │
+                    │  │ ObjectPool   │  │ CommandHist │  │ Decorator (abs)  │   │
+                    │  └──────┬───────┘  └──────┬──────┘  └────────┬─────────┘   │
+                    │         │                 │                   │             │
+                    ├─────────┼─────────────────┼───────────────────┼─────────────┤
+                    │         │    GAME LAYER    │                   │             │
+                    │         ▼                 ▼                   ▼             │
+                    │  ┌──────────────┐  ┌─────────────┐  ┌──────────────────┐   │
+                    │  │ TrafficCar-  │  │ BreakRule-  │  │ PursuitDecorator │   │
+                    │  │ Pool         │  │ Command     │  │ LaneLockDecorator│   │
+                    │  └──────────────┘  │ ActivatePC  │  │ SpeedLimitDeco   │   │
+                    │                    └─────────────┘  └──────────────────┘   │
+                    │  ┌──────────────┐  ┌─────────────┐  ┌──────────────────┐   │
+                    │  │ TrafficCar-  │  │ LevelResult │  │ ResultsScene     │   │
+                    │  │ Builder      │  │ (value obj) │  │ (extends Scene)  │   │
+                    │  └──────────────┘  └─────────────┘  └──────────────────┘   │
+                    └─────────────────────────────────────────────────────────────┘
+```
+
+### 16.8 Updated "Where to Put New Code" Table (Addendum to §15)
+
+| I want to add...                          | Package    | Extends / Implements                     | Pattern    |
+|-------------------------------------------|------------|------------------------------------------|------------|
+| A poolable entity type                    | `demo/`    | `Entity` + `IPoolable`; concrete `ObjectPool` subclass | Object Pool |
+| A complex entity with many config options | `demo/`    | New Builder class using engine types      | Builder    |
+| A reversible game action                  | `demo/`    | `ICommand`                               | Command    |
+| An AI behaviour modifier                  | `demo/`    | `ControlSourceDecorator`                 | Decorator  |
+| A level-completion or game-over condition | `demo/`    | Override `isGameOver()` in `BaseGameScene` subclass | Template Method |
+| A results / summary screen                | `demo/`    | `Scene`                                  | Template Method + State |
+
+---
+
+## 17. Current Implementation Status — Game Layer File Map
+
+> **Note:** The game package is `io.github.raesleg.game.*` (not `demo/`). All rules from
+> sections 1–16 still apply — only the concrete package name differs.
+
+### 17.1 Package Structure (Game Layer)
+
+```
+io.github.raesleg.game/
+├── collision/
+│   └── GameCollisionHandler.java    ICollisionListener — crash debounce (1.5s), zone callbacks
+├── entities/
+│   ├── ExplosionOverlay.java        Large explode.png overlay (IExpirable, EXPLOSION_DELAY)
+│   ├── Pedestrian.java              CrosswalkZone-linked NPC (kinematic body)
+│   ├── PoliceCar.java               Chase entity — X-tracking, speed-based approach
+│   ├── StopSign.java                Decorative sign near crosswalks
+│   └── vehicles/
+│       ├── PlayerCar.java           MovableEntity subclass — flash-on-hit, isFlashing()
+│       └── npc/
+│           ├── NPCCar.java          AI traffic car extending TextureObject
+│           └── world/
+│               └── effects/
+│                   └── ExplosionParticle.java   Batch particle spawner (Factory Method)
+├── factory/
+│   ├── NPCCarSpawner.java          Spawn controller — lane occupation tracking, max 2 lanes
+│   ├── PuddleSpawner.java          Spawn controller — coordinated with NPCCarSpawner
+│   └── TreeSpawner.java            Decorative tree spawner — min Y spacing
+├── io/
+│   └── Keyboard.java               InputDevice + ActionInput + context stack
+├── movement/
+│   ├── MotionTuning.java           Immutable presets: DEFAULT, LOW_TRACTION, HIGH_FRICTION
+│   └── PlayerMovementModel.java    MovementModel — tuning-aware steering (grip scaling)
+├── rules/
+│   ├── BreakRuleCommand.java       ICommand — increments rulesBroken
+│   ├── PedestrianHitCommand.java   ICommand — triggers instantFail
+│   └── RuleManager.java            Violation counter + police aggression
+├── scene/
+│   ├── BaseGameScene.java          Template Method — physics, HUD, audio, checkLevelEnd
+│   ├── Level1Scene.java            Sunny Road — crosswalks, pedestrians, police on violations
+│   ├── Level2Scene.java            Highway Chase — police from start, no BGM, rain overlay
+│   ├── LevelResult.java            Immutable value object with lossReason field
+│   ├── LevelSelectScene.java       Level picker menu
+│   ├── PauseScene.java             Transparent overlay — volume controls (A/D)
+│   ├── ResultsScene.java           Win/Lose screen — displays loss reason
+│   ├── RoadRenderer.java           Road constants (ROAD_LEFT=340, ROAD_RIGHT=940, 3 lanes)
+│   └── StartScene.java             Title / main menu
+├── state/
+│   ├── DashboardUI.java            HUD — graphical progress bar, dashboard.png, star.png
+│   └── IDashboardObserver.java     Observer interface for HUD updates
+└── zone/
+    ├── CrosswalkZone.java          Sensor zone — linked to Pedestrian
+    ├── MotionZone.java             Sensor area with MotionTuning
+    └── Puddle.java                 MotionZone + LOW_TRACTION tuning
+```
+
+### 17.2 Key Mechanics
+
+| Feature | Implementation |
+|---------|---------------|
+| **Crash debounce** | GameCollisionHandler — 1.5s cooldown prevents multiple crash events per collision |
+| **Explosion on 3rd crash** | BaseGameScene.crashCount — only NPC traffic crashes count; explosion + delay then ResultsScene |
+| **Crosswalk violations** | BreakRuleCommand("CROSSWALK_VIOLATION") — increments rulesBroken but NOT crashCount |
+| **Pedestrian hit** | PedestrianHitCommand — sets instantFail with reason "Hit a pedestrian" |
+| **Loss reasons** | LevelResult.lossReason — displayed on ResultsScene: "Crashed into too many vehicles", "Hit a pedestrian", "Police caught you" |
+| **Police chase (L1)** | Spawns when rulesBroken >= 3; speed-based approach with aggression scaling |
+| **Police chase (L2)** | Spawns immediately; player CAN outrun at max speed (speedFactor goes negative) |
+| **Puddle sliding** | PlayerMovementModel scales steeringResponse by tuning.lateralGrip/DEFAULT.lateralGrip |
+| **Lane coordination** | NPCCarSpawner.getOccupiedLanesNear() — PuddleSpawner checks before spawning; max 2 lanes blocked |
+| **Puddle z-order** | Puddle.draw() is no-op; PuddleSpawner.render() called in renderLevelEffects (before entity pass) |
+| **Score** | Only accumulates when simulatedSpeed > 0.5f (score stops when stationary) |
+| **BGM** | BaseGameScene supports null getBgmPath() — Level 2 returns null (no BGM) |
+| **Progress bar** | DashboardUI — white line with car.png icon moving right (graphical, not text) |
+| **Volume control** | PauseScene — "Volume" menu option, A/D to adjust; SoundDevice.getMasterVolume/setMasterVolume |
+| **Tree spacing** | TreeSpawner — MIN_Y_SPACING=250f prevents clustering |
+| **Police siren** | Level 2 — looped sound with distance-based volume scaling |
+
+### 17.3 Engine Layer Additions
+
+| File | Addition |
+|------|----------|
+| `SoundDevice.java` | `getMasterVolume()`, `setMasterVolume(float)` |
+| `SoundManager.java` | `masterVolume` field; `playSound()` scales by masterVolume |
+| `CommandHistory.java` | Stack of ICommand — `executeAndRecord()`, `undoLast()` |
 
