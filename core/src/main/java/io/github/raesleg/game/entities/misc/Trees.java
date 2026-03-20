@@ -81,7 +81,8 @@ public class Trees {
     private static class Tree extends TextureObject {
 
         public Tree(float x, float y, float w, float h) {
-            super("tree2.png", x, y, w, h);
+
+            super(Math.random() < 0.5 ? "tree1.png" : "tree2.png", x, y, w, h);
         }
 
         @Override
