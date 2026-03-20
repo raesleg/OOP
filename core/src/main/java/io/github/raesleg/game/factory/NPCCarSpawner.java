@@ -169,8 +169,8 @@ public class NPCCarSpawner {
                 BodyDef.BodyType.KinematicBody, // Changed from StaticBody - allows collision response
                 bodyX,
                 bodyY,
-                (NPC_WIDTH / Constants.PPM) / 2f,
-                (NPC_HEIGHT / Constants.PPM) / 2f,
+                (NPC_WIDTH / Constants.PPM) / 2f * 0.2f,
+                (NPC_HEIGHT / Constants.PPM) / 2f * 0.2f,
                 1f, // density (matters for collision response)
                 0f, // friction
                 false, // Changed from true - NOT a sensor, creates real collisions

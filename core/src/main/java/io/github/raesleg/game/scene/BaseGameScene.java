@@ -239,7 +239,7 @@ public abstract class BaseGameScene extends Scene {
         setCollisionManager(new CollisionManager(world, collisionHandler));
 
         /* Road boundary walls (metres) */
-        float t = 0.2f;
+        float t = 0.5f;
         float roadLeftM = RoadRenderer.ROAD_LEFT / Constants.PPM;
         float roadRightM = RoadRenderer.ROAD_RIGHT / Constants.PPM;
 
@@ -255,8 +255,8 @@ public abstract class BaseGameScene extends Scene {
         /* Player car — centre lane, near bottom */
         float carPixelX = RoadRenderer.ROAD_LEFT + RoadRenderer.ROAD_WIDTH / 2f;
         float carPixelY = 100f;
-        float carW = 80f; // 64f
-        float carH = 140f; // 64f
+        float carW = 100f; // 64f
+        float carH = 185f; // 64f
 
         PhysicsBody carBody = world.createBody(
                 BodyDef.BodyType.DynamicBody,
