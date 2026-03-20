@@ -30,14 +30,14 @@ public class PedestrianCollisionHandler {
     public boolean canHandle(Entity a, Entity b) {
         Pedestrian ped = GameCollisionHandler.extractEntity(a, b, Pedestrian.class);
         MovableEntity player = GameCollisionHandler.getPlayerEntity(a, b);
-        return ped != null && player != null && !ped.isFlying();
+        return ped != null && player != null && !ped.isExpired();
     }
 
     public void handleBegin(Entity entityA, Entity entityB) {
         Pedestrian ped = GameCollisionHandler.extractEntity(entityA, entityB, Pedestrian.class);
         MovableEntity player = GameCollisionHandler.getPlayerEntity(entityA, entityB);
 
-        if (ped == null || player == null || ped.isFlying()) return;
+        if (ped == null || player == null || ped.isExpired()) return;
 
         // Trigger flash on player
         if (player instanceof IFlashable flashable) {
@@ -59,9 +59,8 @@ public class PedestrianCollisionHandler {
             knockbackDir = pedPos.cpy().sub(playerPos).nor();
         }
 
-        // Make pedestrian fly away! (Team Rocket style)
+        // Pass knockback info to the scene-level reaction system.
         float knockbackForce = Math.max(20f, playerVelocity.len() * 15f);
-        ped.startFlying(knockbackDir, knockbackForce);
 
         // Play impact sound
         if (soundManager != null) {
@@ -70,7 +69,7 @@ public class PedestrianCollisionHandler {
 
         // Notify observer (delayed game over)
         if (violationListener != null) {
-            violationListener.onPedestrianHit();
+            violationListener.onPedestrianHit(ped, knockbackDir, knockbackForce);
         }
     }
 }

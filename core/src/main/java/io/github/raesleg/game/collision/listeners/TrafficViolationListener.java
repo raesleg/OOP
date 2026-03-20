@@ -1,5 +1,9 @@
 package io.github.raesleg.game.collision.listeners;
 
+import com.badlogic.gdx.math.Vector2;
+
+import io.github.raesleg.game.entities.Pedestrian;
+
 /**
  * Observer interface for traffic violation events
  */
@@ -10,7 +14,7 @@ public interface TrafficViolationListener {
     void onCrosswalkViolation();
 
     // Called when player directly hits a pedestrian
-    void onPedestrianHit();
+    void onPedestrianHit(Pedestrian pedestrian, Vector2 knockbackDirection, float knockbackForce);
 
     // Called when player collides with an NPC vehicle
     void onTrafficCrash();

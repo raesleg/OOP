@@ -14,7 +14,6 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.io.CommandHistory;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.collision.GameCollisionHandler;
 import io.github.raesleg.game.entities.Pedestrian;
 import io.github.raesleg.game.entities.StopSign;
 import io.github.raesleg.game.factory.NPCCarSpawner;
@@ -22,6 +21,7 @@ import io.github.raesleg.game.factory.PickupableSpawner;
 import io.github.raesleg.game.factory.PuddleSpawner;
 import io.github.raesleg.game.factory.TreeSpawner;
 import io.github.raesleg.game.collision.PedestrianHitReaction;
+import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
 import io.github.raesleg.game.movement.PedestrianIntent;
 import io.github.raesleg.game.movement.PedestrianMovement;
 import io.github.raesleg.game.rules.BreakRuleCommand;
@@ -157,7 +157,7 @@ public class Level1Scene extends BaseGameScene {
         commandHistory = new CommandHistory();
 
         getCollisionHandler().setTrafficViolationListener(
-                new io.github.raesleg.game.collision.listeners.TrafficViolationListener() {
+                new TrafficViolationListener() {
                     @Override
                     public void onCrosswalkViolation() {
                         commandHistory.executeAndRecord(
@@ -331,11 +331,8 @@ public class Level1Scene extends BaseGameScene {
             Pedestrian pedestrian = encounter.pedestrian;
             CrosswalkZone zone = encounter.zone;
 
+
             if (pedestrian.isExpired() || zone.isExpired()) {
-                if (encounter.hitReaction.isFinished() && !encounter.crashHandled) {
-                    encounter.crashHandled = true;
-                    setInstantFail(true, "Hit a pedestrian and caused an accident");
-                }
                 encounterIter.remove();
                 continue;
             }
@@ -346,40 +343,37 @@ public class Level1Scene extends BaseGameScene {
             if (visible
                     && !encounter.movement.isActive()
                     && !encounter.movement.isFinished()
-                    && !encounter.hitReaction.isActive()) {
+                    && !encounter.hitReaction.isActive()
+                    && !encounter.failQueued) {
                 encounter.movement.activate();
                 zone.setCrossingActive(true);
             }
-            
+
             if (encounter.hitReaction.isActive()) {
                 encounter.hitReaction.update(pedestrian, deltaTime);
                 zone.setCrossingActive(false);
+            }
 
-                if (encounter.failQueued && encounter.hitReaction.isFinished() && !encounter.crashHandled) {
-                    encounter.crashHandled = true;
-                    encounter.failQueued = false;
-                    zone.setCrossingActive(false);
-                    zone.markExpired();
-                    pedestrian.markExpired();
-                    setInstantFail(true, "Hit a pedestrian and caused an accident");
-                    continue;
-                }
-            } else if (encounter.hitReaction.isFinished() && encounter.failQueued && !encounter.crashHandled) {
+            // Check for fail: either animation just finished, or failQueued with no active reaction
+            if (encounter.failQueued && !encounter.crashHandled
+                    && (encounter.hitReaction.isFinished() || !encounter.hitReaction.isActive())) {
                 encounter.crashHandled = true;
                 encounter.failQueued = false;
-                zone.setCrossingActive(false);
                 zone.markExpired();
                 pedestrian.markExpired();
+                encounterIter.remove();
+                Gdx.app.log("Level1Scene", "Setting instant fail after pedestrian hit");
                 setInstantFail(true, "Hit a pedestrian and caused an accident");
-                continue;
-            } else {
+                return;
+            } else if (!encounter.hitReaction.isActive() && !encounter.failQueued) {
                 pedestrian.updateScreenPosition(scroll);
                 pedestrian.resetRenderRotation();
                 pedestrian.syncBodyToSprite();
                 encounter.movement.update(pedestrian, encounter.intent, deltaTime);
             }
 
-            if (!encounter.movement.isFinished()
+            if (!encounter.failQueued
+                    && !encounter.movement.isFinished()
                     && !encounter.hitReaction.isActive()
                     && encounter.movement.hasReachedFinish(pedestrian)) {
                 encounter.movement.markFinishedSuccessfully();

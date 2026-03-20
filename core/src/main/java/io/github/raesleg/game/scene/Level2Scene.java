@@ -10,7 +10,7 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.io.CommandHistory;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.collision.GameCollisionHandler;
+import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
 import io.github.raesleg.game.entities.Pedestrian;
 import io.github.raesleg.game.entities.PoliceCar;
 import io.github.raesleg.game.factory.NPCCarSpawner;
@@ -138,7 +138,7 @@ public class Level2Scene extends BaseGameScene {
 
         // Wire traffic violation listener — traffic crashes increase wanted stars
         getCollisionHandler().setTrafficViolationListener(
-                new io.github.raesleg.game.collision.listeners.TrafficViolationListener() {
+                new TrafficViolationListener() {
                     @Override
                     public void onCrosswalkViolation() {
                         // No crosswalks in Level 2

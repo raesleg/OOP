@@ -21,7 +21,6 @@ import java.util.List;
  */
 public class DashboardUI implements IDashboardObserver, Disposable {
 
-    private static final int PROGRESS_BAR_WIDTH = 20;
     private static final int MAX_WANTED_STARS = 5;
     private static final float LABEL_SCALE = 2f;
 
@@ -79,7 +78,6 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     private static final float STAR_SIZE = 28f;
     private static final float ICON_SIZE = 28f;
     private static final float BAR_WIDTH = 300f;
-    private static final float BAR_HEIGHT = 6f;
 
     public DashboardUI(Viewport uiViewport) {
         font = new BitmapFont();
