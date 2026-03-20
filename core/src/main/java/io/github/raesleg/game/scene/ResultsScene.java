@@ -22,6 +22,8 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
 import io.github.raesleg.engine.scene.Scene;
 import io.github.raesleg.game.io.Keyboard;
+import io.github.raesleg.engine.io.SoundDevice;
+
 
 /**
  * ResultsScene — Win/Lose screen displayed after a level ends
@@ -55,6 +57,8 @@ public class ResultsScene extends Scene {
     private BitmapFont buttonFont;
     private Texture pixelTexture;
 
+    private SoundDevice sound;
+
     /**
      * Creates a results scene.
      *
@@ -70,6 +74,20 @@ public class ResultsScene extends Scene {
 
     @Override
     public void show() {
+        sound = getIOManager().getSound();
+        // sound.addSound("gameover", "gameover_sound.wav");
+        // sound.addSound("select", "uiSelected_sound.wav");
+
+        // if (!result.isCompleted()) {
+        //     sound.playSound("gameover", 1.0f);
+        // }
+
+        if (result.isCompleted()) {
+            sound.playSound("win", 1.0f);
+        } else {
+            sound.playSound("gameover", 1.0f);
+        }
+
         /* Fonts */
         titleFont = new BitmapFont();
         titleFont.getData().setScale(4f);
@@ -151,6 +169,8 @@ public class ResultsScene extends Scene {
         retryBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                sound.stopSound("gameover");
+                sound.playSound("select", 1.0f);
                 getSceneManager().set(retryFactory.get());
             }
         });
@@ -161,6 +181,8 @@ public class ResultsScene extends Scene {
         menuBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                sound.stopSound("gameover");
+                sound.playSound("select", 1.0f);
                 getSceneManager().set(new StartScene());
             }
         });

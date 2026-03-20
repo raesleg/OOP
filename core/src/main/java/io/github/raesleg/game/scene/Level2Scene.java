@@ -179,8 +179,19 @@ public class Level2Scene extends BaseGameScene {
             Gdx.app.log("Level2Scene", "Could not load policesiren sound: " + e.getMessage());
         }
 
+        // Rain sound
+        try {
+            getSound().addSound("rain", "rainsound.wav");
+        } catch (Exception e) {
+            Gdx.app.log("Level2Scene", "Could not load rain sound: " + e.getMessage());
+        }
+
         // Enable police distance mode on dashboard
         getDashboard().setPoliceDistanceMode(true);
+
+        // Enable rain when level starts
+        getSound().loopSound("rain");
+        getSound().setSoundVolume("rain", 1.0f);
 
         Gdx.app.log("Level2Scene", "Level 2 initialised — highway chase");
     }
@@ -307,6 +318,8 @@ public class Level2Scene extends BaseGameScene {
 
     @Override
     protected void disposeLevelData() {
+        getSound().stopSound("rain");
+
         if (npcSpawner != null) {
             npcSpawner.clearAll();
             npcSpawner = null;
