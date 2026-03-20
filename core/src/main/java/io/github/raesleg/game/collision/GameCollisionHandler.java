@@ -17,6 +17,7 @@ import io.github.raesleg.game.entities.Pedestrian;
 import io.github.raesleg.game.entities.Pickupable;
 import io.github.raesleg.game.entities.vehicles.NPCCar;
 import io.github.raesleg.game.entities.vehicles.npc.world.effects.ExplosionParticle;
+import io.github.raesleg.game.scene.RoadRenderer;
 import io.github.raesleg.game.zone.CrosswalkZone;
 import io.github.raesleg.game.zone.MotionZone;
 
@@ -105,14 +106,23 @@ public class GameCollisionHandler implements ICollisionListener {
 
     @Override
     public void onCollisionBegin(Entity entityA, Entity entityB) {
+
         // EXISTING: Handle motion zone entry
         ZoneCollision zc = extractZoneCollision(entityA, entityB);
+        
         if (zc != null) {
             MovementModel model = zc.movable().getMovementModel();
             model.onEnterZone(zc.movable().getPhysicsBody(), zc.zone().getTuning());
         }
 
-        // NEW: Handle player entering a CrosswalkZone
+        // Check for road boundary collision
+        if (isPlayerVsBoundary(entityA, entityB)) {
+            MovableEntity player = getPlayerEntity(entityA, entityB);
+            handleRoadBoundaryCollision(player);
+            return;
+        }
+
+        // Handle player entering a CrosswalkZone
         CrosswalkZone cwZone = extractCrosswalkZone(entityA, entityB);
         MovableEntity cwPlayer = getPlayerEntity(entityA, entityB);
         if (cwZone != null && cwPlayer != null) {
@@ -125,13 +135,40 @@ public class GameCollisionHandler implements ICollisionListener {
             }
         }
 
-        // Handle player hitting a Pedestrian directly — instant fail
+        // UPDATED: Handle player hitting a Pedestrian directly
         Pedestrian ped = extractPedestrian(entityA, entityB);
         MovableEntity pedPlayer = getPlayerEntity(entityA, entityB);
-        if (ped != null && pedPlayer != null) {
+        if (ped != null && pedPlayer != null && !ped.isFlying()) { // Only if not already flying
+            // Trigger flash on player
             if (pedPlayer instanceof IFlashable flashable) {
                 flashable.triggerDamageFlash();
             }
+            
+            // Calculate knockback direction for pedestrian
+            PhysicsBody playerBody = pedPlayer.getPhysicsBody();
+            Vector2 playerVelocity = playerBody.getVelocity();
+            
+            Vector2 knockbackDir;
+            if (playerVelocity.len2() > 0.01f) {
+                // Send pedestrian in player's movement direction
+                knockbackDir = playerVelocity.cpy().nor();
+            } else {
+                // If player stationary, use position-based direction
+                Vector2 pedPos = ped.getPhysicsBody().getPosition();
+                Vector2 playerPos = playerBody.getPosition();
+                knockbackDir = pedPos.cpy().sub(playerPos).nor();
+            }
+            
+            // Make pedestrian fly away!
+            float knockbackForce = Math.max(20f, playerVelocity.len() * 15f);
+            ped.startFlying(knockbackDir, knockbackForce);
+            
+            // Play impact sound
+            if (soundManager != null) {
+                soundManager.playSound("explosion", 1.0f);
+            }
+            
+            // Notify observer (will handle delayed game over)
             if (violationListener != null) {
                 violationListener.onPedestrianHit();
             }
@@ -146,6 +183,43 @@ public class GameCollisionHandler implements ICollisionListener {
                 violationListener.onPickup();
             }
         }
+    }
+
+    private void handleRoadBoundaryCollision(MovableEntity player) {
+        if (player == null)
+            return;
+    
+        // Trigger flash effect if player supports it
+        if (player instanceof IFlashable flashable) {
+            flashable.triggerDamageFlash();
+        }
+    
+        // Calculate bounce direction based on velocity
+        PhysicsBody body = player.getPhysicsBody();
+        Vector2 velocity = body.getVelocity();
+        
+        // Reverse the velocity direction for bounce
+        Vector2 bounceDirection;
+        if (velocity.len2() > 0.01f) {
+            // Bounce opposite to movement direction
+            bounceDirection = velocity.cpy().nor().scl(-1f);
+        } else {
+            // If stationary, push toward center of road
+            Vector2 playerPos = body.getPosition();
+            float roadCenterX = (RoadRenderer.ROAD_LEFT + RoadRenderer.ROAD_RIGHT) / 2f / Constants.PPM;
+            bounceDirection = new Vector2(roadCenterX - playerPos.x, 0f).nor();
+        }
+    
+        // Apply bounce impulse
+        Vector2 bounceImpulse = bounceDirection.scl(BOUNDARY_BOUNCE_FORCE);
+        body.applyImpulseAtCenter(bounceImpulse);
+    
+        // Play sound effect
+        if (soundManager != null) {
+            soundManager.playSound("boundary_hit", 0.8f);
+        }
+    
+        Gdx.app.log("GameCollisionHandler", "Road boundary bounce applied");
     }
 
     @Override
@@ -167,11 +241,6 @@ public class GameCollisionHandler implements ICollisionListener {
 
     @Override
     public void onImpact(Entity entityA, Entity entityB, float impactForce, Vector2 impactPoint) {
-        // NEW: Check for road boundary collision first
-        if (isPlayerVsBoundary(entityA, entityB)) {
-            handleRoadBoundaryCollision(getPlayerEntity(entityA, entityB), impactForce, impactPoint);
-            return; // IMPORTANT: Exit here - don't process other collision types
-        }
 
         // NEW: Check for player vs NPC car collision
         if (isPlayerVsNPCCar(entityA, entityB)) {
@@ -306,40 +375,16 @@ public class GameCollisionHandler implements ICollisionListener {
     // NEW: Collision Handlers
     // ═══════════════════════════════════════════════════════════
 
-    /**
-     * Handles player collision with road boundaries (walls).
-     * 
-     * Effects:
-     * - Triggers flash effect on player if it implements IFlashable
-     * - Applies bounce-back force away from wall
-     * - Plays boundary hit sound
-     * 
-     * This keeps the car within road bounds and provides visual/audio feedback.
-     */
-    private void handleRoadBoundaryCollision(MovableEntity player, float force, Vector2 impactPoint) {
-        if (player == null)
-            return;
+    // clamp player car velocity to prevent it from flying too far during collisions
+    private void clampVelocity(PhysicsBody body, float maxSpeed) {
+        Vector2 vel = body.getVelocity();
+        float currentSpeed = vel.len();
 
-        // Trigger flash effect if player supports it (PlayerCar implements IFlashable)
-        if (player instanceof IFlashable flashable) {
-            flashable.triggerDamageFlash();
+        if (currentSpeed > maxSpeed) {
+            vel.nor().scl(maxSpeed);
+            body.setVelocity(vel.x, vel.y);
+            Gdx.app.log("GameCollisionHandler", "Velocity clamped: " + currentSpeed + " -> " + maxSpeed);
         }
-
-        // Calculate bounce direction (away from impact point toward car center)
-        PhysicsBody body = player.getPhysicsBody();
-        Vector2 playerPos = body.getPosition();
-        Vector2 bounceDirection = playerPos.cpy().sub(impactPoint).nor();
-
-        // Apply bounce impulse to push car back onto road
-        Vector2 bounceImpulse = bounceDirection.scl(BOUNDARY_BOUNCE_FORCE);
-        body.applyImpulseAtCenter(bounceImpulse);
-
-        // Play sound effect
-        if (soundManager != null) {
-            soundManager.playSound("boundary_hit", 0.8f);
-        }
-
-        Gdx.app.log("GameCollisionHandler", "Road boundary bounce applied");
     }
 
     /**
@@ -382,6 +427,9 @@ public class GameCollisionHandler implements ICollisionListener {
         float knockbackMagnitude = Math.max(force * CRASH_KNOCKBACK_MULTIPLIER, 15f);
         Vector2 knockbackImpulse = knockbackDirection.scl(knockbackMagnitude);
         playerBody.applyImpulseAtCenter(knockbackImpulse);
+
+        // Clamp velocity to prevent player from flying too far
+        clampVelocity(playerBody, 12f); // Max 12m/s
 
         // Play crash sound (collide_sound.wav registered as "explosion" in
         // BaseGameScene)

@@ -166,16 +166,19 @@ public class NPCCarSpawner {
         float bodyY = (relativeY + NPC_HEIGHT / 2f) / Constants.PPM;
 
         PhysicsBody body = world.createBody(
-                BodyDef.BodyType.KinematicBody, // Changed from StaticBody - allows collision response
+                BodyDef.BodyType.DynamicBody, // Changed from KinematicBody - prevent phasing
                 bodyX,
                 bodyY,
-                (NPC_WIDTH / Constants.PPM) / 2f * 0.2f,
-                (NPC_HEIGHT / Constants.PPM) / 2f * 0.2f,
-                1f, // density (matters for collision response)
+                (NPC_WIDTH / Constants.PPM) / 2f * 0.3f,
+                (NPC_HEIGHT / Constants.PPM) / 2f * 0.3f,
+                50f, // density (matters for collision response)
                 0f, // friction
                 false, // Changed from true - NOT a sensor, creates real collisions
                 null // userData will be set by NPCCar constructor
         );
+
+        // set NPC body to have very high damping
+        body.setLinearDamping(999f);
 
         // Create NPC car entity
         NPCCar npc = new NPCCar(

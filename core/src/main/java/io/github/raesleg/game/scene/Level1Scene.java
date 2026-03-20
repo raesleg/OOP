@@ -54,6 +54,8 @@ public class Level1Scene extends BaseGameScene {
 
     private final List<CrosswalkZone> crosswalkZones = new ArrayList<>();
     private final List<StopSign> stopSigns = new ArrayList<>();
+
+    private Pedestrian hitPedestrian;
     private final List<PedestrianEncounter> pedestrianEncounters = new ArrayList<>();
 
     private static final class PedestrianEncounter {
@@ -170,8 +172,9 @@ public class Level1Scene extends BaseGameScene {
 
                     @Override
                     public void onPedestrianHit() {
+                        // Wait for flying animation before fail
                         commandHistory.executeAndRecord(new PedestrianHitCommand(ruleManager));
-                        setInstantFail(true, "Hit a pedestrian and caused an accident");
+                        //setInstantFail(true, "Hit a pedestrian and caused an accident");
                     }
 
                     @Override
@@ -188,9 +191,30 @@ public class Level1Scene extends BaseGameScene {
             crosswalkZones.add(zone);
             getEntityManager().addEntity(zone);
 
-            PedestrianEncounter encounter = createPedestrianEncounter(i, worldY, zone);
-            pedestrianEncounters.add(encounter);
-            getEntityManager().addEntity(encounter.pedestrian);
+            // Pedestrian crossing the road
+            float direction = (i % 2 == 0) ? 1f : -1f;
+            float pedHalfW = 40f / Constants.PPM / 2f;
+            float pedHalfH = 40f / Constants.PPM / 2f;
+            PhysicsBody pedBody = getWorld().createBody(
+                BodyDef.BodyType.DynamicBody, // Changed to dynamic for physics response
+                ROAD_CENTRE_X / Constants.PPM,
+                worldY / Constants.PPM,
+                pedHalfW, pedHalfH,
+                1f,     // density (gives it mass)
+                0f,     // friction
+                false,  // NOT a sensor - creates real collision
+                null
+            );
+            // Set high damping (test)
+            pedBody.setLinearDamping(999f);
+
+            Pedestrian ped = new Pedestrian(worldY, direction, CROSSING_SPEED, pedBody);
+            pedestrians.add(ped);
+            getEntityManager().addEntity(ped);
+
+            // Pair the zone with its pedestrian so violations only fire
+            // while the pedestrian is actively crossing (Observer pattern)
+            zone.setPedestrian(ped);
 
             StopSign sign = new StopSign(RoadRenderer.ROAD_LEFT - 130f, worldY - 30f);
             stopSigns.add(sign);
@@ -198,19 +222,20 @@ public class Level1Scene extends BaseGameScene {
         }
 
         try {
-            getSound().addSound("boundary_hit", "hit_sound.wav");
+            getSound().addSound("boundary_hit", "collide_sound.wav");
         } catch (Exception e) {
             Gdx.app.log("Level1Scene", "Could not load boundary_hit sound: " + e.getMessage());
         }
 
         try {
-            getSound().addSound("crash", "crash_sound.wav");
+            getSound().addSound("crash", "collide_sound.wav");
         } catch (Exception e) {
             Gdx.app.log("Level1Scene", "Could not load crash sound: " + e.getMessage());
         }
 
         Gdx.app.log("Level1Scene", "=== INIT LEVEL DATA COMPLETE ===");
     }
+
 
     private CrosswalkZone createCrosswalkZone(float worldY) {
         float zoneHalfW = (RoadRenderer.ROAD_WIDTH / Constants.PPM) / 2f;
@@ -298,17 +323,36 @@ public class Level1Scene extends BaseGameScene {
             zone.updatePosition(scroll);
         }
 
-        Iterator<PedestrianEncounter> encounterIter = pedestrianEncounters.iterator();
-        while (encounterIter.hasNext()) {
-            PedestrianEncounter encounter = encounterIter.next();
-            updatePedestrianEncounter(encounter, scroll, deltaTime);
-
-            if (encounter.pedestrian.isExpired()) {
-                encounter.zone.setCrossingActive(false);
-                encounterIter.remove();
+        // Update pedestrians — check expired first to avoid operating on disposed
+        // entities
+        Iterator<Pedestrian> pedIter = pedestrians.iterator();
+        while (pedIter.hasNext()) {
+            Pedestrian ped = pedIter.next();
+            if (ped.isExpired()) {
+                // Reward the player when a pedestrian crosses safely
+                if (ped.hasCrossedSuccessfully()) {
+                    addScore(200);
+                    getSound().playSound("reward", 1.0f);
+                }
+                // Check if this was a hit pedestrian finishing their flight
+                else if (ped.isFlying() && ped == hitPedestrian) {
+                    // Flying animation complete, trigger game over NOW
+                    setInstantFail(true, "Hit a pedestrian and caused an accident");
+                    hitPedestrian = null;
+                }
+                pedIter.remove();
+                continue;
             }
+            
+            // Track which pedestrian is flying ( for delayed game over )
+            if (ped.isFlying() && hitPedestrian == null) {
+                hitPedestrian = ped;
+            }
+
+            ped.updatePosition(scroll, deltaTime);
         }
 
+        // Update stop signs — check expired first
         Iterator<StopSign> signIter = stopSigns.iterator();
         while (signIter.hasNext()) {
             StopSign sign = signIter.next();
@@ -322,48 +366,6 @@ public class Level1Scene extends BaseGameScene {
         setRulesBroken(ruleManager.getRulesBroken());
         if (ruleManager.isInstantFail()) {
             setInstantFail(true, "Hit a pedestrian and caused an accident");
-        }
-    }
-
-    private void updatePedestrianEncounter(PedestrianEncounter encounter, float scroll, float deltaTime) {
-        Pedestrian ped = encounter.pedestrian;
-        PedestrianIntent intent = encounter.intent;
-        PedestrianMovement movement = encounter.movement;
-        CrosswalkZone zone = encounter.zone;
-
-        if (ped.isExpired()) {
-            return;
-        }
-
-        float screenY = encounter.relativeY + scroll;
-        ped.setY(screenY);
-
-        boolean visibleForActivation = screenY > -100f && screenY < 800f;
-        if (visibleForActivation && !movement.isActive() && !movement.isFinished()) {
-            movement.activate();
-            zone.setCrossingActive(true);
-        }
-
-        movement.update(ped, intent, deltaTime);
-
-        if (!movement.isFinished() && movement.hasReachedFinish(ped)) {
-            movement.markFinishedSuccessfully();
-            zone.setCrossingActive(false);
-
-            if (!encounter.rewarded) {
-                addScore(200);
-                getSound().playSound("reward", 1.0f);
-                encounter.rewarded = true;
-            }
-
-            ped.markExpired();
-            return;
-        }
-
-        if (screenY < -ped.getH() * 2f) {
-            movement.markFinishedUnsuccessfully();
-            zone.setCrossingActive(false);
-            ped.markExpired();
         }
     }
 

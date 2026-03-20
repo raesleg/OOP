@@ -83,11 +83,11 @@ public class NPCCar extends TextureObject implements IExpirable {
         setX(laneX - getW() / 2f);
         setY(screenY);
         
-        // Sync kinematic body position (convert pixels to meters)
+        // Sync dynamic body position (convert pixels to meters)
         float bodyX = laneX / io.github.raesleg.engine.Constants.PPM;
         float bodyY = (screenY + getH() / 2f) / io.github.raesleg.engine.Constants.PPM;
         
-        // Update kinematic body position manually
+        // Update dynamic body position manually
         if (body != null) {
             body.setPosition(bodyX, bodyY);
         }

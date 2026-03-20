@@ -36,7 +36,7 @@ public class Pickupable extends Entity implements IExpirable {
 
         // Load coin texture once
         if (sharedTex == null) {
-            sharedTex = new Texture("coin.png"); // <-- make sure it's in assets
+            sharedTex = new Texture("battery.png"); // <-- make sure it's in assets
         }
     }
 

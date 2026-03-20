@@ -267,7 +267,7 @@ public abstract class BaseGameScene extends Scene {
                 (carW / Constants.PPM) / 2f,
                 (carH / Constants.PPM) / 2f,
                 1f, 0.3f, false, null);
-        carBody.setBullet(true);
+        //carBody.setBullet(true);
 
         /* Input bindings */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
