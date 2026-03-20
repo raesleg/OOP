@@ -316,6 +316,7 @@ public abstract class BaseGameScene extends Scene {
         sound.addSound("reward", "rewardsound.mp3");
         sound.addSound("negative", "negativesound.mp3");
         sound.addSound("gameover", "gameover_sound.wav");
+        sound.addSound("win", "winning_sound.wav");
 
         /* Level-specific setup (Template Method hook) */
         initLevelData();
