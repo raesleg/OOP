@@ -25,6 +25,8 @@ import io.github.raesleg.game.collision.GameCollisionHandler;
 import io.github.raesleg.game.entities.misc.Trees;
 import io.github.raesleg.game.entities.vehicles.PlayerCar;
 import io.github.raesleg.game.io.Keyboard;
+import io.github.raesleg.game.movement.PlayerMovement;
+import io.github.raesleg.game.movement.PlayerMovementModel;
 import io.github.raesleg.game.state.DashboardUI;
 
 /**
@@ -276,7 +278,11 @@ public abstract class BaseGameScene extends Scene {
                 "car.png",
                 carPixelX - carW / 2f, carPixelY,
                 carW, carH,
-                user, carBody);
+                user, 
+                new PlayerMovement(),
+                new PlayerMovementModel(),
+                carBody);
+                
         getEntityManager().addEntity(playerCar);
 
         /* Input bindings */
