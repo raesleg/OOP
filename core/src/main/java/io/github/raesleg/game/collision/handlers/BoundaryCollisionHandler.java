@@ -26,9 +26,10 @@ public class BoundaryCollisionHandler {
 
     // Checks if this handler can process the collision.
     public boolean canHandle(Entity a, Entity b) {
+        boolean oneIsNull = (a == null) != (b == null); // XOR: exactly one is null
         MovableEntity player = GameCollisionHandler.getPlayerEntity(a, b);
-        boolean hasNull = (a == null || b == null);
-        return player != null && hasNull;
+        // boolean hasNull = (a == null || b == null);
+        return player != null && oneIsNull;
     }
 
 

@@ -11,7 +11,7 @@ import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
-import io.github.raesleg.game.entities.Pickupable;
+import io.github.raesleg.game.entities.misc.Pickupable;
 import io.github.raesleg.game.scene.RoadRenderer;
 
 /**

@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import io.github.raesleg.engine.entity.EntityManager;
-import io.github.raesleg.game.entities.Tree;
+import io.github.raesleg.game.entities.misc.Tree;
 import io.github.raesleg.game.scene.RoadRenderer;
 
 /**

@@ -4,7 +4,7 @@ import io.github.raesleg.engine.entity.Entity;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.game.collision.GameCollisionHandler;
 import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
-import io.github.raesleg.game.entities.Pickupable;
+import io.github.raesleg.game.entities.misc.Pickupable;
 
 /**
  * Handles collectible pickup.

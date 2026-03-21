@@ -9,7 +9,8 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.IExpirable;
 import io.github.raesleg.engine.physics.PhysicsWorld;
-import io.github.raesleg.game.movement.MotionTuning;
+
+import io.github.raesleg.game.movement.SurfaceEffect;
 
 /**
  * Puddle — A scrollable MotionZone that applies LOW_TRACTION when
@@ -26,7 +27,7 @@ public class Puddle extends MotionZone implements IExpirable {
     public Puddle(PhysicsWorld world, float centreXPx, float relativeY,
             float wPx, float hPx) {
         super(centreXPx - wPx / 2f, 0, wPx, hPx,
-                MotionTuning.LOW_TRACTION,
+                SurfaceEffect.PUDDLE,
                 new Color(0.3f, 0.5f, 0.9f, 0.35f),
                 world.createBody(
                         BodyDef.BodyType.KinematicBody,

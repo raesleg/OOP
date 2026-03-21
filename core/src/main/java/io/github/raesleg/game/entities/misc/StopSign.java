@@ -1,4 +1,4 @@
-package io.github.raesleg.game.entities;
+package io.github.raesleg.game.entities.misc;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 

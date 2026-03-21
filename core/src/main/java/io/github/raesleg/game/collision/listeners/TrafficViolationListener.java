@@ -2,7 +2,7 @@ package io.github.raesleg.game.collision.listeners;
 
 import com.badlogic.gdx.math.Vector2;
 
-import io.github.raesleg.game.entities.Pedestrian;
+import io.github.raesleg.game.entities.misc.Pedestrian;
 
 /**
  * Observer interface for traffic violation events

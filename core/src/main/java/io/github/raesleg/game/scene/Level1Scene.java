@@ -14,8 +14,8 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.io.CommandHistory;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.entities.Pedestrian;
-import io.github.raesleg.game.entities.StopSign;
+import io.github.raesleg.game.entities.misc.Pedestrian;
+import io.github.raesleg.game.entities.misc.StopSign;
 import io.github.raesleg.game.factory.NPCCarSpawner;
 import io.github.raesleg.game.factory.PickupableSpawner;
 import io.github.raesleg.game.factory.PuddleSpawner;
@@ -307,7 +307,7 @@ public class Level1Scene extends BaseGameScene {
     @Override
     protected void updateGame(float deltaTime) {
         if (npcSpawner != null) {
-            npcSpawner.update(deltaTime, getScrollOffset());
+            npcSpawner.update(deltaTime, getScrollSpeedPixelsPerSecond());
         }
         if (puddleSpawner != null) {
             puddleSpawner.update(deltaTime, getScrollOffset());
