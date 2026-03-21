@@ -25,6 +25,8 @@ import io.github.raesleg.game.collision.GameCollisionHandler;
 import io.github.raesleg.game.entities.misc.Trees;
 import io.github.raesleg.game.entities.vehicles.PlayerCar;
 import io.github.raesleg.game.io.Keyboard;
+import io.github.raesleg.game.movement.PlayerMovement;
+import io.github.raesleg.game.movement.PlayerMovementModel;
 import io.github.raesleg.game.state.DashboardUI;
 
 /**
@@ -81,7 +83,7 @@ public abstract class BaseGameScene extends Scene {
     // private MovableEntity playerCar;
     private PlayerCar playerCar;
 
-    //trees
+    // trees
     private Trees trees;
 
     /* ── Rendering ── */
@@ -91,6 +93,7 @@ public abstract class BaseGameScene extends Scene {
     /* ── Audio ── */
     private SoundDevice sound;
     private Music bgm;
+    private static final float BGM_BASE_VOLUME = 0.2f;
 
     /* ── Explosion game-over delay ── */
     private boolean gameOverPending;
@@ -238,7 +241,7 @@ public abstract class BaseGameScene extends Scene {
         setCollisionManager(new CollisionManager(world, collisionHandler));
 
         /* Road boundary walls (metres) */
-        float t = 0.2f;
+        float t = 0.5f;
         float roadLeftM = RoadRenderer.ROAD_LEFT / Constants.PPM;
         float roadRightM = RoadRenderer.ROAD_RIGHT / Constants.PPM;
 
@@ -254,8 +257,8 @@ public abstract class BaseGameScene extends Scene {
         /* Player car — centre lane, near bottom */
         float carPixelX = RoadRenderer.ROAD_LEFT + RoadRenderer.ROAD_WIDTH / 2f;
         float carPixelY = 100f;
-        float carW = 80f; // 64f
-        float carH = 140f; // 64f
+        float carW = 100f; // 64f
+        float carH = 185f; // 64f
 
         PhysicsBody carBody = world.createBody(
                 BodyDef.BodyType.DynamicBody,
@@ -264,6 +267,7 @@ public abstract class BaseGameScene extends Scene {
                 (carW / Constants.PPM) / 2f,
                 (carH / Constants.PPM) / 2f,
                 1f, 0.3f, false, null);
+        //carBody.setBullet(true);
 
         /* Input bindings */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
@@ -274,7 +278,11 @@ public abstract class BaseGameScene extends Scene {
                 "car.png",
                 carPixelX - carW / 2f, carPixelY,
                 carW, carH,
-                user, carBody);
+                user, 
+                new PlayerMovement(),
+                new PlayerMovementModel(),
+                carBody);
+
         getEntityManager().addEntity(playerCar);
 
         /* Input bindings */
@@ -297,7 +305,7 @@ public abstract class BaseGameScene extends Scene {
         kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
         kb.addBind(Input.Keys.M, this::toggleMute, true);
 
-        //tree assets being made
+        // tree assets being made
         trees = new Trees(8, getEntityManager());
 
         /* Background music (null path = no BGM) */
@@ -305,7 +313,7 @@ public abstract class BaseGameScene extends Scene {
         if (bgmPath != null) {
             bgm = Gdx.audio.newMusic(Gdx.files.internal(bgmPath));
             bgm.setLooping(true);
-            bgm.setVolume(0.2f);
+            syncBgmVolume();
             bgm.play();
         }
 
@@ -365,7 +373,7 @@ public abstract class BaseGameScene extends Scene {
         }
         score = (int) scoreAccumulator + scoreBonus;
 
-        //tree update to simulate scenery movement
+        // tree update to simulate scenery movement
         trees.update(simulatedSpeed, deltaTime);
 
         /* Dashboard updates */
@@ -378,7 +386,10 @@ public abstract class BaseGameScene extends Scene {
         dashboard.onRuleBroken(rulesBroken);
         dashboard.act(deltaTime);
 
-        updateMoveLoop(kb.isHeld(Constants.UP) || simulatedSpeed > 0);
+        updateMoveLoop(playerCar.isMoving());
+
+        /* Sync BGM volume with master volume (may have changed in pause menu) */
+        syncBgmVolume();
 
         /* Level-specific update (Template Method hook) */
         updateGame(deltaTime);
@@ -424,8 +435,10 @@ public abstract class BaseGameScene extends Scene {
     @Override
     public void resume() {
         isPaused = false;
-        if (bgm != null)
+        if (bgm != null) {
+            syncBgmVolume();
             bgm.play();
+        }
         Gdx.app.log(getClass().getSimpleName(), "Scene resumed");
     }
 
@@ -644,8 +657,18 @@ public abstract class BaseGameScene extends Scene {
 
     private void toggleMute() {
         sound.toggleMute();
-        if (bgm != null)
-            bgm.setVolume(sound.isMuted() ? 0f : 0.5f);
+        syncBgmVolume();
         updateMoveLoop(playerCar.isMoving());
+    }
+
+    /** Keeps the BGM Music object in sync with mute state and master volume. */
+    private void syncBgmVolume() {
+        if (bgm != null) {
+            if (sound.isMuted()) {
+                bgm.setVolume(0f);
+            } else {
+                bgm.setVolume(BGM_BASE_VOLUME * sound.getMasterVolume());
+            }
+        }
     }
 }

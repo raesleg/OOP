@@ -2,13 +2,11 @@ package io.github.raesleg.game.factory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.physics.PhysicsWorld;
-import io.github.raesleg.game.entities.vehicles.NPCCar;
 import io.github.raesleg.game.scene.RoadRenderer;
 import io.github.raesleg.game.zone.Puddle;
 
@@ -28,6 +26,9 @@ public class PuddleSpawner {
     private final float spawnInterval;
     private final List<Puddle> activePuddles = new ArrayList<>();
     private final List<float[]> exclusionZones;
+
+    /** Tracks (laneIndex, relativeY) for each active puddle. */
+    private final List<int[]> puddleLanes = new ArrayList<>();
 
     private static final float PUDDLE_W = 100f;
     private static final float PUDDLE_H = 40f;
@@ -56,11 +57,11 @@ public class PuddleSpawner {
             spawnTimer = 0f;
             spawnRandomPuddle(scrollOffset);
         }
-        Iterator<Puddle> it = activePuddles.iterator();
-        while (it.hasNext()) {
-            Puddle p = it.next();
+        for (int i = activePuddles.size() - 1; i >= 0; i--) {
+            Puddle p = activePuddles.get(i);
             if (p.isExpired()) {
-                it.remove();
+                activePuddles.remove(i);
+                puddleLanes.remove(i);
                 continue;
             }
             p.updatePosition(scrollOffset);
@@ -101,6 +102,25 @@ public class PuddleSpawner {
         Puddle puddle = new Puddle(world, laneX, relativeY, PUDDLE_W, PUDDLE_H);
         entityManager.addEntity(puddle);
         activePuddles.add(puddle);
+        puddleLanes.add(new int[] { laneIndex, (int) relativeY });
+    }
+
+    /**
+     * Returns the set of lane indices (0-2) that have an active puddle
+     * whose relativeY is within {@code range} pixels of {@code nearY}.
+     * Used by NPCCarSpawner to avoid overlapping with puddles.
+     */
+    public Set<Integer> getOccupiedLanesNear(float nearY, float range) {
+        Set<Integer> lanes = new HashSet<>();
+        for (int i = 0; i < puddleLanes.size(); i++) {
+            if (i < activePuddles.size() && !activePuddles.get(i).isExpired()) {
+                int[] info = puddleLanes.get(i);
+                if (Math.abs(info[1] - nearY) < range) {
+                    lanes.add(info[0]);
+                }
+            }
+        }
+        return lanes;
     }
 
     /** Draws all active puddles (called before entity pass for correct z-order). */
@@ -116,5 +136,6 @@ public class PuddleSpawner {
         for (Puddle p : activePuddles)
             p.markExpired();
         activePuddles.clear();
+        puddleLanes.clear();
     }
 }

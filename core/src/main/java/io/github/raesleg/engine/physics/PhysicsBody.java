@@ -117,4 +117,14 @@ public class PhysicsBody {
             body.setTransform(x, y, body.getAngle());
         }
     }
+
+    /**
+     * Enables continuous collision detection (CCD) on this body.
+     * Prevents fast-moving bodies from tunnelling through thin sensors.
+     */
+    public void setBullet(boolean bullet) {
+        if (body != null) {
+            body.setBullet(bullet);
+        }
+    }
 }

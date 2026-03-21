@@ -8,7 +8,6 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.IExpirable;
-import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.game.movement.MotionTuning;
 

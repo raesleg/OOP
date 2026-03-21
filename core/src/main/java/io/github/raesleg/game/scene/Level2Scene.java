@@ -4,11 +4,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.io.CommandHistory;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
+import io.github.raesleg.game.entities.Pedestrian;
 import io.github.raesleg.game.entities.PoliceCar;
 import io.github.raesleg.game.factory.NPCCarSpawner;
 import io.github.raesleg.game.factory.PickupableSpawner;
@@ -116,6 +119,9 @@ public class Level2Scene extends BaseGameScene {
                 VIRTUAL_HEIGHT, 3.5f,
                 npcSpawner, null);
 
+        // Cross-link: NPC spawner also avoids puddle lanes
+        npcSpawner.setPuddleSpawner(puddleSpawner);
+
         // Pickupable spawner — collectible yellow squares
         pickupSpawner = new PickupableSpawner(
                 getEntityManager(), getWorld(),
@@ -132,7 +138,7 @@ public class Level2Scene extends BaseGameScene {
 
         // Wire traffic violation listener — traffic crashes increase wanted stars
         getCollisionHandler().setTrafficViolationListener(
-                new io.github.raesleg.game.collision.GameCollisionHandler.TrafficViolationListener() {
+                new TrafficViolationListener() {
                     @Override
                     public void onCrosswalkViolation() {
                         // No crosswalks in Level 2
@@ -144,11 +150,10 @@ public class Level2Scene extends BaseGameScene {
                                 new BreakRuleCommand(ruleManager, "TRAFFIC_CRASH", 1));
                         incrementCrashCount();
                         addScore(-100);
-                        getSound().playSound("negative", 1.0f);
                     }
-
+                    
                     @Override
-                    public void onPedestrianHit() {
+                    public void onPedestrianHit(Pedestrian pedestrian, Vector2 knockbackDirection, float knockbackForce) {
                         // No pedestrians in Level 2
                     }
 
@@ -242,10 +247,10 @@ public class Level2Scene extends BaseGameScene {
         }
     }
 
-    /** Spawns the police car below the screen at level start. */
+    /** Spawns the police car just below the visible screen. */
     private void spawnPolice() {
         float centreX = ROAD_CENTRE_X / Constants.PPM;
-        float startY = -200f;
+        float startY = -50f;
         PhysicsBody policeBody = getWorld().createBody(
                 BodyDef.BodyType.KinematicBody,
                 centreX,

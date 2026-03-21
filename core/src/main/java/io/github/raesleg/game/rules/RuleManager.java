@@ -4,21 +4,22 @@ public class RuleManager {
 
     private int rulesBroken;
     private int redLightViolations;
+    private int speedingViolations;
     private int pedestrianHits;
     private int curbHits;
     private boolean instantFail;
 
-    public void recordRedLightViolation() {
+    public void setRedLightViolation() {
         redLightViolations++;
         rulesBroken++;
     }
 
-    public void recordPedestrianHit() {
+    public void setPedestrianHit() {
         pedestrianHits++;
         instantFail = true;
     }
 
-    public void recordCurbHit() {
+    public void setCurbHit() {
         curbHits++;
         rulesBroken++;
     }
@@ -27,11 +28,12 @@ public class RuleManager {
         rulesBroken++;
     }
 
-    /**
-     * Reverses the most recent generic violation (+1).
-     * Used by {@link BreakRuleCommand#undo()} to support the Command pattern.
-     */
-    public void undoLastViolation() {
+    public void setSpeedingViolation() {
+        speedingViolations++;
+        rulesBroken++;
+    }
+
+    public void undoLastViolation() { //????
         if (rulesBroken > 0) {
             rulesBroken--;
         }
@@ -45,12 +47,25 @@ public class RuleManager {
         return redLightViolations;
     }
 
+    public int getSpeedingViolations() {
+        return speedingViolations;
+    }
+
     public int getPedestrianHits() {
         return pedestrianHits;
     }
 
     public int getCurbHits() {
         return curbHits;
+    }
+
+    /**
+     * Returns 0..1 aggression scale for police AI.
+     * 0 rules broken = calm
+     * 5 rules broken = max aggression
+     */ // dont know if supposed to be here
+    public float getPoliceAggression() {
+        return Math.min(1f, rulesBroken / 5f);
     }
 
     public boolean isInstantFail() {
@@ -64,17 +79,9 @@ public class RuleManager {
     public void reset() {
         rulesBroken = 0;
         redLightViolations = 0;
+        speedingViolations = 0;
         pedestrianHits = 0;
         curbHits = 0;
         instantFail = false;
-    }
-
-    /**
-     * Returns 0..1 aggression scale for police AI.
-     * 0 rules broken = calm
-     * 5 rules broken = max aggression
-     */
-    public float getPoliceAggression() {
-        return Math.min(1f, rulesBroken / 5f);
     }
 }

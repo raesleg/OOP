@@ -29,7 +29,7 @@ public class PickupableSpawner {
     private final float spawnInterval;
     private final List<Pickupable> activePickups = new ArrayList<>();
 
-    private static final float PICKUP_SIZE = 80f; //changed for coin.png
+    private static final float PICKUP_SIZE = 100f;
 
     public PickupableSpawner(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float spawnInterval,
@@ -48,6 +48,7 @@ public class PickupableSpawner {
             spawnTimer = 0f;
             spawnPickup(scrollOffset);
         }
+
         Iterator<Pickupable> it = activePickups.iterator();
         while (it.hasNext()) {
             Pickupable p = it.next();
@@ -72,6 +73,7 @@ public class PickupableSpawner {
             if (!blocked.contains(i))
                 freeLanes.add(i);
         }
+
         if (freeLanes.isEmpty())
             return;
 
@@ -79,13 +81,21 @@ public class PickupableSpawner {
         float laneX = RoadRenderer.ROAD_LEFT
                 + (laneIndex + 0.5f) * RoadRenderer.ROAD_WIDTH / 3f;
 
+        // CHANGED: DynamicBody with sensor=true instead of KinematicBody
+        // This ensures collision detection works from ALL angles
         PhysicsBody body = world.createBody(
-                BodyDef.BodyType.KinematicBody,
+                BodyDef.BodyType.DynamicBody, // Changed from KinematicBody
                 laneX / Constants.PPM,
                 relativeY / Constants.PPM,
                 (PICKUP_SIZE / Constants.PPM) / 2f,
                 (PICKUP_SIZE / Constants.PPM) / 2f,
-                0f, 0f, true, null);
+                0.1f,  // Small density (very light)
+                0f,    // No friction
+                true,  // Sensor = true (no physical collision response)
+                null);
+
+        // Very high damping so it doesn't drift or move
+        body.setLinearDamping(999f);
 
         Pickupable pickup = new Pickupable(body, laneX, relativeY,
                 PICKUP_SIZE, PICKUP_SIZE);

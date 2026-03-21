@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 
 import io.github.raesleg.engine.Constants;
@@ -56,6 +55,9 @@ public class NPCCarSpawner {
      */
     private final List<float[]> exclusionZones;
 
+    /** Optional reference to puddle spawner for lane-overlap prevention. */
+    private PuddleSpawner puddleSpawner;
+
     /* NPC car dimensions (pixels) */
     private static final float NPC_WIDTH = 70f;
     private static final float NPC_HEIGHT = 120f;
@@ -84,6 +86,12 @@ public class NPCCarSpawner {
         this.spawnTimer = 0f;
         this.activeNPCs = new ArrayList<>();
         this.exclusionZones = (exclusionZones != null) ? exclusionZones : new ArrayList<>();
+        this.puddleSpawner = null;
+    }
+
+    /** Sets the puddle spawner reference for lane-overlap prevention. */
+    public void setPuddleSpawner(PuddleSpawner puddleSpawner) {
+        this.puddleSpawner = puddleSpawner;
     }
 
     /**
@@ -134,6 +142,12 @@ public class NPCCarSpawner {
 
         // Determine which lanes are already occupied near the spawn Y
         Set<Integer> occupied = getOccupiedLanesNear(relativeY, NPC_HEIGHT * 2.5f);
+
+        // Also check puddle lanes to prevent visual overlap
+        if (puddleSpawner != null) {
+            occupied.addAll(puddleSpawner.getOccupiedLanesNear(relativeY, 400f));
+        }
+
         if (occupied.size() >= 2) {
             return; // already 2 lanes blocked — leave at least 1 free
         }
@@ -151,16 +165,19 @@ public class NPCCarSpawner {
         float bodyY = (relativeY + NPC_HEIGHT / 2f) / Constants.PPM;
 
         PhysicsBody body = world.createBody(
-                BodyDef.BodyType.KinematicBody, // Changed from StaticBody - allows collision response
+                BodyDef.BodyType.DynamicBody, // Changed from KinematicBody - prevent phasing
                 bodyX,
                 bodyY,
-                (NPC_WIDTH / Constants.PPM) / 2f,
-                (NPC_HEIGHT / Constants.PPM) / 2f,
-                1f, // density (matters for collision response)
+                (NPC_WIDTH / Constants.PPM) / 2f * 0.3f,
+                (NPC_HEIGHT / Constants.PPM) / 2f * 0.3f,
+                50f, // density (matters for collision response)
                 0f, // friction
                 false, // Changed from true - NOT a sensor, creates real collisions
                 null // userData will be set by NPCCar constructor
         );
+
+        // set NPC body to have very high damping
+        body.setLinearDamping(999f);
 
         // Create NPC car entity
         NPCCar npc = new NPCCar(
