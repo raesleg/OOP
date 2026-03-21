@@ -9,7 +9,7 @@ import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.game.collision.GameCollisionHandler;
 import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
-import io.github.raesleg.game.entities.Pedestrian;
+import io.github.raesleg.game.entities.misc.Pedestrian;
 
 /**
  * Handles player hitting pedestrians.

@@ -7,6 +7,8 @@ import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.IExpirable;
 import io.github.raesleg.engine.entity.Shape;
 import io.github.raesleg.engine.physics.PhysicsBody;
+
+import io.github.raesleg.game.movement.SurfaceEffect;
 import io.github.raesleg.game.state.CrosswalkZoneState;
 
 public class CrosswalkZone extends Shape implements IExpirable {
@@ -14,6 +16,7 @@ public class CrosswalkZone extends Shape implements IExpirable {
     private final PhysicsBody body;
     private final float relativeY;
     private final CrosswalkZoneState state;
+    private final SurfaceEffect surfaceEffect;
 
     public CrosswalkZone(float centreXPx, float relativeY,
                          float widthPx, float heightPx, PhysicsBody body) {
@@ -23,6 +26,7 @@ public class CrosswalkZone extends Shape implements IExpirable {
         this.relativeY = relativeY;
         this.body = body;
         this.state = new CrosswalkZoneState();
+        this.surfaceEffect = SurfaceEffect.CROSSWALK;
 
         if (body != null) {
             body.setUserData(this);
@@ -116,5 +120,9 @@ public class CrosswalkZone extends Shape implements IExpirable {
 
     public CrosswalkZoneState getState() {
         return state;
+    }
+
+    public SurfaceEffect getSurfaceEffect() {
+        return surfaceEffect;
     }
 }

@@ -9,33 +9,18 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.EntityManager;
+import io.github.raesleg.engine.movement.AIControlled;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
+
 import io.github.raesleg.game.entities.vehicles.NPCCar;
+import io.github.raesleg.game.movement.NpcDrivingStrategy;
+import io.github.raesleg.game.movement.AIPerceptionService;
+import io.github.raesleg.game.movement.CarMovementModel;
+import io.github.raesleg.game.movement.SensorComponent;
+import io.github.raesleg.game.movement.VehicleProfile;
 import io.github.raesleg.game.scene.RoadRenderer;
 
-/**
- * NPCCarSpawner — Manages spawning and lifecycle of NPC traffic cars.
- * <p>
- * This class encapsulates the logic for:
- * <ul>
- * <li>Spawning NPC cars at timed intervals</li>
- * <li>Positioning cars in appropriate lanes</li>
- * <li>Updating car positions based on scroll offset</li>
- * <li>Marking off-screen cars as expired (auto-removal via IExpirable)</li>
- * </ul>
- * <p>
- * <b>Design Pattern:</b> This is a <b>Manager/Service class</b> that handles
- * a specific responsibility (NPC lifecycle), demonstrating the Single
- * Responsibility Principle.
- * <p>
- * <b>Note:</b> NPCCar implements IExpirable, so EntityManager automatically
- * removes them when they go off-screen. This avoids needing a removeEntity()
- * method.
- * <p>
- * <b>Usage:</b> Each level creates an NPCCarSpawner in initLevelData() and
- * calls update() in updateGame().
- */
 public class NPCCarSpawner {
 
     private final EntityManager entityManager;
@@ -82,11 +67,10 @@ public class NPCCarSpawner {
         this.world = world;
         this.screenHeight = screenHeight;
         this.spawnInterval = spawnInterval;
-        this.spawnYOffset = screenHeight + 200f; // Spawn just above screen
+        this.spawnYOffset = screenHeight + 40f; // Spawn just above screen
         this.spawnTimer = 0f;
         this.activeNPCs = new ArrayList<>();
         this.exclusionZones = (exclusionZones != null) ? exclusionZones : new ArrayList<>();
-        this.puddleSpawner = null;
     }
 
     /** Sets the puddle spawner reference for lane-overlap prevention. */
@@ -95,43 +79,36 @@ public class NPCCarSpawner {
     }
 
     /**
-     * Updates the spawner — spawns new cars and updates positions.
-     * Call this every frame from your level's updateGame().
-     *
-     * Note: Off-screen NPCs are automatically removed by EntityManager
-     * via the IExpirable interface, so no manual cleanup needed here.
-     * 
-     * @param deltaTime    Time since last frame (seconds)
-     * @param scrollOffset Current road scroll offset (pixels)
-     */
-    public void update(float deltaTime, float scrollOffset) {
+     * scrollPixelsPerSecond = road/world downward speed in pixels/sec
+    */
+    public void update(float deltaTime, float scrollPixelsPerSecond) {
         // Update spawn timer
         spawnTimer += deltaTime;
 
         // Spawn new car if interval passed
         if (spawnTimer >= spawnInterval) {
             spawnTimer = 0f;
-            spawnRandomCar(scrollOffset);
+            spawnRandomCar();
         }
 
         // Update all active NPC positions based on scroll
         // Also clean up our tracking list (NPCs are auto-removed by EntityManager)
         activeNPCs.removeIf(npc -> {
             if (npc.isExpired()) {
-                return true; // Remove from our tracking list
+                return true;
             }
-            // Update position for NPCs still alive
-            npc.updatePosition(scrollOffset, screenHeight);
-            return false;
-        });
+
+            npc.updateLifeCycle(scrollPixelsPerSecond, deltaTime, screenHeight);
+            return npc.isExpired();
+        });        
     }
 
     /**
      * Spawns a new NPC car in a random lane, ensuring at most 2 lanes are
      * occupied near the spawn Y to always leave a gap for the player.
      */
-    private void spawnRandomCar(float scrollOffset) {
-        float relativeY = -scrollOffset + spawnYOffset;
+    private void spawnRandomCar() {
+        float relativeY = spawnYOffset;
 
         // Skip if spawn Y falls inside an exclusion zone (e.g. crosswalk)
         for (float[] zone : exclusionZones) {
@@ -158,41 +135,63 @@ public class NPCCarSpawner {
             if (!occupied.contains(i))
                 freeLanes.add(i);
         }
+
+        if (freeLanes.isEmpty()) {
+            return;
+        }
+
         int laneIndex = freeLanes.get((int) (Math.random() * freeLanes.size()));
 
         float laneX = RoadRenderer.ROAD_LEFT + (laneIndex + 0.5f) * RoadRenderer.ROAD_WIDTH / 3f;
-        float bodyX = laneX / Constants.PPM;
-        float bodyY = (relativeY + NPC_HEIGHT / 2f) / Constants.PPM;
+        // float bodyX = laneX / Constants.PPM;
+        // float bodyY = (relativeY + NPC_HEIGHT / 2f) / Constants.PPM;
 
         PhysicsBody body = world.createBody(
-                BodyDef.BodyType.DynamicBody, // Changed from KinematicBody - prevent phasing
-                bodyX,
-                bodyY,
+                BodyDef.BodyType.DynamicBody,
+                (laneX) / Constants.PPM,
+                (relativeY + NPC_HEIGHT / 2f) / Constants.PPM,
                 (NPC_WIDTH / Constants.PPM) / 2f * 0.3f,
                 (NPC_HEIGHT / Constants.PPM) / 2f * 0.3f,
-                50f, // density (matters for collision response)
-                0f, // friction
-                false, // Changed from true - NOT a sensor, creates real collisions
-                null // userData will be set by NPCCar constructor
+                50f,
+                0f,
+                false,
+                null
+        );
+        body.setLinearDamping(8f);
+
+        AIPerceptionService perceptionService = new AIPerceptionService(entityManager);
+
+        SensorComponent sensor = new SensorComponent(
+                220f,  // forward range
+                60f,   // side range
+                70f,   // stop distance
+                120f   // follow distance
         );
 
-        // set NPC body to have very high damping
-        body.setLinearDamping(999f);
-
-        // Create NPC car entity
         NPCCar npc = new NPCCar(
-                "car2.png", // Using same texture as player car for now - can change later
-                laneIndex,
+                "car2.png",
+                laneX - NPC_WIDTH / 2f,
                 relativeY,
                 NPC_WIDTH,
                 NPC_HEIGHT,
-                body);
-
+                laneIndex,
+                new AIControlled(),
+                new NpcDrivingStrategy(perceptionService),
+                new CarMovementModel(VehicleProfile.npcTraffic()),
+                body,
+                sensor
+        );
         // Add to manager and active list
         entityManager.addEntity(npc);
         activeNPCs.add(npc);
 
-        System.out.println("NPC car spawned in lane " + laneIndex);
+        System.out.println("NPC spawned: lane=" + laneIndex + ", x=" + npc.getX() + ", y=" + npc.getY());
+        System.out.println("Active NPC count = " + activeNPCs.size());
+        System.out.println("spawnYOffset = " + spawnYOffset);
+        System.out.println("spawn body y px = " + ((body.getPosition().y * Constants.PPM) - NPC_HEIGHT / 2f));
+        System.out.println("npc initial y = " + npc.getY());
+
+        // System.out.println("NPC car spawned in lane " + laneIndex);
     }
 
     /**
@@ -232,8 +231,11 @@ public class NPCCarSpawner {
     public Set<Integer> getOccupiedLanesNear(float nearY, float range) {
         Set<Integer> lanes = new HashSet<>();
         for (NPCCar npc : activeNPCs) {
-            if (!npc.isExpired()
-                    && Math.abs(npc.getRelativeY() - nearY) < range) {
+            if (npc.isExpired() || npc.getPhysicsBody() == null) {
+                continue;
+            }
+
+            if (Math.abs(npc.getY() - nearY) < range) {
                 lanes.add(npc.getLaneIndex());
             }
         }

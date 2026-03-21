@@ -25,12 +25,7 @@ public abstract class TextureObject extends Entity {
     @Override
     public void draw(SpriteBatch batch) {
         if (texture != null) {
-            batch.draw(
-                    texture,
-                    getX() - getW() / 2f,
-                    getY() - getH() / 2f,
-                    getW(),
-                    getH());
+            batch.draw(texture, getX(), getY(), getW(), getH());
         }
     }
 

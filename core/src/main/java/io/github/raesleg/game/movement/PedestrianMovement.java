@@ -2,7 +2,7 @@ package io.github.raesleg.game.movement;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.entities.Pedestrian;
+import io.github.raesleg.game.entities.misc.Pedestrian;
 import io.github.raesleg.game.scene.RoadRenderer;
 
 /**

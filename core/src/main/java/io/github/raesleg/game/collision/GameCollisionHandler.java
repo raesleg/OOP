@@ -16,6 +16,7 @@ import io.github.raesleg.game.collision.handlers.PickupCollisionHandler;
 import io.github.raesleg.game.collision.handlers.ZoneCollisionHandler;
 import io.github.raesleg.game.collision.handlers.ExplosionCollisionHandler;
 import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
+import io.github.raesleg.game.entities.misc.Pedestrian;
 
 
 /**
@@ -117,6 +118,16 @@ public class GameCollisionHandler implements ICollisionListener {
         // 4. Pedestrians
         if (pedestrianHandler.canHandle(entityA, entityB)) {
             pedestrianHandler.handleBegin(entityA, entityB);
+            return;
+        }
+
+        // 4b. NPC car hits pedestrian — expire pedestrian silently (no game-over)
+        Pedestrian ped = extractEntity(entityA, entityB, Pedestrian.class);
+        if (ped != null && !ped.isExpired()) {
+            MovableEntity mover = extractEntity(entityA, entityB, MovableEntity.class);
+            if (mover != null && mover.isAIControlled()) {
+                ped.markExpired();
+            }
         }
 
         // 5. Pickupables
