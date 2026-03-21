@@ -205,13 +205,13 @@ public class Level1Scene extends BaseGameScene {
         }
 
         try {
-            getSound().addSound("boundary_hit", "collide_sound.wav");
+            getSound().addSound("boundary_hit", "crash_sound.wav");
         } catch (Exception e) {
             Gdx.app.log("Level1Scene", "Could not load boundary_hit sound: " + e.getMessage());
         }
 
         try {
-            getSound().addSound("crash", "collide_sound.wav");
+            getSound().addSound("crash", "crash_sound.wav");
         } catch (Exception e) {
             Gdx.app.log("Level1Scene", "Could not load crash sound: " + e.getMessage());
         }
@@ -220,6 +220,12 @@ public class Level1Scene extends BaseGameScene {
             getSound().addSound("pedestrain_hit", "pedestrain_hit.wav");
         } catch (Exception e) {
             Gdx.app.log("Level1Scene", "Could not load pedestrain_hit sound: " + e.getMessage());
+        }
+
+        try {
+            getSound().addSound("scream", "scream.mp3");
+        } catch (Exception e) {
+            Gdx.app.log("Level1Scene", "Could not load scream sound: " + e.getMessage());
         }
 
 
@@ -262,12 +268,16 @@ public class Level1Scene extends BaseGameScene {
         float pedHalfW = (pedW / Constants.PPM) / 2f;
         float pedHalfH = (pedH / Constants.PPM) / 2f;
 
+        // Hitbox is smaller than sprite — just the person's body, not the full tile
+        float hitboxHalfW = pedHalfW * 0.4f;
+        float hitboxHalfH = pedHalfH * 0.4f;
+
         PhysicsBody pedBody = getWorld().createBody(
             BodyDef.BodyType.DynamicBody,
             (pedStartX + pedW / 2f) / Constants.PPM,
             (worldY + pedH / 2f) / Constants.PPM,
-            pedHalfW,
-            pedHalfH,
+            hitboxHalfW,
+            hitboxHalfH,
             0f,
             0f,
             false,
@@ -307,7 +317,7 @@ public class Level1Scene extends BaseGameScene {
     @Override
     protected void updateGame(float deltaTime) {
         if (npcSpawner != null) {
-            npcSpawner.update(deltaTime, getScrollSpeedPixelsPerSecond());
+            npcSpawner.update(deltaTime, getNpcScrollSpeedPixelsPerSecond());
         }
         if (puddleSpawner != null) {
             puddleSpawner.update(deltaTime, getScrollOffset());

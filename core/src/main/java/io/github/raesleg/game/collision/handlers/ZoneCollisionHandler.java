@@ -36,17 +36,18 @@ public class ZoneCollisionHandler {
     }
 
     private ZoneCollision extractZoneCollision(Entity a, Entity b) {
-        if (a instanceof MovableEntity m && b instanceof MotionZone z) {
+        // Only apply surface effects to player-controlled vehicles, not NPCs
+        if (a instanceof MovableEntity m && !m.isAIControlled() && b instanceof MotionZone z) {
             return new ZoneCollision(m, z.getTuning());
         }
-        if (b instanceof MovableEntity m && a instanceof MotionZone z) {
+        if (b instanceof MovableEntity m && !m.isAIControlled() && a instanceof MotionZone z) {
             return new ZoneCollision(m, z.getTuning());
         }
 
-        if (a instanceof MovableEntity m && b instanceof CrosswalkZone z) {
+        if (a instanceof MovableEntity m && !m.isAIControlled() && b instanceof CrosswalkZone z) {
             return new ZoneCollision(m, z.getSurfaceEffect());
         }
-        if (b instanceof MovableEntity m && a instanceof CrosswalkZone z) {
+        if (b instanceof MovableEntity m && !m.isAIControlled() && a instanceof CrosswalkZone z) {
             return new ZoneCollision(m, z.getSurfaceEffect());
         }
 

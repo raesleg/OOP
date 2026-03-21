@@ -51,6 +51,9 @@ public class GameCollisionHandler implements ICollisionListener {
     private final NPCCarCollisionHandler npcCarHandler;
     private final ExplosionCollisionHandler explosionHandler;
 
+    /* Shared sound device */
+    private final SoundDevice soundManager;
+
     /* Observer for traffic violations */
     private TrafficViolationListener violationListener;
 
@@ -73,6 +76,7 @@ public class GameCollisionHandler implements ICollisionListener {
      */
     public GameCollisionHandler(EntityManager entityManager, SoundDevice soundManager,
             float explosionForceThreshold) {
+        this.soundManager = soundManager;
         // Instantiate all specialized handlers (Dependency Injection)
         this.zoneHandler = new ZoneCollisionHandler();
         this.boundaryHandler = new BoundaryCollisionHandler(soundManager);
@@ -127,6 +131,9 @@ public class GameCollisionHandler implements ICollisionListener {
             MovableEntity mover = extractEntity(entityA, entityB, MovableEntity.class);
             if (mover != null && mover.isAIControlled()) {
                 ped.markExpired();
+                if (soundManager != null) {
+                    soundManager.playSound("scream", 1.0f);
+                }
             }
         }
 

@@ -205,7 +205,7 @@ public class Level2Scene extends BaseGameScene {
     @Override
     protected void updateGame(float deltaTime) {
         if (npcSpawner != null)
-            npcSpawner.update(deltaTime, getScrollSpeedPixelsPerSecond());
+            npcSpawner.update(deltaTime, getNpcScrollSpeedPixelsPerSecond());
         if (puddleSpawner != null)
             puddleSpawner.update(deltaTime, getScrollOffset());
         if (pickupSpawner != null)

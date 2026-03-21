@@ -279,7 +279,6 @@ public abstract class BaseGameScene extends Scene {
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         UserControlled user = new UserControlled(kb);
 
-        /* Testing Purposes for Movement */
         playerCar = new PlayerCar(
                 "car.png",
                 carPixelX - carW / 2f, carPixelY,
@@ -296,17 +295,10 @@ public abstract class BaseGameScene extends Scene {
         kb.bindAction(Input.Keys.LEFT, Constants.LEFT);
         kb.bindAction(Input.Keys.D, Constants.RIGHT);
         kb.bindAction(Input.Keys.RIGHT, Constants.RIGHT);
-
         kb.bindAction(Input.Keys.W, Constants.UP);
         kb.bindAction(Input.Keys.UP, Constants.UP);
         kb.bindAction(Input.Keys.S, Constants.DOWN);
         kb.bindAction(Input.Keys.DOWN, Constants.DOWN);
-
-        // kb.bindAction(Input.Keys.W, "ACCEL");
-        // kb.bindAction(Input.Keys.UP, "ACCEL");
-        // kb.bindAction(Input.Keys.S, "BRAKE");
-        // kb.bindAction(Input.Keys.DOWN, "BRAKE");
-
         kb.bindAction(Input.Keys.SPACE, Constants.ACTION);
         kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
         kb.addBind(Input.Keys.M, this::toggleMute, true);
@@ -383,7 +375,6 @@ public abstract class BaseGameScene extends Scene {
         trees.update(simulatedSpeed, deltaTime);
 
         /* Dashboard updates */
-        score = (int) (gameTime * 10f);
         float progress = Math.min(1f, (-scrollOffset) / getLevelLength());
 
         dashboard.onScoreUpdated(score);
@@ -548,6 +539,15 @@ public abstract class BaseGameScene extends Scene {
         float t = simulatedSpeed / getMaxSpeed();
         t = Math.max(0f, Math.min(1f, t));
         return t * getMaxScrollPixelsPerSecond();
+    }
+
+    /**
+     * NPC scroll speed — has a minimum floor so NPCs always drift down
+     * the screen even when the player is stationary.
+     */
+    protected float getNpcScrollSpeedPixelsPerSecond() {
+        float minScroll = getMaxScrollPixelsPerSecond() * 0.25f;
+        return Math.max(minScroll, getScrollSpeedPixelsPerSecond());
     }
 
     protected float getSimulatedSpeedKmh() {
