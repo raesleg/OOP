@@ -40,8 +40,8 @@ public class NPCCarSpawner {
      */
     private final List<float[]> exclusionZones;
 
-    /** Optional reference to puddle spawner for lane-overlap prevention. */
-    private PuddleSpawner puddleSpawner;
+    /** Optional reference to hazard spawner for lane-overlap prevention. */
+    private RoadHazardSpawner hazardSpawner;
 
     /* NPC car dimensions (pixels) */
     private static final float NPC_WIDTH = 70f;
@@ -73,9 +73,9 @@ public class NPCCarSpawner {
         this.exclusionZones = (exclusionZones != null) ? exclusionZones : new ArrayList<>();
     }
 
-    /** Sets the puddle spawner reference for lane-overlap prevention. */
-    public void setPuddleSpawner(PuddleSpawner puddleSpawner) {
-        this.puddleSpawner = puddleSpawner;
+    /** Sets the hazard spawner reference for lane-overlap prevention. */
+    public void setHazardSpawner(RoadHazardSpawner hazardSpawner) {
+        this.hazardSpawner = hazardSpawner;
     }
 
     /**
@@ -120,9 +120,9 @@ public class NPCCarSpawner {
         // Determine which lanes are already occupied near the spawn Y
         Set<Integer> occupied = getOccupiedLanesNear(relativeY, NPC_HEIGHT * 2.5f);
 
-        // Also check puddle lanes to prevent visual overlap
-        if (puddleSpawner != null) {
-            occupied.addAll(puddleSpawner.getOccupiedLanesNear(relativeY, 400f));
+        // Also check hazard lanes to prevent visual overlap
+        if (hazardSpawner != null) {
+            occupied.addAll(hazardSpawner.getOccupiedLanesNear(relativeY, 400f));
         }
 
         if (occupied.size() >= 2) {
@@ -226,7 +226,7 @@ public class NPCCarSpawner {
     /**
      * Returns the set of lane indices (0-2) that have an active NPC
      * whose relativeY is within {@code range} pixels of {@code nearY}.
-     * Used by PuddleSpawner to avoid overlapping with NPC cars.
+     * Used by HazardSpawner to avoid overlapping with NPC cars.
      */
     public Set<Integer> getOccupiedLanesNear(float nearY, float range) {
         Set<Integer> lanes = new HashSet<>();

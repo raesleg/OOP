@@ -20,6 +20,10 @@ public class CarMovementModel implements MovementModel {
     private boolean slideRecoveryActive = false;
     private float slideRecoveryTimer = 0f;
 
+    // Slip state — used by all slippery surfaces, not just puddles
+    private boolean wasSlipping = false;
+    private float driftVx = 0f;
+
     public CarMovementModel(VehicleProfile profile) {
         this.profile = profile;
     }
@@ -38,11 +42,43 @@ public class CarMovementModel implements MovementModel {
         }
 
         Vector2 velocity = body.getVelocity().cpy();
+        float vx;
+        
+        if (surface.isSlippery()) {
+            if (!wasSlipping) {
+                if (surface.getStickyness() > 0f) {
+                    // Oil — seed from real velocity, no kick, just locks you in
+                    driftVx = velocity.x;
+                } else {
+                    // Puddle — random sideways kick for dramatic uncontrolled sway
+                    float kickDir = (Math.random() > 0.5f) ? 1f : -1f;
+                    driftVx = kickDir * profile.getMaxLateralSpeed() * 0.7f;
+                }
+            }
+            wasSlipping = true;
+ 
+            // Unified slip calculation — same formula for all slippery surfaces
+            driftVx *= surface.getMomentumRetention();
+            float steerContrib = steerInput * profile.getMaxLateralSpeed()
+                    * surface.getSteerInfluence();
 
-        float gripMultiplier = getCurrentGripMultiplier(dt);
-        float steeringResponse = profile.getSteeringResponse() * gripMultiplier;
-        float targetVx = steerInput * profile.getMaxLateralSpeed() * gripMultiplier;
-        float vx = approach(velocity.x, targetVx, steeringResponse * dt);
+            // Oil: actively drag vx back toward zero each frame — feels like glue
+            // stickiness = 0 means no drag (puddle), > 0 means surface fights movement
+            float stuck = driftVx * surface.getStickyness();
+            vx = driftVx + steerContrib - stuck;
+ 
+            vx = MathUtils.clamp(vx,
+                    -profile.getMaxLateralSpeed() * 0.75f,
+                     profile.getMaxLateralSpeed() * 0.75f);
+
+        } else {
+            wasSlipping = false;
+            driftVx = 0f;
+            float gripMultiplier   = getCurrentGripMultiplier(dt);
+            float steeringResponse = profile.getSteeringResponse() * gripMultiplier;
+            float targetVx         = steerInput * profile.getMaxLateralSpeed() * gripMultiplier;
+            vx = approach(velocity.x, targetVx, steeringResponse * dt);
+        }
 
         float vy = computeForwardVelocity(throttleInput, dt);
 

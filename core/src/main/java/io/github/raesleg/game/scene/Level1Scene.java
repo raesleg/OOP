@@ -14,11 +14,11 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.io.CommandHistory;
 import io.github.raesleg.engine.physics.PhysicsBody;
+
 import io.github.raesleg.game.entities.misc.Pedestrian;
 import io.github.raesleg.game.entities.misc.StopSign;
 import io.github.raesleg.game.factory.NPCCarSpawner;
 import io.github.raesleg.game.factory.PickupableSpawner;
-import io.github.raesleg.game.factory.PuddleSpawner;
 import io.github.raesleg.game.factory.TreeSpawner;
 import io.github.raesleg.game.collision.PedestrianHitReaction;
 import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
@@ -48,7 +48,6 @@ public class Level1Scene extends BaseGameScene {
     private static final int MAX_STARS = 5;
 
     private NPCCarSpawner npcSpawner;
-    private PuddleSpawner puddleSpawner;
     private PickupableSpawner pickupSpawner;
     private TreeSpawner treeSpawner;
     private RuleManager ruleManager;
@@ -130,16 +129,6 @@ public class Level1Scene extends BaseGameScene {
                 VIRTUAL_HEIGHT,
                 NPC_SPAWN_INTERVAL,
                 crosswalkExclusions);
-
-        puddleSpawner = new PuddleSpawner(
-                getEntityManager(),
-                getWorld(),
-                VIRTUAL_HEIGHT,
-                4.0f,
-                npcSpawner,
-                crosswalkExclusions);
-
-        npcSpawner.setPuddleSpawner(puddleSpawner);
 
         pickupSpawner = new PickupableSpawner(
                 getEntityManager(),
@@ -319,9 +308,6 @@ public class Level1Scene extends BaseGameScene {
         if (npcSpawner != null) {
             npcSpawner.update(deltaTime, getNpcScrollSpeedPixelsPerSecond());
         }
-        if (puddleSpawner != null) {
-            puddleSpawner.update(deltaTime, getScrollOffset());
-        }
         if (pickupSpawner != null) {
             pickupSpawner.update(deltaTime, getScrollOffset());
         }
@@ -419,12 +405,6 @@ public class Level1Scene extends BaseGameScene {
         }
         sr.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
-
-        if (puddleSpawner != null) {
-            batch.begin();
-            puddleSpawner.render(batch);
-            batch.end();
-        }
     }
 
     @Override
@@ -452,10 +432,6 @@ public class Level1Scene extends BaseGameScene {
         if (npcSpawner != null) {
             npcSpawner.clearAll();
             npcSpawner = null;
-        }
-        if (puddleSpawner != null) {
-            puddleSpawner.clearAll();
-            puddleSpawner = null;
         }
         if (pickupSpawner != null) {
             pickupSpawner.clearAll();

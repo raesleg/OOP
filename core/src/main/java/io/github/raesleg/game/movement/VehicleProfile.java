@@ -2,7 +2,6 @@ package io.github.raesleg.game.movement;
 
 /**
  * Base movement stats for a vehicle type.
- * This replaces the old split between VehicleDynamics and part of MotionTuning.
  */
 public final class VehicleProfile {
 
@@ -99,7 +98,7 @@ public final class VehicleProfile {
                 false,
                 false,
                 true,
-                1.5f
+                2.8f
         );
     }
 
