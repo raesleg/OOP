@@ -75,13 +75,7 @@ public class ResultsScene extends Scene {
     @Override
     public void show() {
         sound = getIOManager().getSound();
-        // sound.addSound("gameover", "gameover_sound.wav");
-        // sound.addSound("select", "uiSelected_sound.wav");
-
-        // if (!result.isCompleted()) {
-        //     sound.playSound("gameover", 1.0f);
-        // }
-
+        
         if (result.isCompleted()) {
             sound.playSound("win", 1.0f);
         } else {

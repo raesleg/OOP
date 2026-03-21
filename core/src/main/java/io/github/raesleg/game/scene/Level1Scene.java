@@ -177,6 +177,7 @@ public class Level1Scene extends BaseGameScene {
                     public void onPedestrianHit(Pedestrian pedestrian, Vector2 knockbackDirection,
                             float knockbackForce) {
                         commandHistory.executeAndRecord(new PedestrianHitCommand(ruleManager));
+                        getSound().playSound("pedestrain_hit", 1.0f);
                         triggerPedestrianHit(pedestrian, knockbackDirection, knockbackForce);
                     }
 
@@ -214,6 +215,13 @@ public class Level1Scene extends BaseGameScene {
         } catch (Exception e) {
             Gdx.app.log("Level1Scene", "Could not load crash sound: " + e.getMessage());
         }
+
+        try {
+            getSound().addSound("pedestrain_hit", "pedestrain_hit.wav");
+        } catch (Exception e) {
+            Gdx.app.log("Level1Scene", "Could not load pedestrain_hit sound: " + e.getMessage());
+        }
+
 
         Gdx.app.log("Level1Scene", "=== INIT LEVEL DATA COMPLETE ===");
     }
