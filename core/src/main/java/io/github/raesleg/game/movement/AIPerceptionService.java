@@ -6,7 +6,6 @@ import io.github.raesleg.engine.entity.Entity;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.game.entities.misc.Pedestrian;
 import io.github.raesleg.game.entities.misc.StopSign;
-import io.github.raesleg.game.entities.misc.Tree;
 import io.github.raesleg.game.entities.vehicles.NPCCar;
 
 /**
@@ -62,7 +61,7 @@ public class AIPerceptionService {
                 nearestPedestrianDistance = dy;
             } else if (entity instanceof NPCCar && dy < nearestVehicleDistance) {
                 nearestVehicleDistance = dy;
-            } else if ((entity instanceof Tree || entity instanceof StopSign) && dy < nearestObstacleDistance) {
+            } else if (entity instanceof StopSign && dy < nearestObstacleDistance) {
                 nearestObstacleDistance = dy;
             }
         }

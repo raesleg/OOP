@@ -60,14 +60,12 @@ public class Level2Scene extends BaseGameScene {
     private PoliceCar policeCar;
     private boolean policeSpawned;
     private boolean sirenStarted;
+    private float policeSpawnDelay = 0f; // counts down after first violation
 
     // All road hazards (puddles, oil spills) in one list —
     // each entry is a RoadHazardSpawner configured with a different SurfaceEffect.
     // No separate puddleSpawner/oilSpawner fields needed.
     private final List<RoadHazardSpawner> hazardSpawners = new ArrayList<>();
-
-    /** Max wanted stars before game over. */
-    private static final int MAX_STARS = 5;
 
     /* ── Rain rendering state ── */
     private static final int DROP_COUNT = 150;
@@ -231,10 +229,13 @@ public class Level2Scene extends BaseGameScene {
 
         setRulesBroken(ruleManager.getRulesBroken());
 
-        // Spawn police on first rule break (not immediately)
+        // Spawn police 2 seconds after first violation
         if (!policeSpawned && ruleManager.getRulesBroken() >= 1) {
-            spawnPolice();
-            policeSpawned = true;
+            policeSpawnDelay += deltaTime;
+            if (policeSpawnDelay >= 0.5f) {
+                spawnPolice();
+                policeSpawned = true;
+            }
         }
 
         if (policeCar != null) {
@@ -244,7 +245,8 @@ public class Level2Scene extends BaseGameScene {
                     getPlayerCar().getY(),
                     getSimulatedSpeedKmh(),
                     getMaxSpeed(),
-                    ruleManager.getPoliceAggression());
+                    ruleManager.getRulesBroken(),
+                    getScrollSpeedPixelsPerSecond());
 
             // Police siren — start on first frame, volume scales with distance
             if (!sirenStarted) {
@@ -266,7 +268,7 @@ public class Level2Scene extends BaseGameScene {
     /** Spawns the police car just below the visible screen. */
     private void spawnPolice() {
         float centreX = ROAD_CENTRE_X / Constants.PPM;
-        float startY = -50f;
+        float startY = -100f; // Start just below the screen
         PhysicsBody policeBody = getWorld().createBody(
                 BodyDef.BodyType.KinematicBody,
                 centreX,
@@ -274,24 +276,20 @@ public class Level2Scene extends BaseGameScene {
                 (80f / Constants.PPM) / 2f,
                 (140f / Constants.PPM) / 2f,
                 0f, 0f, true, null);
-        policeCar = new PoliceCar(policeBody);
+        policeCar = new PoliceCar(policeBody, startY);
         getEntityManager().addEntity(policeCar);
         Gdx.app.log("Level2Scene", "Police spawned — chase begins!");
     }
 
     @Override
     protected boolean isGameOver() {
-        if (getPlayerCar().isFlashing())
-            return false;
-        if (getRulesBroken() >= MAX_STARS)
-            return true;
+        if (getPlayerCar().isFlashing()) return false;
+        // Level 2 has no star-count game over — only the police catching you ends it
         return policeCar != null && policeCar.hasCaughtPlayer();
     }
 
     @Override
     protected String getGameOverReason() {
-        if (getRulesBroken() >= MAX_STARS)
-            return "Too many violations \u2014 5 wanted stars";
         return "Police caught you";
     }
 

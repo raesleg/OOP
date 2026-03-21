@@ -1,107 +1,31 @@
-// package io.github.raesleg.game.movement;
+package io.github.raesleg.game.movement;
 
-// import java.util.function.IntSupplier;
-// import java.util.function.Supplier;
+/**
+ * PoliceMovement — screen-space chase logic for the police car.
+ *
+ * Does NOT implement MovementModel because police movement is
+ * screen-space, not physics-space. MovementManager must not touch it.
+ *
+ * Net screen Y movement per frame = approachSpeed - scrollSpeed
+ *   0 violations + fast player  → police falls behind (negative net, capped at MIN)
+ *   more violations             → approachSpeed climbs → gap closes
+ *   player stopped              → scrollSpeed = 0 → closes at full approachSpeed
+*/
+public class PoliceMovement {
 
-// import com.badlogic.gdx.math.MathUtils;
-// import com.badlogic.gdx.math.Vector2;
+    private static final float BASE_APPROACH_SPEED = 5f;
+    private static final float SPEED_PER_VIOLATION = 5f;
+    private static final float MIN_APPROACH_SPEED  = 5f;
 
-// import io.github.raesleg.engine.movement.MovementModel;
-// import io.github.raesleg.engine.physics.PhysicsBody;
+    public float update(float dt, float playerX, float currentScreenY,
+            float rulesBroken, float scrollSpeed) {
 
-// public class PoliceMovement implements MovementModel {
+        float approachSpeed = BASE_APPROACH_SPEED + rulesBroken * SPEED_PER_VIOLATION;
 
-//     private final Supplier<Vector2> targetPositionSupplier;
-//     private final IntSupplier rulesBrokenSupplier;
+        // Net = police gains on player this much per second
+        // Clamped so police always creeps forward even at max player speed
+        float netYSpeed = Math.max(MIN_APPROACH_SPEED, approachSpeed - scrollSpeed);
 
-//     private final float baseForwardSpeed;
-//     private final float maxForwardSpeed;
-//     private final float baseLateralSpeed;
-//     private final float maxLateralSpeed;
-//     private final float behindOffset;
-//     private final float snapDistance;
-
-//     public PoliceMovement(Supplier<Vector2> targetPositionSupplier,
-//                           IntSupplier rulesBrokenSupplier) {
-//         this(targetPositionSupplier, rulesBrokenSupplier,
-//                 3.2f, 9.5f,
-//                 2.8f, 8.0f,
-//                 2.2f, 0.12f);
-//     }
-
-//     public PoliceMovement(Supplier<Vector2> targetPositionSupplier,
-//                           IntSupplier rulesBrokenSupplier,
-//                           float baseForwardSpeed,
-//                           float maxForwardSpeed,
-//                           float baseLateralSpeed,
-//                           float maxLateralSpeed,
-//                           float behindOffset,
-//                           float snapDistance) {
-//         this.targetPositionSupplier = targetPositionSupplier;
-//         this.rulesBrokenSupplier = rulesBrokenSupplier;
-//         this.baseForwardSpeed = baseForwardSpeed;
-//         this.maxForwardSpeed = maxForwardSpeed;
-//         this.baseLateralSpeed = baseLateralSpeed;
-//         this.maxLateralSpeed = maxLateralSpeed;
-//         this.behindOffset = behindOffset;
-//         this.snapDistance = snapDistance;
-//     }
-
-//     @Override
-//     public void step(PhysicsBody body, float x, float y, float dt) {
-//         if (body == null || targetPositionSupplier == null || rulesBrokenSupplier == null) return;
-
-//         Vector2 target = targetPositionSupplier.get();
-//         if (target == null) return;
-
-//         Vector2 policePos = body.getPosition();
-//         int rulesBroken = Math.max(0, rulesBrokenSupplier.getAsInt());
-
-//         float aggression = getAggression01(rulesBroken);
-
-//         // Ramp police pressure with rules broken
-//         float forwardSpeed = MathUtils.lerp(baseForwardSpeed, maxForwardSpeed, aggression);
-//         float lateralSpeed = MathUtils.lerp(baseLateralSpeed, maxLateralSpeed, aggression);
-//         float steeringSharpness = MathUtils.lerp(2.8f, 6.0f, aggression);
-
-//         // Police wants same lane as player
-//         float dx = target.x - policePos.x;
-
-//         float vx;
-//         if (Math.abs(dx) < snapDistance) {
-//             vx = 0f;
-//         } else {
-//             float desiredVx = Math.signum(dx) * lateralSpeed;
-//             vx = approach(body.getVelocity().x, desiredVx, steeringSharpness * dt);
-//         }
-
-//         // Police stays behind at first, but becomes more aggressive and closes in harder
-//         float desiredY = target.y - behindOffset + aggression * 1.2f;
-//         float dy = desiredY - policePos.y;
-
-//         float vy;
-//         if (dy > 0f) {
-//             // catch up
-//             vy = forwardSpeed + Math.min(dy * 1.25f, 3.0f + aggression * 3.5f);
-//         } else {
-//             // if already too close, don't overshoot too much
-//             vy = Math.max(1.2f, forwardSpeed * 0.55f);
-//         }
-
-//         body.setLinearDamping(MathUtils.lerp(2.5f, 1.2f, aggression));
-//         body.setAngularVelocity(0f);
-//         body.setVelocity(vx, vy);
-//     }
-
-//     private float getAggression01(int rulesBroken) {
-//         // 0 rules = calm
-//         // 8+ rules = max aggression
-//         return Math.min(1f, rulesBroken / 8f);
-//     }
-
-//     private float approach(float current, float target, float amount) {
-//         if (current < target) return Math.min(current + amount, target);
-//         if (current > target) return Math.max(current - amount, target);
-//         return target;
-//     }
-// }
+        return currentScreenY + netYSpeed * dt;
+    }
+}

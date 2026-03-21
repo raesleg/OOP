@@ -30,14 +30,14 @@ public class PedestrianHitCommand implements ICommand {
 
     @Override
     public void execute() {
-        ruleManager.setPedestrianHit();
+        ruleManager.recordPedestrianHit();
         Gdx.app.log("PedestrianHitCommand",
                 "Pedestrian hit! Instant fail triggered.");
     }
 
     @Override
     public void undo() {
-        ruleManager.clearInstantFail();
-        Gdx.app.log("PedestrianHitCommand", "Instant fail cleared.");
+        ruleManager.undoLastViolation();
+        Gdx.app.log("PedestrianHitCommand", "Pedestrian hit undone.");
     }
 }

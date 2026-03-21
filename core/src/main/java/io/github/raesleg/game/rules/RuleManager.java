@@ -1,5 +1,18 @@
 package io.github.raesleg.game.rules;
 
+/**
+ * RuleManager — tracks all player violations during a level.
+ *
+ * Each violation type has its own counter for the results screen,
+ * plus a shared rulesBroken total used for game-over and police aggression.
+ *
+ * getPoliceAggression() lives here because aggression is derived purely
+ * from rules state — it is not a movement or AI concern.
+ *
+ * Note: undoLastViolation() is kept for Command pattern support
+ * (called by CommandHistory.undo() via BreakRuleCommand).
+ * Do not call it directly — always go through CommandHistory.
+ */
 public class RuleManager {
 
     private int rulesBroken;
@@ -7,19 +20,19 @@ public class RuleManager {
     private int speedingViolations;
     private int pedestrianHits;
     private int curbHits;
-    private boolean instantFail;
+    private int trafficCrashes;
 
-    public void setRedLightViolation() {
+    public void recordRedLightViolation() {
         redLightViolations++;
         rulesBroken++;
     }
 
-    public void setPedestrianHit() {
+    public void recordPedestrianHit() {
         pedestrianHits++;
-        instantFail = true;
+        rulesBroken++;
     }
 
-    public void setCurbHit() {
+    public void recordCurbHit() {
         curbHits++;
         rulesBroken++;
     }
@@ -28,60 +41,34 @@ public class RuleManager {
         rulesBroken++;
     }
 
-    public void setSpeedingViolation() {
+    public void recordSpeedingViolation() {
         speedingViolations++;
         rulesBroken++;
     }
 
-    public void undoLastViolation() { //????
-        if (rulesBroken > 0) {
-            rulesBroken--;
-        }
+    public void recordTrafficCrash() {
+        trafficCrashes++;
+        rulesBroken++;
     }
 
-    public int getRulesBroken() {
-        return rulesBroken;
+    /** Called by CommandHistory.undo() via BreakRuleCommand — do not call directly. */
+    public void undoLastViolation() {
+        if (rulesBroken > 0) rulesBroken--;
     }
 
-    public int getRedLightViolations() {
-        return redLightViolations;
-    }
-
-    public int getSpeedingViolations() {
-        return speedingViolations;
-    }
-
-    public int getPedestrianHits() {
-        return pedestrianHits;
-    }
-
-    public int getCurbHits() {
-        return curbHits;
-    }
-
-    /**
-     * Returns 0..1 aggression scale for police AI.
-     * 0 rules broken = calm
-     * 5 rules broken = max aggression
-     */ // dont know if supposed to be here
-    public float getPoliceAggression() {
-        return Math.min(1f, rulesBroken / 5f);
-    }
-
-    public boolean isInstantFail() {
-        return instantFail;
-    }
-
-    public void clearInstantFail() {
-        instantFail = false;
-    }
+    public int getRulesBroken()        { return rulesBroken; }
+    public int getRedLightViolations() { return redLightViolations; }
+    public int getSpeedingViolations() { return speedingViolations; }
+    public int getPedestrianHits()     { return pedestrianHits; }
+    public int getCurbHits()           { return curbHits; }
+    public int getTrafficCrashes()     { return trafficCrashes; }
 
     public void reset() {
-        rulesBroken = 0;
+        rulesBroken        = 0;
         redLightViolations = 0;
         speedingViolations = 0;
-        pedestrianHits = 0;
-        curbHits = 0;
-        instantFail = false;
+        pedestrianHits     = 0;
+        curbHits           = 0;
+        trafficCrashes     = 0;
     }
 }
