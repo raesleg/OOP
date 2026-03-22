@@ -7,7 +7,7 @@ import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.entities.vehicles.npc.world.effects.ExplosionParticle;
+import io.github.raesleg.game.entities.misc.ExplosionParticle;
 
 /**
  * Handles legacy AI entity explosions.

@@ -1,9 +1,11 @@
-package io.github.raesleg.game.entities;
+package io.github.raesleg.game.entities.misc;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import io.github.raesleg.engine.entity.IExpirable;
 import io.github.raesleg.engine.entity.TextureObject;
+import io.github.raesleg.game.entities.IPerceivable;
+import io.github.raesleg.game.entities.PerceptionCategory;
 
 /**
  * StopSign — A static sprite entity that scrolls with the road.
@@ -17,7 +19,7 @@ import io.github.raesleg.engine.entity.TextureObject;
  * <b>Engine/Game Boundary:</b> Extends engine's TextureObject, lives in game
  * layer.
  */
-public class StopSign extends TextureObject implements IExpirable {
+public class StopSign extends TextureObject implements IExpirable, IPerceivable {
 
     private final float relativeY;
     private boolean expired;
@@ -52,6 +54,11 @@ public class StopSign extends TextureObject implements IExpirable {
     @Override
     public boolean isExpired() {
         return expired;
+    }
+
+    @Override
+    public PerceptionCategory getPerceptionCategory() {
+        return PerceptionCategory.OBSTACLE;
     }
 
     public void markExpired() {

@@ -8,10 +8,11 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import io.github.raesleg.engine.physics.BodyType;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+/* Engine Imports */
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.collision.CollisionManager;
 import io.github.raesleg.engine.entity.EntityManager;
@@ -21,12 +22,17 @@ import io.github.raesleg.engine.movement.UserControlled;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.Scene;
+
+/* Game Imports */
 import io.github.raesleg.game.collision.GameCollisionHandler;
+import io.github.raesleg.game.entities.misc.ExplosionOverlay;
+import io.github.raesleg.game.entities.misc.ExplosionParticle;
 import io.github.raesleg.game.entities.misc.Trees;
 import io.github.raesleg.game.entities.vehicles.PlayerCar;
 import io.github.raesleg.game.io.Keyboard;
-import io.github.raesleg.game.movement.PlayerMovement;
-import io.github.raesleg.game.movement.PlayerMovementModel;
+import io.github.raesleg.game.movement.CarMovementModel;
+import io.github.raesleg.game.movement.PlayerMovementStrategy;
+import io.github.raesleg.game.movement.VehicleProfile;
 import io.github.raesleg.game.state.DashboardUI;
 
 /**
@@ -245,13 +251,13 @@ public abstract class BaseGameScene extends Scene {
         float roadLeftM = RoadRenderer.ROAD_LEFT / Constants.PPM;
         float roadRightM = RoadRenderer.ROAD_RIGHT / Constants.PPM;
 
-        world.createBody(BodyDef.BodyType.StaticBody,
+        world.createBody(BodyType.STATIC,
                 roadLeftM - t / 2f, worldH / 2f, t / 2f, worldH / 2f, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody,
+        world.createBody(BodyType.STATIC,
                 roadRightM + t / 2f, worldH / 2f, t / 2f, worldH / 2f, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody,
+        world.createBody(BodyType.STATIC,
                 worldW / 2f, -t / 2f, worldW / 2f, t / 2f, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody,
+        world.createBody(BodyType.STATIC,
                 worldW / 2f, worldH + t / 2f, worldW / 2f, t / 2f, 0, 0.4f, false, null);
 
         /* Player car — centre lane, near bottom */
@@ -261,26 +267,25 @@ public abstract class BaseGameScene extends Scene {
         float carH = 185f; // 64f
 
         PhysicsBody carBody = world.createBody(
-                BodyDef.BodyType.DynamicBody,
+                BodyType.DYNAMIC,
                 carPixelX / Constants.PPM,
                 (carPixelY + carH / 2f) / Constants.PPM,
                 (carW / Constants.PPM) / 2f,
                 (carH / Constants.PPM) / 2f,
                 1f, 0.3f, false, null);
-        //carBody.setBullet(true);
+        carBody.setBullet(true);
 
         /* Input bindings */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         UserControlled user = new UserControlled(kb);
 
-        /* Testing Purposes for Movement */
         playerCar = new PlayerCar(
                 "car.png",
                 carPixelX - carW / 2f, carPixelY,
                 carW, carH,
-                user, 
-                new PlayerMovement(),
-                new PlayerMovementModel(),
+                user,
+                new PlayerMovementStrategy(),
+                new CarMovementModel(VehicleProfile.playerArcade()),
                 carBody);
 
         getEntityManager().addEntity(playerCar);
@@ -290,17 +295,10 @@ public abstract class BaseGameScene extends Scene {
         kb.bindAction(Input.Keys.LEFT, Constants.LEFT);
         kb.bindAction(Input.Keys.D, Constants.RIGHT);
         kb.bindAction(Input.Keys.RIGHT, Constants.RIGHT);
-
         kb.bindAction(Input.Keys.W, Constants.UP);
         kb.bindAction(Input.Keys.UP, Constants.UP);
         kb.bindAction(Input.Keys.S, Constants.DOWN);
         kb.bindAction(Input.Keys.DOWN, Constants.DOWN);
-
-        // kb.bindAction(Input.Keys.W, "ACCEL");
-        // kb.bindAction(Input.Keys.UP, "ACCEL");
-        // kb.bindAction(Input.Keys.S, "BRAKE");
-        // kb.bindAction(Input.Keys.DOWN, "BRAKE");
-
         kb.bindAction(Input.Keys.SPACE, Constants.ACTION);
         kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
         kb.addBind(Input.Keys.M, this::toggleMute, true);
@@ -377,7 +375,6 @@ public abstract class BaseGameScene extends Scene {
         trees.update(simulatedSpeed, deltaTime);
 
         /* Dashboard updates */
-        score = (int) (gameTime * 10f);
         float progress = Math.min(1f, (-scrollOffset) / getLevelLength());
 
         dashboard.onScoreUpdated(score);
@@ -548,6 +545,15 @@ public abstract class BaseGameScene extends Scene {
         return t * getMaxScrollPixelsPerSecond();
     }
 
+    /**
+     * NPC scroll speed — has a minimum floor so NPCs always drift down
+     * the screen even when the player is stationary.
+     */
+    protected float getNpcScrollSpeedPixelsPerSecond() {
+        float minScroll = getMaxScrollPixelsPerSecond() * 0.25f;
+        return Math.max(minScroll, getScrollSpeedPixelsPerSecond());
+    }
+
     protected float getSimulatedSpeedKmh() {
         return simulatedSpeed;
     }
@@ -620,14 +626,12 @@ public abstract class BaseGameScene extends Scene {
         // Spawn visual explosion at player position
         float px = playerCar.getX() + playerCar.getW() / 2f;
         float py = playerCar.getY() + playerCar.getH() / 2f;
-        io.github.raesleg.game.entities.vehicles.npc.world.effects.ExplosionParticle
-                .spawnExplosion(getEntityManager(),
-                        new com.badlogic.gdx.math.Vector2(px / Constants.PPM, py / Constants.PPM), 50f);
+        ExplosionParticle.spawnExplosion(getEntityManager(),
+                new com.badlogic.gdx.math.Vector2(px / Constants.PPM, py / Constants.PPM), 50f);
 
         // Large explode.png overlay
-        getEntityManager().addEntity(
-                new io.github.raesleg.game.entities.ExplosionOverlay(
-                        "explode.png", px - 100f, py - 100f, 200f, 200f, EXPLOSION_DELAY));
+        getEntityManager().addEntity(new ExplosionOverlay(
+                "explode.png", px - 100f, py - 100f, 200f, 200f, EXPLOSION_DELAY));
 
         sound.playSound("explosion_big", 0.5f);
         stopMoveLoop();

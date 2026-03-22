@@ -2,24 +2,25 @@ package io.github.raesleg.game.zone;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import io.github.raesleg.engine.physics.BodyType;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.Shape;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
-import io.github.raesleg.game.movement.MotionTuning;
+
+import io.github.raesleg.game.movement.SurfaceEffect;
 
 public class MotionZone extends Shape {
 
-    private MotionTuning tuning;
+    private SurfaceEffect tuning;
     private PhysicsBody body;
 
     public MotionZone(
             PhysicsWorld world,
             float x, float y,
             float w, float h,
-            MotionTuning tuning,
+            SurfaceEffect tuning,
             Color color) {
         super( // in pixels
                 (x - w) * Constants.PPM,
@@ -31,7 +32,7 @@ public class MotionZone extends Shape {
         this.tuning = tuning;
 
         this.body = world.createBody(
-                BodyDef.BodyType.StaticBody,
+                BodyType.STATIC,
                 x, y,
                 w, h,
                 0f, 0f,
@@ -44,7 +45,7 @@ public class MotionZone extends Shape {
      * PhysicsBody (kinematic) so subclasses can reposition it each frame.
      */
     protected MotionZone(float xPx, float yPx, float wPx, float hPx,
-            MotionTuning tuning, Color color, PhysicsBody body) {
+            SurfaceEffect tuning, Color color, PhysicsBody body) {
         super(xPx, yPx, wPx, hPx, color);
         this.tuning = tuning;
         this.body = body;
@@ -52,7 +53,7 @@ public class MotionZone extends Shape {
             body.setUserData(this);
     }
 
-    public MotionTuning getTuning() {
+    public SurfaceEffect getTuning() {
         return tuning;
     }
 

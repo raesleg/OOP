@@ -9,16 +9,16 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import io.github.raesleg.engine.physics.BodyType;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.io.CommandHistory;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.entities.Pedestrian;
-import io.github.raesleg.game.entities.StopSign;
+
+import io.github.raesleg.game.entities.misc.Pedestrian;
+import io.github.raesleg.game.entities.misc.StopSign;
 import io.github.raesleg.game.factory.NPCCarSpawner;
 import io.github.raesleg.game.factory.PickupableSpawner;
-import io.github.raesleg.game.factory.PuddleSpawner;
 import io.github.raesleg.game.factory.TreeSpawner;
 import io.github.raesleg.game.collision.PedestrianHitReaction;
 import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
@@ -48,7 +48,6 @@ public class Level1Scene extends BaseGameScene {
     private static final int MAX_STARS = 5;
 
     private NPCCarSpawner npcSpawner;
-    private PuddleSpawner puddleSpawner;
     private PickupableSpawner pickupSpawner;
     private TreeSpawner treeSpawner;
     private RuleManager ruleManager;
@@ -131,16 +130,6 @@ public class Level1Scene extends BaseGameScene {
                 NPC_SPAWN_INTERVAL,
                 crosswalkExclusions);
 
-        puddleSpawner = new PuddleSpawner(
-                getEntityManager(),
-                getWorld(),
-                VIRTUAL_HEIGHT,
-                4.0f,
-                npcSpawner,
-                crosswalkExclusions);
-
-        npcSpawner.setPuddleSpawner(puddleSpawner);
-
         pickupSpawner = new PickupableSpawner(
                 getEntityManager(),
                 getWorld(),
@@ -205,13 +194,13 @@ public class Level1Scene extends BaseGameScene {
         }
 
         try {
-            getSound().addSound("boundary_hit", "collide_sound.wav");
+            getSound().addSound("boundary_hit", "crash_sound.wav");
         } catch (Exception e) {
             Gdx.app.log("Level1Scene", "Could not load boundary_hit sound: " + e.getMessage());
         }
 
         try {
-            getSound().addSound("crash", "collide_sound.wav");
+            getSound().addSound("crash", "crash_sound.wav");
         } catch (Exception e) {
             Gdx.app.log("Level1Scene", "Could not load crash sound: " + e.getMessage());
         }
@@ -222,6 +211,11 @@ public class Level1Scene extends BaseGameScene {
             Gdx.app.log("Level1Scene", "Could not load pedestrain_hit sound: " + e.getMessage());
         }
 
+        try {
+            getSound().addSound("scream", "scream.mp3");
+        } catch (Exception e) {
+            Gdx.app.log("Level1Scene", "Could not load scream sound: " + e.getMessage());
+        }
 
         Gdx.app.log("Level1Scene", "=== INIT LEVEL DATA COMPLETE ===");
     }
@@ -231,7 +225,7 @@ public class Level1Scene extends BaseGameScene {
         float zoneHalfH = (CROSSWALK_HEIGHT / Constants.PPM) / 2f;
 
         PhysicsBody zoneBody = getWorld().createBody(
-                BodyDef.BodyType.DynamicBody,
+                BodyType.DYNAMIC,
                 ROAD_CENTRE_X / Constants.PPM,
                 worldY / Constants.PPM,
                 zoneHalfW,
@@ -262,16 +256,20 @@ public class Level1Scene extends BaseGameScene {
         float pedHalfW = (pedW / Constants.PPM) / 2f;
         float pedHalfH = (pedH / Constants.PPM) / 2f;
 
+        // Hitbox is smaller than sprite — just the person's body, not the full tile
+        float hitboxHalfW = pedHalfW * 0.4f;
+        float hitboxHalfH = pedHalfH * 0.4f;
+
         PhysicsBody pedBody = getWorld().createBody(
-            BodyDef.BodyType.DynamicBody,
-            (pedStartX + pedW / 2f) / Constants.PPM,
-            (worldY + pedH / 2f) / Constants.PPM,
-            pedHalfW,
-            pedHalfH,
-            0f,
-            0f,
-            false,
-            null);
+                BodyType.DYNAMIC,
+                (pedStartX + pedW / 2f) / Constants.PPM,
+                (worldY + pedH / 2f) / Constants.PPM,
+                hitboxHalfW,
+                hitboxHalfH,
+                0f,
+                0f,
+                false,
+                null);
 
         Pedestrian pedestrian = new Pedestrian(pedStartX, worldY, pedW, pedH, pedBody);
         PedestrianIntent intent = new PedestrianIntent(direction);
@@ -307,10 +305,7 @@ public class Level1Scene extends BaseGameScene {
     @Override
     protected void updateGame(float deltaTime) {
         if (npcSpawner != null) {
-            npcSpawner.update(deltaTime, getScrollOffset());
-        }
-        if (puddleSpawner != null) {
-            puddleSpawner.update(deltaTime, getScrollOffset());
+            npcSpawner.update(deltaTime, getNpcScrollSpeedPixelsPerSecond());
         }
         if (pickupSpawner != null) {
             pickupSpawner.update(deltaTime, getScrollOffset());
@@ -339,7 +334,6 @@ public class Level1Scene extends BaseGameScene {
             Pedestrian pedestrian = encounter.pedestrian;
             CrosswalkZone zone = encounter.zone;
 
-
             if (pedestrian.isExpired() || zone.isExpired()) {
                 encounterIter.remove();
                 continue;
@@ -362,7 +356,8 @@ public class Level1Scene extends BaseGameScene {
                 zone.setCrossingActive(false);
             }
 
-            // Check for fail: either animation just finished, or failQueued with no active reaction
+            // Check for fail: either animation just finished, or failQueued with no active
+            // reaction
             if (encounter.failQueued && !encounter.crashHandled
                     && (encounter.hitReaction.isFinished() || !encounter.hitReaction.isActive())) {
                 encounter.crashHandled = true;
@@ -409,12 +404,6 @@ public class Level1Scene extends BaseGameScene {
         }
         sr.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
-
-        if (puddleSpawner != null) {
-            batch.begin();
-            puddleSpawner.render(batch);
-            batch.end();
-        }
     }
 
     @Override
@@ -442,10 +431,6 @@ public class Level1Scene extends BaseGameScene {
         if (npcSpawner != null) {
             npcSpawner.clearAll();
             npcSpawner = null;
-        }
-        if (puddleSpawner != null) {
-            puddleSpawner.clearAll();
-            puddleSpawner = null;
         }
         if (pickupSpawner != null) {
             pickupSpawner.clearAll();

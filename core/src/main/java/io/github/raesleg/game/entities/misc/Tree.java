@@ -1,15 +1,17 @@
-package io.github.raesleg.game.entities;
+package io.github.raesleg.game.entities.misc;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import io.github.raesleg.engine.entity.IExpirable;
 import io.github.raesleg.engine.entity.TextureObject;
+import io.github.raesleg.game.entities.IPerceivable;
+import io.github.raesleg.game.entities.PerceptionCategory;
 
 /**
  * Tree — Decorative scrollable entity rendered on the road shoulders.
  * Uses tree1.png or tree2.png. Implements IExpirable for auto-cleanup.
  */
-public class Tree extends TextureObject implements IExpirable {
+public class Tree extends TextureObject implements IExpirable, IPerceivable {
 
     private final float relativeY;
     private boolean expired;
@@ -31,6 +33,11 @@ public class Tree extends TextureObject implements IExpirable {
     @Override
     public boolean isExpired() {
         return expired;
+    }
+
+    @Override
+    public PerceptionCategory getPerceptionCategory() {
+        return PerceptionCategory.OBSTACLE;
     }
 
     public void markExpired() {

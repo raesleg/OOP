@@ -3,7 +3,7 @@ package io.github.raesleg.game.collision;
 import com.badlogic.gdx.math.Vector2;
 
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.entities.Pedestrian;
+import io.github.raesleg.game.entities.misc.Pedestrian;
 
 /**
  * Collision aftermath behaviour for a pedestrian.

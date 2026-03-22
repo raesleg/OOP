@@ -5,13 +5,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import io.github.raesleg.engine.physics.BodyType;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
-import io.github.raesleg.game.entities.Pickupable;
+import io.github.raesleg.game.entities.misc.Pickupable;
 import io.github.raesleg.game.scene.RoadRenderer;
 
 /**
@@ -84,14 +84,14 @@ public class PickupableSpawner {
         // CHANGED: DynamicBody with sensor=true instead of KinematicBody
         // This ensures collision detection works from ALL angles
         PhysicsBody body = world.createBody(
-                BodyDef.BodyType.DynamicBody, // Changed from KinematicBody
+                BodyType.DYNAMIC, // Changed from KinematicBody
                 laneX / Constants.PPM,
                 relativeY / Constants.PPM,
                 (PICKUP_SIZE / Constants.PPM) / 2f,
                 (PICKUP_SIZE / Constants.PPM) / 2f,
-                0.1f,  // Small density (very light)
-                0f,    // No friction
-                true,  // Sensor = true (no physical collision response)
+                0.1f, // Small density (very light)
+                0f, // No friction
+                true, // Sensor = true (no physical collision response)
                 null);
 
         // Very high damping so it doesn't drift or move

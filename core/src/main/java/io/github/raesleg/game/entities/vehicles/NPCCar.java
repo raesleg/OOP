@@ -1,155 +1,87 @@
 package io.github.raesleg.game.entities.vehicles;
 
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-
+import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.IExpirable;
-import io.github.raesleg.engine.entity.TextureObject;
+import io.github.raesleg.engine.io.ControlSource;
+import io.github.raesleg.engine.movement.MovableEntity;
+import io.github.raesleg.engine.movement.MovementModel;
+import io.github.raesleg.engine.movement.MovementStrategy;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.scene.RoadRenderer;
 
-/**
- * NPCCar — Non-player traffic vehicle entity.
- * <p>
- * NPC cars are part of the scrolling road environment. Unlike player-controlled
- * entities, NPC cars:
- * <ul>
- * <li>Move with the road scroll (don't use MovableEntity)</li>
- * <li>Have kinematic Box2D bodies (create real collisions but move manually)</li>
- * <li>Are positioned relative to the player's speed (road scroll offset)</li>
- * <li>Implement IExpirable for automatic cleanup when off-screen</li>
- * </ul>
- * <p>
- * <b>Design Pattern:</b> This demonstrates <b>Composition over Inheritance</b>
- * — NPCCar extends TextureObject directly rather than MovableEntity, because
- * it doesn't need physics-driven movement. It has a kinematic PhysicsBody for
- * collision detection AND physical response.
- * <p>
- * <b>Scalability:</b> Easy to add different NPC car types (truck, bus, sports car)
- * by extending this class or using a factory pattern.
- */
-public class NPCCar extends TextureObject implements IExpirable {
-    
-    private final PhysicsBody body;
-    private final int laneIndex; // 0, 1, or 2 (left, center, right)
-    private final float relativeY; // Initial Y position relative to scroll
-    private boolean expired; // Marks this NPC for removal
-    
-    /**
-     * Creates an NPC car at a specific lane and scroll position.
-     * 
-     * @param filename Texture asset path (e.g., "npc_car.png")
-     * @param laneIndex Lane number (0=left, 1=center, 2=right)
-     * @param relativeY Y position relative to current scroll offset
-     * @param width Car width in pixels
-     * @param height Car height in pixels
-     * @param body PhysicsBody (should be kinematic for collision response)
-     */
-    public NPCCar(String filename, int laneIndex, float relativeY, 
-                  float width, float height, PhysicsBody body) {
-        // Start position will be updated every frame based on scroll
-        super(filename, 0, 0, width, height);
-        
+import io.github.raesleg.game.entities.IPerceivable;
+import io.github.raesleg.game.entities.PerceptionCategory;
+import io.github.raesleg.game.movement.SensorComponent;
+
+public class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
+
+    private final int laneIndex;
+    private final SensorComponent sensor;
+    private boolean expired;
+
+    public NPCCar(String filename,
+            float x, float y,
+            float w, float h,
+            int laneIndex,
+            ControlSource controls,
+            MovementStrategy strategy,
+            MovementModel movementModel,
+            PhysicsBody body,
+            SensorComponent sensor) {
+        super(filename, x, y, w, h, controls, movementModel, body);
+        setMovementStrategy(strategy);
         this.laneIndex = laneIndex;
-        this.relativeY = relativeY;
-        this.body = body;
+        this.sensor = sensor;
         this.expired = false;
-        
-        // Link this entity to the physics body for collision detection
-        body.setUserData(this);
     }
-    
-    /**
-     * Updates NPC car position based on road scroll offset.
-     * <p>
-     * Called every frame by NPCCarSpawner. This makes NPC cars "move with
-     * the road" — as the player drives forward (increasing scroll offset),
-     * NPC cars scroll backward relative to the screen.
-     * 
-     * For kinematic bodies, we need to update the physics body position
-     * using Box2D's transform system.
-     * 
-     * @param scrollOffset Current road scroll offset (negative = player moving forward)
-     */
-    public void updatePosition(float scrollOffset, float screenHeight) {
-        // Calculate lane X position (same as RoadRenderer lane positioning)
-        float laneX = RoadRenderer.ROAD_LEFT + (laneIndex + 0.5f) * RoadRenderer.ROAD_WIDTH / 3f;
-        
-        // Calculate Y position based on scroll
-        // relativeY is the car's "fixed" position in the world
-        // scrollOffset moves the entire world up/down
-        float screenY = relativeY + scrollOffset;
-        
-        // Update visual position (centered on lane)
-        setX(laneX - getW() / 2f);
-        setY(screenY);
-        
-        // Sync dynamic body position (convert pixels to meters)
-        float bodyX = laneX / io.github.raesleg.engine.Constants.PPM;
-        float bodyY = (screenY + getH() / 2f) / io.github.raesleg.engine.Constants.PPM;
-        
-        // Update dynamic body position manually
-        if (body != null) {
-            body.setPosition(bodyX, bodyY);
+
+    public void updateLifeCycle(float scrollPixelsPerSecond, float deltaTime, float screenHeight) {
+        if (getPhysicsBody() == null) {
+            return;
+        }
+
+        // Move NPC body down the screen at the same rate as the world scroll
+        float bodyX = getPhysicsBody().getPosition().x;
+        float bodyY = getPhysicsBody().getPosition().y;
+        float scrollMetersPerSecond = scrollPixelsPerSecond / Constants.PPM;
+        getPhysicsBody().setPosition(bodyX, bodyY - scrollMetersPerSecond * deltaTime);
+
+        // Sync sprite position from physics body
+        float newY = getPhysicsBody().getPosition().y * Constants.PPM - getH() / 2f;
+        setX(getPhysicsBody().getPosition().x * Constants.PPM - getW() / 2f);
+        setY(newY);
+
+        // Expire when scrolled off the bottom of the screen
+        if (newY < -getH() * 2f) {
+            expired = true;
         }
     }
-    
-    // ═══════════════════════════════════════════════════════════
-    // IExpirable Implementation
-    // ═══════════════════════════════════════════════════════════
-    
+
     @Override
     public boolean isExpired() {
         return expired;
     }
-    
-    /**
-     * Manually marks this NPC as expired (used by NPCCarSpawner.clearAll()).
-     * EntityManager will automatically remove it on the next update.
-     */
+
+    @Override
+    public PerceptionCategory getPerceptionCategory() {
+        return PerceptionCategory.VEHICLE;
+    }
+
     public void markExpired() {
         expired = true;
     }
-    
-    // ═══════════════════════════════════════════════════════════
-    // Accessors
-    // ═══════════════════════════════════════════════════════════
-    
-    @Override
-    public void draw(SpriteBatch batch) {
-        if (getTexture() != null) {
-            // Standard texture rendering
-            batch.draw(
-                getTexture(),
-                getX(),
-                getY(),
-                getW(),
-                getH()
-            );
-        }
-    }
-    
-    @Override
-    public void dispose() {
-        // Texture is disposed by TextureObject parent
-        // PhysicsBody disposal is handled by PhysicsWorld
-        if (body != null) {
-            body.destroy();
-        }
-    }
-    
-    // ═══════════════════════════════════════════════════════════
-    // Accessors
-    // ═══════════════════════════════════════════════════════════
-    
-    public PhysicsBody getPhysicsBody() {
-        return body;
-    }
-    
+
     public int getLaneIndex() {
         return laneIndex;
     }
-    
-    public float getRelativeY() {
-        return relativeY;
+
+    public SensorComponent getSensor() {
+        return sensor;
+    }
+
+    @Override
+    public void dispose() {
+        if (getPhysicsBody() != null) {
+            getPhysicsBody().destroy();
+        }
     }
 }

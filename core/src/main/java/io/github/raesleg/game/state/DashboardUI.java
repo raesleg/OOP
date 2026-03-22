@@ -11,6 +11,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import io.github.raesleg.engine.entity.TextureObject;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +35,7 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     private final Label scoreLabel;
     private final Label progressLabel;
 
-    //start finish flags
+    // start finish flags
     private final Texture finishIcon;
     private final Texture startIcon;
 
@@ -99,12 +101,12 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         targetScore = 0;
 
         // Load textures
-        dashboardTex = new Texture("dashboard.png");
-        starTex = new Texture("star.png");
-        carTex = new Texture("car.png");
-        policeTex = new Texture("policecar_noflash.png");
-        finishIcon = new Texture("finish_flag.png");
-        startIcon = new Texture("start_flag.png");
+        dashboardTex = TextureObject.getOrLoadTexture("dashboard.png");
+        starTex = TextureObject.getOrLoadTexture("star.png");
+        carTex = TextureObject.getOrLoadTexture("car.png");
+        policeTex = TextureObject.getOrLoadTexture("policecar_noflash.png");
+        finishIcon = TextureObject.getOrLoadTexture("finish_flag.png");
+        startIcon = TextureObject.getOrLoadTexture("start_flag.png");
 
         // Popup font
         popupFont = new BitmapFont();
@@ -346,7 +348,7 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         // "S" label at start
         float sflagWidth = 50f;
         float sflagheight = 30f;
-        float sflagX = barX  - 50f;
+        float sflagX = barX - 50f;
         float sflagY = barY - sflagWidth / 2f + 10f;
 
         batch.draw(startIcon, sflagX, sflagY, sflagWidth, sflagheight);
