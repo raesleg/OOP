@@ -427,6 +427,8 @@ public abstract class BaseGameScene extends Scene {
     public void pause() {
         isPaused = true;
         stopMoveLoop();
+        sound.stopSound("rain");
+        sound.stopSound("policesiren");
         if (bgm != null)
             bgm.pause();
         Gdx.app.log(getClass().getSimpleName(), "Scene paused");
@@ -439,6 +441,8 @@ public abstract class BaseGameScene extends Scene {
             syncBgmVolume();
             bgm.play();
         }
+        sound.loopSound("rain");
+        sound.loopSound("policesiren");
         Gdx.app.log(getClass().getSimpleName(), "Scene resumed");
     }
 
