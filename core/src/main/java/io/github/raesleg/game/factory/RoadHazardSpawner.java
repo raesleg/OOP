@@ -40,6 +40,7 @@ public class RoadHazardSpawner {
     private static final float HAZARD_W = 100f;
     private static final float HAZARD_H = 40f;
 
+
     /** Backwards-compatible constructor — spawns puddles. */
     public RoadHazardSpawner(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float spawnInterval,
@@ -93,6 +94,7 @@ public class RoadHazardSpawner {
         Set<Integer> blockedLanes = (npcCarSpawner != null)
                 ? npcCarSpawner.getOccupiedLanesNear(relativeY, 400f)
                 : Set.of();
+
 
         List<Integer> freeLanes = new ArrayList<>();
         for (int i = 0; i < 3; i++) {

@@ -177,7 +177,7 @@ public class NPCCarSpawner {
                 laneIndex,
                 new AIControlled(),
                 new NpcDrivingStrategy(perceptionService, sensor),
-                new CarMovementModel(VehicleProfile.npcTraffic()),
+                new CarMovementModel(VehicleProfile.npcTraffic(), entityManager),
                 body,
                 sensor);
         // Add to manager and active list

@@ -26,7 +26,7 @@ import io.github.raesleg.engine.scene.Scene;
 /* Game Imports */
 import io.github.raesleg.game.collision.GameCollisionHandler;
 import io.github.raesleg.game.entities.misc.ExplosionOverlay;
-import io.github.raesleg.game.entities.misc.ExplosionParticle;
+import io.github.raesleg.game.entities.misc.Particle;
 import io.github.raesleg.game.entities.misc.Trees;
 import io.github.raesleg.game.entities.vehicles.PlayerCar;
 import io.github.raesleg.game.io.Keyboard;
@@ -287,7 +287,7 @@ public abstract class BaseGameScene extends Scene {
                 carW, carH,
                 user,
                 new PlayerMovementStrategy(),
-                new CarMovementModel(VehicleProfile.playerArcade()),
+                new CarMovementModel(VehicleProfile.playerArcade(), getEntityManager()),
                 carBody);
 
         getEntityManager().addEntity(playerCar);
@@ -651,7 +651,7 @@ public abstract class BaseGameScene extends Scene {
         // Spawn visual explosion at player position
         float px = playerCar.getX() + playerCar.getW() / 2f;
         float py = playerCar.getY() + playerCar.getH() / 2f;
-        ExplosionParticle.spawnExplosion(getEntityManager(),
+        Particle.spawnExplosion(getEntityManager(),
                 new com.badlogic.gdx.math.Vector2(px / Constants.PPM, py / Constants.PPM), 50f);
 
         // Large explode.png overlay

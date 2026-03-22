@@ -59,7 +59,7 @@ public final class SurfaceEffect {
 
     // Puddle — random kick on entry, free lateral slide, bleeds off over time
     public static final SurfaceEffect PUDDLE = new SurfaceEffect(
-            0.95f, 0.80f, 0.25f, 0.35f,
+            1.50f, 0.80f, 0.15f, 0.35f,
             true, 0.93f, 0.08f, 0.0f);
 
     // Oil — no kick, but movement locked and actively resisted, speed gutted

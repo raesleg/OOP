@@ -7,7 +7,7 @@ import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.entities.misc.ExplosionParticle;
+import io.github.raesleg.game.entities.misc.Particle;
 
 /**
  * Handles legacy AI entity explosions.
@@ -48,7 +48,7 @@ public class ExplosionCollisionHandler {
             createExplosion(impactPoint, force);
 
             // Spawn visual particles
-            ExplosionParticle.spawnExplosion(entityManager, impactPoint, force);
+            Particle.spawnExplosion(entityManager, impactPoint, force);
         }
     }
 
