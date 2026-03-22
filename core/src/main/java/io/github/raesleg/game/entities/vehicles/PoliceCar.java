@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.TextureObject;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.entities.IChaseEntity;
 import io.github.raesleg.game.movement.PoliceMovement;
 
@@ -23,7 +24,6 @@ import io.github.raesleg.game.movement.PoliceMovement;
 public class PoliceCar extends TextureObject implements IChaseEntity {
 
     /* ── Siren flash animation ── */
-    private static final float FLASH_INTERVAL = 0.15f;
     private static final String[] FLASH_FRAMES = {
             "policecar_noflash.png",
             "policecar_leftflash.png",
@@ -46,7 +46,7 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
     public PoliceCar(PhysicsBody body) {
         super("policecar_noflash.png", 0, 0, 80f, 140f);
         this.body = body;
-        this.screenY = -50f;
+        this.screenY = GameConstants.POLICE_START_Y;
         this.caught = false;
         this.flashTimer = 0f;
         this.flashIndex = 0;
@@ -59,10 +59,9 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
 
     @Override
     public void updateChase(float deltaTime, float playerX, float playerY,
-            float playerSpeed, float maxSpeed,
-            float aggression) {
+            int starCount, int maxStars) {
         // Delegate chase algorithm to PoliceMovement
-        screenY = movement.advance(deltaTime, playerSpeed, maxSpeed, aggression);
+        screenY = movement.advance(deltaTime, playerY, starCount, maxStars);
 
         float newX = movement.lerpX(getX(), playerX, deltaTime);
         setX(newX);
@@ -79,8 +78,8 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
 
         // Advance siren flash animation
         flashTimer += deltaTime;
-        if (flashTimer >= FLASH_INTERVAL) {
-            flashTimer -= FLASH_INTERVAL;
+        if (flashTimer >= GameConstants.POLICE_FLASH_INTERVAL) {
+            flashTimer -= GameConstants.POLICE_FLASH_INTERVAL;
             flashIndex = (flashIndex + 1) % FLASH_FRAMES.length;
         }
     }

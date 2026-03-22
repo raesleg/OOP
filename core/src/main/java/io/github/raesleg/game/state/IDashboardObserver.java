@@ -1,4 +1,5 @@
 package io.github.raesleg.game.state;
+
 /**
  * Observer interface for the in-game HUD dashboard.
  * <p>
@@ -25,4 +26,8 @@ public interface IDashboardObserver {
 
     /** Called when the player's speed changes (in KM/H). */
     void onSpeedChanged(int speed);
+
+    /** Called when the player's fuel level changes (0.0 empty – 1.0 full). */
+    default void onFuelUpdated(float percentage) {
+    }
 }

@@ -2,13 +2,11 @@ package io.github.raesleg.game.scene;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import io.github.raesleg.engine.physics.BodyType;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -16,24 +14,34 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.collision.CollisionManager;
 import io.github.raesleg.engine.entity.EntityManager;
+import io.github.raesleg.engine.event.EventBus;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovementManager;
 import io.github.raesleg.engine.movement.UserControlled;
-import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.Scene;
 
 /* Game Imports */
+import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.collision.GameCollisionHandler;
-import io.github.raesleg.game.entities.misc.ExplosionOverlay;
-import io.github.raesleg.game.entities.misc.ExplosionParticle;
 import io.github.raesleg.game.entities.misc.Trees;
+import io.github.raesleg.game.factory.BoundaryFactory;
+import io.github.raesleg.game.factory.PlayerFactory;
 import io.github.raesleg.game.entities.vehicles.PlayerCar;
+import io.github.raesleg.game.event.FuelDepletedEvent;
+import io.github.raesleg.game.event.PickupCollectedEvent;
+import io.github.raesleg.game.event.ScoreChangedEvent;
 import io.github.raesleg.game.io.Keyboard;
-import io.github.raesleg.game.movement.CarMovementModel;
-import io.github.raesleg.game.movement.PlayerMovementStrategy;
-import io.github.raesleg.game.movement.VehicleProfile;
+import io.github.raesleg.game.rules.RuleManager;
+import io.github.raesleg.game.state.AudioController;
 import io.github.raesleg.game.state.DashboardUI;
+import io.github.raesleg.game.state.FuelController;
+import io.github.raesleg.game.state.FuelSystem;
+import io.github.raesleg.game.state.SpeedScrollController;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * BaseGameScene — Abstract template for all gameplay levels.
@@ -41,24 +49,25 @@ import io.github.raesleg.game.state.DashboardUI;
  * Uses the <b>Template Method</b> pattern to define a strict contract for
  * level scenes. Common infrastructure (physics, managers, player car, HUD,
  * input, audio) is initialised here. Subclasses customise behaviour through
- * well-defined hooks:
- * <ul>
- * <li>{@link #getLevelLength()}, {@link #getMaxSpeed()},
- * {@link #getAcceleration()}, {@link #getBrakeRate()},
- * {@link #getBgmPath()} — level configuration</li>
- * <li>{@link #initLevelData()} — add level-specific entities, zones,
- * sounds</li>
- * <li>{@link #updateGame(float)} — per-frame level-specific logic</li>
- * <li>{@link #renderLevelEffects(ShapeRenderer, SpriteBatch)} — visual
- * overlays</li>
- * <li>{@link #disposeLevelData()} — clean up level-specific resources</li>
- * </ul>
+ * well-defined hooks.
+ * <p>
+ * <b>SRP Composition:</b> Delegates speed/scroll to
+ * {@link SpeedScrollController},
+ * fuel lifecycle to {@link FuelController}, and audio management to
+ * {@link AudioController}. Cross-system communication uses the
+ * {@link EventBus}.
  * <p>
  * <b>Scene Sovereignty:</b> Each level owns its own EntityManager,
- * MovementManager, CollisionManager, and PhysicsWorld. Only the shared
- * IOManager is injected by SceneManager.
+ * MovementManager, CollisionManager, PhysicsWorld, and EventBus.
  */
 public abstract class BaseGameScene extends Scene {
+
+    /* ── Composed systems (SRP) ── */
+    private SpeedScrollController speedScroll;
+    private FuelController fuelController;
+    private AudioController audioController;
+    private EventBus eventBus;
+
     /* ── Common state ── */
     private DashboardUI dashboard;
     private boolean isPaused;
@@ -71,13 +80,12 @@ public abstract class BaseGameScene extends Scene {
     private boolean instantFail;
     private String instantFailReason;
 
-    /** The number of NPC crashes that triggers an explosion game over. */
-    private static final int CRASH_EXPLOSION_THRESHOLD = 3;
-
-    /* ── Speed & scroll ── */
-    private float simulatedSpeed;
-    private float scrollOffset;
-    private static final float PASSIVE_DECEL = 18f;
+    /*
+     * ── Shared rule/command infrastructure (DIP — created here, injected into
+     * subclasses) ──
+     */
+    private RuleManager ruleManager;
+    private io.github.raesleg.engine.io.CommandHistory commandHistory;
 
     /* ── Physics ── */
     private PhysicsWorld world;
@@ -86,26 +94,28 @@ public abstract class BaseGameScene extends Scene {
     private GameCollisionHandler collisionHandler;
 
     /* ── Player ── */
-    // private MovableEntity playerCar;
     private PlayerCar playerCar;
 
-    // trees
+    /* ── Scenery ── */
     private Trees trees;
 
     /* ── Rendering ── */
     private ShapeRenderer shapeRenderer;
     private RoadRenderer roadRenderer;
 
-    /* ── Audio ── */
+    /* ── Visible camera bounds (updated each frame in render()) ── */
+    private float visMinX, visMinY, visMaxX, visMaxY;
+
+    /* ── Audio (direct reference for subclass access) ── */
     private SoundDevice sound;
-    private Music bgm;
-    private static final float BGM_BASE_VOLUME = 0.2f;
 
     /* ── Explosion game-over delay ── */
     private boolean gameOverPending;
     private float gameOverTimer;
     private LevelResult pendingResult;
-    private static final float EXPLOSION_DELAY = 1.5f;
+
+    /* ── Level-end conditions (OCP — evaluated in registration order) ── */
+    private final List<ILevelEndCondition> endConditions = new ArrayList<>();
 
     /* ── World dimensions (metres) ── */
     private final float worldW = VIRTUAL_WIDTH / Constants.PPM;
@@ -124,8 +134,6 @@ public abstract class BaseGameScene extends Scene {
         this.crashCount = 0;
         this.instantFail = false;
         this.instantFailReason = "";
-        this.scrollOffset = 0f;
-        this.simulatedSpeed = 0f;
         this.gameOverPending = false;
         this.gameOverTimer = 0f;
     }
@@ -136,57 +144,29 @@ public abstract class BaseGameScene extends Scene {
      * ══════════════════════════════════════════════════════════════
      */
 
-    /** Total scroll distance (pixels) to reach the finish line. */
     protected abstract float getLevelLength();
 
-    /** Maximum achievable speed in KM/H. */
     protected abstract float getMaxSpeed();
 
-    /** Speed increase rate (KM/H per second) while accelerating. */
     protected abstract float getAcceleration();
 
-    /** Speed decrease rate (KM/H per second) while braking. */
     protected abstract float getBrakeRate();
 
-    /** Asset path for the level's background music (null = no BGM). */
     protected abstract String getBgmPath();
 
-    /**
-     * Called after all common managers, player car, and input are ready.
-     * Add level-specific entities, motion zones, and sounds here.
-     */
     protected abstract void initLevelData();
 
-    /**
-     * Called every frame (when not paused) after common update logic.
-     * Implement level-specific rules (police chase, traffic spawning, etc.).
-     */
     protected abstract void updateGame(float deltaTime);
 
-    /**
-     * Template Method hook — returns true when the level's specific
-     * lose condition is met. Called by {@link #checkLevelEnd()} every frame.
-     * <p>
-     * Level 1 returns true when the WANTED threshold is reached.
-     * Level 2 returns true when the police car catches the player.
-     * A level with no lose condition simply returns false.
-     */
     protected abstract boolean isGameOver();
 
-    /** Human-readable name shown on the results screen. */
     protected abstract String getLevelName();
 
-    /**
-     * Factory Method hook — creates a fresh instance of
-     * this level for the "Retry" action on the results screen.
-     */
     protected abstract BaseGameScene createRetryScene();
 
-    /**
-     * Human-readable reason for the level-specific lose condition (e.g. "Police
-     * caught you").
-     */
     protected abstract String getGameOverReason();
+
+    protected abstract float getMaxScrollPixelsPerSecond();
 
     /*
      * ══════════════════════════════════════════════════════════════
@@ -194,20 +174,19 @@ public abstract class BaseGameScene extends Scene {
      * ══════════════════════════════════════════════════════════════
      */
 
-    /**
-     * Called during render between the road and the entity layer.
-     * Override to draw level-specific visual effects (rain, fog, etc.).
-     */
     protected void renderLevelEffects(ShapeRenderer sr, SpriteBatch batch) {
-        // no-op by default
     }
 
-    /**
-     * Called at the start of {@link #dispose()} before common resources
-     * are cleaned up. Override to dispose level-specific resources.
-     */
+    /** Camera zoom — subclasses may override for a wider/narrower view. */
+    protected float getCameraZoom() {
+        return GameConstants.CAMERA_ZOOM;
+    }
+
     protected void disposeLevelData() {
-        // no-op by default
+    }
+
+    protected List<String> getViolationLog() {
+        return Collections.emptyList();
     }
 
     /*
@@ -232,13 +211,34 @@ public abstract class BaseGameScene extends Scene {
         Gdx.input.setInputProcessor(null);
 
         shapeRenderer = new ShapeRenderer();
-        roadRenderer = new RoadRenderer(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+        roadRenderer = new RoadRenderer();
         dashboard = new DashboardUI(getUiViewport());
+
+        /* EventBus — central nervous system for cross-system communication */
+        eventBus = new EventBus();
 
         /* Physics world: zero gravity (top-down) */
         world = new PhysicsWorld(new Vector2(0, 0));
 
         sound = getIOManager().getSound();
+
+        /* Shared rule/command infrastructure — injected into subclasses (DIP) */
+        ruleManager = new RuleManager();
+        commandHistory = new io.github.raesleg.engine.io.CommandHistory();
+
+        /* Composed systems (SRP extraction) */
+        speedScroll = new SpeedScrollController(
+                getMaxSpeed(), getAcceleration(), getBrakeRate(), getMaxScrollPixelsPerSecond());
+
+        fuelController = new FuelController(
+                GameConstants.FUEL_DRAIN_RATE, GameConstants.FUEL_RECHARGE_AMOUNT, eventBus);
+
+        audioController = new AudioController(sound);
+
+        /* EventBus wiring — systems communicate via events */
+        eventBus.subscribe(FuelDepletedEvent.class, e -> setInstantFail(true, "Ran out of fuel!"));
+        eventBus.subscribe(ScoreChangedEvent.class, e -> addScore(e.getDelta()));
+        eventBus.subscribe(PickupCollectedEvent.class, e -> handlePickup());
 
         /* Managers (Scene Sovereignty) */
         setEntityManager(new EntityManager());
@@ -246,51 +246,14 @@ public abstract class BaseGameScene extends Scene {
         collisionHandler = new GameCollisionHandler(getEntityManager(), sound);
         setCollisionManager(new CollisionManager(world, collisionHandler));
 
-        /* Road boundary walls (metres) */
-        float t = 0.5f;
-        float roadLeftM = RoadRenderer.ROAD_LEFT / Constants.PPM;
-        float roadRightM = RoadRenderer.ROAD_RIGHT / Constants.PPM;
+        /* Road boundary walls — delegated to factory (SRP) */
+        BoundaryFactory.createBoundaries(world, worldW, worldH);
 
-        world.createBody(BodyType.STATIC,
-                roadLeftM - t / 2f, worldH / 2f, t / 2f, worldH / 2f, 0, 0.4f, false, null);
-        world.createBody(BodyType.STATIC,
-                roadRightM + t / 2f, worldH / 2f, t / 2f, worldH / 2f, 0, 0.4f, false, null);
-        world.createBody(BodyType.STATIC,
-                worldW / 2f, -t / 2f, worldW / 2f, t / 2f, 0, 0.4f, false, null);
-        world.createBody(BodyType.STATIC,
-                worldW / 2f, worldH + t / 2f, worldW / 2f, t / 2f, 0, 0.4f, false, null);
-
-        /* Player car — centre lane, near bottom */
-        float carPixelX = RoadRenderer.ROAD_LEFT + RoadRenderer.ROAD_WIDTH / 2f;
-        float carPixelY = 100f;
-        float carW = 100f; // 64f
-        float carH = 185f; // 64f
-
-        PhysicsBody carBody = world.createBody(
-                BodyType.DYNAMIC,
-                carPixelX / Constants.PPM,
-                (carPixelY + carH / 2f) / Constants.PPM,
-                (carW / Constants.PPM) / 2f,
-                (carH / Constants.PPM) / 2f,
-                1f, 0.3f, false, null);
-        carBody.setBullet(true);
-
-        /* Input bindings */
+        /* Player car — delegated to factory (SRP) */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         UserControlled user = new UserControlled(kb);
+        playerCar = PlayerFactory.create(world, getEntityManager(), user);
 
-        playerCar = new PlayerCar(
-                "car.png",
-                carPixelX - carW / 2f, carPixelY,
-                carW, carH,
-                user,
-                new PlayerMovementStrategy(),
-                new CarMovementModel(VehicleProfile.playerArcade()),
-                carBody);
-
-        getEntityManager().addEntity(playerCar);
-
-        /* Input bindings */
         kb.bindAction(Input.Keys.A, Constants.LEFT);
         kb.bindAction(Input.Keys.LEFT, Constants.LEFT);
         kb.bindAction(Input.Keys.D, Constants.RIGHT);
@@ -301,37 +264,45 @@ public abstract class BaseGameScene extends Scene {
         kb.bindAction(Input.Keys.DOWN, Constants.DOWN);
         kb.bindAction(Input.Keys.SPACE, Constants.ACTION);
         kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
-        kb.addBind(Input.Keys.M, this::toggleMute, true);
+        kb.addBind(Input.Keys.M, () -> audioController.toggleMute(), true);
 
-        // tree assets being made
+        /* Wire keyboard to speed controller */
+        speedScroll.setKeyboard(kb);
+
+        /* Scenery trees */
         trees = new Trees(8, getEntityManager());
 
-        /* Background music (null path = no BGM) */
-        String bgmPath = getBgmPath();
-        if (bgmPath != null) {
-            bgm = Gdx.audio.newMusic(Gdx.files.internal(bgmPath));
-            bgm.setLooping(true);
-            syncBgmVolume();
-            bgm.play();
-        }
+        /* BGM via AudioController */
+        audioController.startBgm(getBgmPath());
 
-        /* Common scene sounds */
-        sound.addSound("drive", "car_sound.wav");
-        sound.addSound("explosion", "crash_sound.wav");
-        sound.addSound("explosion_big", "explosion.wav");
-        sound.addSound("reward", "rewardsound.mp3");
-        sound.addSound("negative", "negativesound.mp3");
-        sound.addSound("gameover", "gameover_sound.wav");
-        sound.addSound("win", "winning_sound.wav");
+        /* Common scene sounds (paths from GameConstants) */
+        sound.addSound("drive", GameConstants.SFX_DRIVE);
+        sound.addSound("explosion", GameConstants.SFX_EXPLOSION);
+        sound.addSound("explosion_big", GameConstants.SFX_EXPLOSION_BIG);
+        sound.addSound("reward", GameConstants.SFX_REWARD);
+        sound.addSound("negative", GameConstants.SFX_NEGATIVE);
+        sound.addSound("gameover", GameConstants.SFX_GAMEOVER);
+        sound.addSound("win", GameConstants.SFX_WIN);
 
         /* Level-specific setup (Template Method hook) */
         initLevelData();
+
+        /*
+         * Register base level-end conditions (OCP).
+         * NOTE: checkCrashExplosion is NOT registered here — subclasses
+         * that want crash-explosion behaviour must register it explicitly
+         * in initLevelData() via addEndCondition(this::checkCrashExplosion).
+         * This allows Level 2 to opt out of explosions on crash.
+         */
+        addEndCondition(this::checkWinCondition);
+        addEndCondition(this::checkInstantFail);
+        addEndCondition(this::checkSubclassGameOver);
     }
 
     @Override
     public final void update(float deltaTime) {
         if (isPaused) {
-            sound.stopSound("drive");
+            audioController.onPause();
             return;
         }
 
@@ -339,7 +310,7 @@ public abstract class BaseGameScene extends Scene {
         if (gameOverPending) {
             getEntityManager().update(deltaTime);
             gameOverTimer -= deltaTime;
-            if (gameOverTimer <= 0) {
+            if (gameOverTimer <= 0f) {
                 getSceneManager().set(
                         new ResultsScene(pendingResult, () -> createRetryScene()));
             }
@@ -351,42 +322,35 @@ public abstract class BaseGameScene extends Scene {
         getEntityManager().update(deltaTime);
         getMovementManager().update(deltaTime);
 
-        /* Speed control via action bindings */
-        Keyboard kb = getIOManager().getInputs(Keyboard.class);
-
-        if (kb.isHeld(Constants.UP)) {
-            simulatedSpeed = Math.min(getMaxSpeed(), simulatedSpeed + getAcceleration() * deltaTime);
-        } else if (kb.isHeld(Constants.DOWN)) {
-            simulatedSpeed = Math.max(0f, simulatedSpeed - getBrakeRate() * deltaTime);
-        } else {
-            simulatedSpeed = Math.max(0f, simulatedSpeed - PASSIVE_DECEL * deltaTime);
-        }
-
-        float scrollSpeed = getScrollSpeedPixelsPerSecond();
-        scrollOffset -= scrollSpeed * deltaTime;
+        /* Delegate speed/scroll to extracted system */
+        speedScroll.update(deltaTime);
 
         /* Dashboard updates — score only increases when moving toward goal */
-        if (simulatedSpeed > 0.5f) {
-            scoreAccumulator += deltaTime * 10f;
+        float simSpeed = speedScroll.getSimulatedSpeed();
+        if (simSpeed > 0.5f) {
+            scoreAccumulator += deltaTime * GameConstants.SCORE_RATE_PER_SECOND;
         }
         score = (int) scoreAccumulator + scoreBonus;
 
-        // tree update to simulate scenery movement
-        trees.update(simulatedSpeed, deltaTime);
+        trees.update(simSpeed, deltaTime);
 
-        /* Dashboard updates */
+        float scrollOffset = speedScroll.getScrollOffset();
         float progress = Math.min(1f, (-scrollOffset) / getLevelLength());
 
         dashboard.onScoreUpdated(score);
-        dashboard.onSpeedChanged(Math.round(simulatedSpeed));
+        dashboard.onSpeedChanged(Math.round(simSpeed));
         dashboard.onProgressUpdated(progress);
         dashboard.onRuleBroken(rulesBroken);
         dashboard.act(deltaTime);
 
-        updateMoveLoop(playerCar.isMoving());
+        /* Delegate fuel to extracted system */
+        fuelController.setCurrentSpeed(simSpeed);
+        fuelController.update(deltaTime);
+        dashboard.onFuelUpdated(fuelController.getFuel());
 
-        /* Sync BGM volume with master volume (may have changed in pause menu) */
-        syncBgmVolume();
+        /* Delegate audio to extracted system */
+        audioController.setPlayerMoving(playerCar.isMoving());
+        audioController.update(deltaTime);
 
         /* Level-specific update (Template Method hook) */
         updateGame(deltaTime);
@@ -401,56 +365,66 @@ public abstract class BaseGameScene extends Scene {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         getViewport().apply();
+        /* Apply camera zoom and look-ahead */
+        getCamera().zoom = getCameraZoom();
+        getCamera().position.set(
+                VIRTUAL_WIDTH * 0.5f,
+                VIRTUAL_HEIGHT * 0.5f + GameConstants.CAMERA_LOOK_AHEAD,
+                0f);
         getCamera().update();
+
+        /* Compute visible world-space bounds (accounts for zoom + ExtendViewport) */
+        float halfVisW = (getViewport().getWorldWidth() / 2f) * getCameraZoom();
+        float halfVisH = (getViewport().getWorldHeight() / 2f) * getCameraZoom();
+        float camX = getCamera().position.x;
+        float camY = getCamera().position.y;
+        visMinX = camX - halfVisW;
+        visMinY = camY - halfVisH;
+        visMaxX = camX + halfVisW;
+        visMaxY = camY + halfVisH;
+
         shapeRenderer.setProjectionMatrix(getCamera().combined);
         batch.setProjectionMatrix(getCamera().combined);
 
-        /* Road background */
-        roadRenderer.draw(shapeRenderer, scrollOffset);
+        roadRenderer.draw(shapeRenderer, speedScroll.getScrollOffset(),
+                visMinX, visMinY, visMaxX, visMaxY);
 
-        /* Level-specific visual effects (Template Method hook) */
         renderLevelEffects(shapeRenderer, batch);
 
-        /* Entities */
         batch.begin();
         getEntityManager().render(batch);
         batch.end();
 
-        /* HUD overlay */
         dashboard.draw();
     }
 
     @Override
     public void pause() {
         isPaused = true;
-        stopMoveLoop();
-        if (bgm != null)
-            bgm.pause();
+        audioController.onPause();
         Gdx.app.log(getClass().getSimpleName(), "Scene paused");
     }
 
     @Override
     public void resume() {
         isPaused = false;
-        if (bgm != null) {
-            syncBgmVolume();
-            bgm.play();
-        }
+        audioController.onResume();
         Gdx.app.log(getClass().getSimpleName(), "Scene resumed");
     }
 
     @Override
     public final void dispose() {
-        sound.stopAllSounds();
+        audioController.dispose();
         disposeLevelData();
+        speedScroll.dispose();
+        fuelController.dispose();
+        eventBus.clear();
+        if (commandHistory != null)
+            commandHistory.clear();
         dashboard.dispose();
         shapeRenderer.dispose();
         getEntityManager().dispose();
         world.dispose();
-        if (bgm != null) {
-            bgm.stop();
-            bgm.dispose();
-        }
         Gdx.app.log(getClass().getSimpleName(), "Scene disposed — all resources cleaned up");
     }
 
@@ -468,9 +442,6 @@ public abstract class BaseGameScene extends Scene {
         return collisionHandler;
     }
 
-    // protected MovableEntity getPlayerCar() {
-    // return playerCar;
-    // }
     protected PlayerCar getPlayerCar() {
         return playerCar;
     }
@@ -483,6 +454,18 @@ public abstract class BaseGameScene extends Scene {
         return sound;
     }
 
+    protected EventBus getEventBus() {
+        return eventBus;
+    }
+
+    protected RuleManager getRuleManager() {
+        return ruleManager;
+    }
+
+    protected io.github.raesleg.engine.io.CommandHistory getCommandHistory() {
+        return commandHistory;
+    }
+
     protected RoadRenderer getRoadRenderer() {
         return roadRenderer;
     }
@@ -492,7 +475,7 @@ public abstract class BaseGameScene extends Scene {
     }
 
     protected float getScrollOffset() {
-        return scrollOffset;
+        return speedScroll.getScrollOffset();
     }
 
     protected int getScore() {
@@ -520,159 +503,168 @@ public abstract class BaseGameScene extends Scene {
         this.crashCount++;
     }
 
-    /**
-     * Adds (or subtracts) a score delta. Dashboard shows the change
-     * incrementally and displays a floating popup.
-     */
     protected void addScore(int delta) {
         this.scoreBonus += delta;
         dashboard.showScorePopup(delta);
+    }
+
+    protected void handlePickup() {
+        addScore(50);
+        fuelController.getFuelSystem().recharge();
+        sound.playSound("reward", 1.0f);
+    }
+
+    protected FuelSystem getFuelSystem() {
+        return fuelController.getFuelSystem();
     }
 
     protected float getGameTime() {
         return gameTime;
     }
 
-    protected abstract float getMaxScrollPixelsPerSecond();
-
     protected float getScrollSpeedPixelsPerSecond() {
-        float t = simulatedSpeed / getMaxSpeed();
-        t = Math.max(0f, Math.min(1f, t));
-        return t * getMaxScrollPixelsPerSecond();
+        return speedScroll.getScrollSpeedPixelsPerSecond();
     }
 
-    /**
-     * NPC scroll speed — has a minimum floor so NPCs always drift down
-     * the screen even when the player is stationary.
-     */
     protected float getNpcScrollSpeedPixelsPerSecond() {
-        float minScroll = getMaxScrollPixelsPerSecond() * 0.25f;
-        return Math.max(minScroll, getScrollSpeedPixelsPerSecond());
+        return speedScroll.getNpcScrollSpeedPixelsPerSecond();
     }
 
     protected float getSimulatedSpeedKmh() {
-        return simulatedSpeed;
+        return speedScroll.getSimulatedSpeed();
     }
 
     /**
-     * Template Method — fixed algorithm step that checks both win and lose
-     * conditions every frame. Calls the abstract hook {@link #isGameOver()}
-     * for level-specific lose logic.
-     * <p>
-     * The level is <b>won</b> when scroll progress reaches 100%.
-     * The level is <b>lost</b> when:
-     * <ul>
-     * <li>{@code rulesBroken >= GAME_OVER_THRESHOLD} (too many violations)</li>
-     * <li>{@code instantFail} is set (e.g. pedestrian hit)</li>
-     * <li>{@link #isGameOver()} returns true (level-specific condition)</li>
-     * </ul>
-     * On trigger, transitions to {@link ResultsScene} with a
-     * {@link LevelResult} snapshot.
+     * Returns the speed/scroll controller so subclasses can apply speed
+     * penalties (e.g. Level 2 crash halving).
+     */
+    protected SpeedScrollController getSpeedScrollController() {
+        return speedScroll;
+    }
+
+    protected int getCrashCount() {
+        return crashCount;
+    }
+
+    /** Left edge of the visible camera area (world coords, updated each frame). */
+    protected float getVisMinX() {
+        return visMinX;
+    }
+
+    /**
+     * Bottom edge of the visible camera area (world coords, updated each frame).
+     */
+    protected float getVisMinY() {
+        return visMinY;
+    }
+
+    /** Right edge of the visible camera area (world coords, updated each frame). */
+    protected float getVisMaxX() {
+        return visMaxX;
+    }
+
+    /** Top edge of the visible camera area (world coords, updated each frame). */
+    protected float getVisMaxY() {
+        return visMaxY;
+    }
+
+    /**
+     * Registers a level-end condition (OCP extension point).
+     * Subclasses may call this in {@link #initLevelData()} to add
+     * custom conditions without modifying this base class.
+     */
+    protected void addEndCondition(ILevelEndCondition condition) {
+        endConditions.add(condition);
+    }
+
+    /**
+     * Template Method — iterates registered end conditions every frame.
+     * Stops at the first condition that fires.
      */
     protected final void checkLevelEnd() {
-        float progress = Math.min(1f, (-scrollOffset) / getLevelLength());
-
-        if (progress >= 1.0f) {
-            Gdx.app.log(getClass().getSimpleName(),
-                    "Level complete! Score: " + score);
-            LevelResult win = new LevelResult(
-                    score, gameTime, rulesBroken, getLevelName(), true, "");
-            getSceneManager().set(
-                    new ResultsScene(win, () -> createRetryScene()));
+        if (gameOverPending)
             return;
-        }
 
-        if (crashCount >= CRASH_EXPLOSION_THRESHOLD) {
-            Gdx.app.log(getClass().getSimpleName(),
-                    "3rd crash! Triggering explosion...");
-            triggerExplosionGameOver("Crashed into too many vehicles");
-            return;
-        }
-
-        if (instantFail) {
-            Gdx.app.log(getClass().getSimpleName(),
-                    "Instant fail! Reason: " + instantFailReason);
-            sound.playSound("negative", 1.0f);
-            LevelResult lose = new LevelResult(
-                    score, gameTime, rulesBroken, getLevelName(), false, instantFailReason);
-            getSceneManager().set(
-                    new ResultsScene(lose, () -> createRetryScene()));
-            return;
-        }
-
-        if (isGameOver()) {
-            String reason = getGameOverReason();
-            Gdx.app.log(getClass().getSimpleName(),
-                    "Game Over! Reason: " + reason);
-            sound.playSound("negative", 1.0f);
-            LevelResult lose = new LevelResult(
-                    score, gameTime, rulesBroken, getLevelName(), false, reason);
-            getSceneManager().set(
-                    new ResultsScene(lose, () -> createRetryScene()));
+        for (ILevelEndCondition condition : endConditions) {
+            if (condition.evaluate())
+                return;
         }
     }
 
-    /** Spawns a large explode.png at the player position and delays transition. */
-    private void triggerExplosionGameOver(String lossReason) {
-        gameOverPending = true;
-        gameOverTimer = EXPLOSION_DELAY;
-        pendingResult = new LevelResult(
-                score, gameTime, rulesBroken, getLevelName(), false, lossReason);
+    /* ── Built-in end conditions (registered in show()) ── */
 
-        // Spawn visual explosion at player position
+    protected boolean checkWinCondition() {
+        float scrollOffset = speedScroll.getScrollOffset();
+        float progress = Math.min(1f, (-scrollOffset) / getLevelLength());
+        if (progress < 1.0f)
+            return false;
+
+        Gdx.app.log(getClass().getSimpleName(), "Level complete! Score: " + score);
+        LevelResult win = new LevelResult(
+                score, gameTime, rulesBroken, getLevelName(), true, "", getViolationLog());
+        getSceneManager().set(new ResultsScene(win, () -> createRetryScene()));
+        return true;
+    }
+
+    /**
+     * Checks whether the crash count has reached the explosion threshold.
+     * <p>
+     * NOT registered by default — subclasses that want crash-explosion
+     * behaviour must call {@code addEndCondition(this::checkCrashExplosion)}
+     * in their {@link #initLevelData()} method.
+     */
+    protected boolean checkCrashExplosion() {
+        if (crashCount < GameConstants.CRASH_EXPLOSION_THRESHOLD)
+            return false;
+
+        Gdx.app.log(getClass().getSimpleName(), "3rd crash! Triggering explosion...");
+        triggerExplosionGameOver("Crashed into too many vehicles");
+        return true;
+    }
+
+    protected boolean checkInstantFail() {
+        if (!instantFail)
+            return false;
+
+        Gdx.app.log(getClass().getSimpleName(), "Instant fail! Reason: " + instantFailReason);
+        sound.playSound("negative", 1.0f);
+        LevelResult lose = new LevelResult(
+                score, gameTime, rulesBroken, getLevelName(), false, instantFailReason, getViolationLog());
+        getSceneManager().set(new ResultsScene(lose, () -> createRetryScene()));
+        return true;
+    }
+
+    protected boolean checkSubclassGameOver() {
+        if (!isGameOver())
+            return false;
+
+        String reason = getGameOverReason();
+        Gdx.app.log(getClass().getSimpleName(), "Game Over! Reason: " + reason);
+        sound.playSound("negative", 1.0f);
+        LevelResult lose = new LevelResult(
+                score, gameTime, rulesBroken, getLevelName(), false, reason, getViolationLog());
+        getSceneManager().set(new ResultsScene(lose, () -> createRetryScene()));
+        return true;
+    }
+
+    /**
+     * Triggers an explosion at the player's position and schedules a delayed
+     * transition to the results screen. Entity spawning is delegated to
+     * {@link ExplosionSystem} (SRP).
+     */
+    protected void triggerExplosionGameOver(String lossReason) {
+        gameOverPending = true;
+        gameOverTimer = GameConstants.EXPLOSION_DELAY;
+        pendingResult = new LevelResult(
+                score, gameTime, rulesBroken, getLevelName(), false, lossReason, getViolationLog());
+
         float px = playerCar.getX() + playerCar.getW() / 2f;
         float py = playerCar.getY() + playerCar.getH() / 2f;
-        ExplosionParticle.spawnExplosion(getEntityManager(),
-                new com.badlogic.gdx.math.Vector2(px / Constants.PPM, py / Constants.PPM), 50f);
-
-        // Large explode.png overlay
-        getEntityManager().addEntity(new ExplosionOverlay(
-                "explode.png", px - 100f, py - 100f, 200f, 200f, EXPLOSION_DELAY));
-
-        sound.playSound("explosion_big", 0.5f);
-        stopMoveLoop();
-        if (bgm != null)
-            bgm.setVolume(0.05f);
-    }
-
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Private helpers
-     * ══════════════════════════════════════════════════════════════
-     */
-
-    private void stopMoveLoop() {
-        sound.stopSound("drive");
-    }
-
-    private void updateMoveLoop(boolean moving) {
-        if (sound.isMuted() || !moving) {
-            stopMoveLoop();
-            return;
-        }
-        if (!sound.isLooping("drive")) {
-            sound.loopSound("drive");
-        }
+        ExplosionSystem.trigger(getEntityManager(), sound, px, py);
+        audioController.dimBgm();
     }
 
     private void openPause() {
         getSceneManager().push(new PauseScene());
-    }
-
-    private void toggleMute() {
-        sound.toggleMute();
-        syncBgmVolume();
-        updateMoveLoop(playerCar.isMoving());
-    }
-
-    /** Keeps the BGM Music object in sync with mute state and master volume. */
-    private void syncBgmVolume() {
-        if (bgm != null) {
-            if (sound.isMuted()) {
-                bgm.setVolume(0f);
-            } else {
-                bgm.setVolume(BGM_BASE_VOLUME * sound.getMasterVolume());
-            }
-        }
     }
 }

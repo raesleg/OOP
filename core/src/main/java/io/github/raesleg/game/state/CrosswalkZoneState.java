@@ -10,12 +10,14 @@ public class CrosswalkZoneState {
     private boolean playerInside;
     private boolean violationFired;
     private boolean crossingActive;
+    private boolean playerPassed;
 
     public CrosswalkZoneState() {
         this.expired = false;
         this.playerInside = false;
         this.violationFired = false;
         this.crossingActive = false;
+        this.playerPassed = false;
     }
 
     public boolean isExpired() {
@@ -27,9 +29,13 @@ public class CrosswalkZoneState {
     }
 
     public void setPlayerInside(boolean inside) {
+        boolean wasInside = this.playerInside;
         this.playerInside = inside;
         if (!inside) {
             this.violationFired = false;
+            if (wasInside) {
+                this.playerPassed = true;
+            }
         }
     }
 
@@ -51,5 +57,9 @@ public class CrosswalkZoneState {
 
     public boolean isPedestrianCrossing() {
         return crossingActive;
+    }
+
+    public boolean hasPlayerPassed() {
+        return playerPassed;
     }
 }

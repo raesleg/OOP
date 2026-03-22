@@ -2,6 +2,7 @@ package io.github.raesleg.game.movement;
 
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.movement.MovementStrategy;
+import io.github.raesleg.game.GameConstants;
 
 public class NpcDrivingStrategy implements MovementStrategy {
 
@@ -27,20 +28,21 @@ public class NpcDrivingStrategy implements MovementStrategy {
         }
 
         // Stop for pedestrians
-        if (snapshot.pedestrianAhead() && snapshot.nearestPedestrianDistance() < 90f) {
+        if (snapshot.pedestrianAhead()
+                && snapshot.nearestPedestrianDistance() < GameConstants.NPC_PEDESTRIAN_STOP_DIST) {
             return 0f;
         }
 
         // Slow down if another vehicle is too close ahead
-        if (snapshot.vehicleAhead() && snapshot.nearestVehicleDistance() < 110f) {
-            return 0.25f;
+        if (snapshot.vehicleAhead() && snapshot.nearestVehicleDistance() < GameConstants.NPC_VEHICLE_SLOW_DIST) {
+            return GameConstants.NPC_SLOW_SPEED;
         }
 
         // Slow down for general obstacles ahead
-        if (snapshot.obstacleAhead() && snapshot.nearestObstacleDistance() < 85f) {
-            return 0.3f;
+        if (snapshot.obstacleAhead() && snapshot.nearestObstacleDistance() < GameConstants.NPC_OBSTACLE_SLOW_DIST) {
+            return GameConstants.NPC_OBSTACLE_SPEED;
         }
 
-        return 0.45f; // slower than player, straight line
+        return GameConstants.NPC_DEFAULT_SPEED;
     }
 }

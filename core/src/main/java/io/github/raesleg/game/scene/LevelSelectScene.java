@@ -35,6 +35,7 @@ public class LevelSelectScene extends Scene {
     private Stage stage;
     private BitmapFont titleFont;
     private BitmapFont buttonFont;
+    private BitmapFont subFont;
     private Texture pixelTexture;
     private SoundDevice sound;
 
@@ -84,7 +85,7 @@ public class LevelSelectScene extends Scene {
         Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, Color.WHITE);
 
         /* Subtitle label style */
-        BitmapFont subFont = new BitmapFont();
+        subFont = new BitmapFont();
         subFont.getData().setScale(1.5f);
         Label.LabelStyle subStyle = new Label.LabelStyle(subFont, Color.LIGHT_GRAY);
 
@@ -185,6 +186,7 @@ public class LevelSelectScene extends Scene {
         stage.dispose();
         titleFont.dispose();
         buttonFont.dispose();
+        subFont.dispose();
         pixelTexture.dispose();
         Gdx.app.log("LevelSelectScene", "Scene disposed");
     }

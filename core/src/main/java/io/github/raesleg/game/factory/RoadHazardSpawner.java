@@ -1,6 +1,7 @@
 package io.github.raesleg.game.factory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -12,21 +13,25 @@ import io.github.raesleg.game.scene.RoadRenderer;
 import io.github.raesleg.game.zone.RoadHazard;
 
 /**
- * HazardSpawner — Spawns RoadHazard zones (puddles, oil spills, etc.)
+ * RoadHazardSpawner — Spawns RoadHazard zones (puddles, oil spills, etc.)
+ *
+ * <b>SRP:</b> Only responsible for spawning and lifecycle management.
+ * Rendering is the entity’s responsibility — callers use
+ * {@link #getActiveHazards()} to render hazards at the correct z-order.
  *
  * Hazard type is injected via constructor — no subclass or separate
  * spawner needed for oil spills (Open/Closed Principle).
  *
  * Usage:
- *   new HazardSpawner(..., SurfaceEffect.PUDDLE,    "puddle.png")
- *   new HazardSpawner(..., SurfaceEffect.MUD, "mud.png")
+ * new RoadHazardSpawner(..., SurfaceEffect.PUDDLE, "puddle.png")
+ * new RoadHazardSpawner(..., SurfaceEffect.MUD, "mud.png")
  */
-public class RoadHazardSpawner {
+public class RoadHazardSpawner implements ILaneOccupancy {
 
     private final EntityManager entityManager;
     private final PhysicsWorld world;
     private final float screenHeight;
-    private final NPCCarSpawner npcCarSpawner;
+    private final ILaneOccupancy npcOccupancy;
     private final List<float[]> exclusionZones;
     private final SurfaceEffect surfaceEffect;
     private final String texturePath;
@@ -43,23 +48,23 @@ public class RoadHazardSpawner {
     /** Backwards-compatible constructor — spawns puddles. */
     public RoadHazardSpawner(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float spawnInterval,
-            NPCCarSpawner npcCarSpawner, List<float[]> exclusionZones) {
+            ILaneOccupancy npcOccupancy, List<float[]> exclusionZones) {
         this(entityManager, world, screenHeight, spawnInterval,
-                npcCarSpawner, exclusionZones,
+                npcOccupancy, exclusionZones,
                 SurfaceEffect.PUDDLE, "puddle.png");
     }
 
     /** Full constructor — specify hazard type via SurfaceEffect + texture. */
     public RoadHazardSpawner(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float spawnInterval,
-            NPCCarSpawner npcCarSpawner, List<float[]> exclusionZones,
+            ILaneOccupancy npcOccupancy, List<float[]> exclusionZones,
             SurfaceEffect surfaceEffect, String texturePath) {
         this.entityManager = entityManager;
         this.world = world;
         this.screenHeight = screenHeight;
         this.spawnInterval = spawnInterval;
         this.spawnTimer = 0f;
-        this.npcCarSpawner = npcCarSpawner;
+        this.npcOccupancy = npcOccupancy;
         this.exclusionZones = (exclusionZones != null) ? exclusionZones : new ArrayList<>();
         this.surfaceEffect = surfaceEffect;
         this.texturePath = texturePath;
@@ -90,16 +95,18 @@ public class RoadHazardSpawner {
                 return;
         }
 
-        Set<Integer> blockedLanes = (npcCarSpawner != null)
-                ? npcCarSpawner.getOccupiedLanesNear(relativeY, 400f)
+        Set<Integer> blockedLanes = (npcOccupancy != null)
+                ? npcOccupancy.getOccupiedLanesNear(relativeY, 400f)
                 : Set.of();
 
         List<Integer> freeLanes = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
-            if (!blockedLanes.contains(i)) freeLanes.add(i);
+            if (!blockedLanes.contains(i))
+                freeLanes.add(i);
         }
 
-        if (freeLanes.isEmpty() || blockedLanes.size() >= 2) return;
+        if (freeLanes.isEmpty() || blockedLanes.size() >= 2)
+            return;
 
         int laneIndex = freeLanes.get((int) (Math.random() * freeLanes.size()));
         float laneX = RoadRenderer.ROAD_LEFT
@@ -111,9 +118,10 @@ public class RoadHazardSpawner {
 
         entityManager.addEntity(hazard);
         activeHazards.add(hazard);
-        hazardLanes.add(new int[]{ laneIndex, (int) relativeY });
+        hazardLanes.add(new int[] { laneIndex, (int) relativeY });
     }
 
+    @Override
     public Set<Integer> getOccupiedLanesNear(float nearY, float range) {
         Set<Integer> lanes = new HashSet<>();
         for (int i = 0; i < hazardLanes.size(); i++) {
@@ -126,14 +134,17 @@ public class RoadHazardSpawner {
         return lanes;
     }
 
-    public void render(com.badlogic.gdx.graphics.g2d.SpriteBatch batch) {
-        for (RoadHazard h : activeHazards) {
-            if (!h.isExpired()) h.drawHazard(batch);
-        }
+    /**
+     * Returns a read-only view of currently active hazards.
+     * Used by scenes to render hazards at the correct z-order layer.
+     */
+    public List<RoadHazard> getActiveHazards() {
+        return Collections.unmodifiableList(activeHazards);
     }
 
     public void clearAll() {
-        for (RoadHazard h : activeHazards) h.markExpired();
+        for (RoadHazard h : activeHazards)
+            h.markExpired();
         activeHazards.clear();
         hazardLanes.clear();
     }

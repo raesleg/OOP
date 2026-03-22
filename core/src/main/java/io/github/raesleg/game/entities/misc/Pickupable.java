@@ -22,7 +22,7 @@ public class Pickupable extends TextureObject implements IExpirable {
 
     public Pickupable(PhysicsBody body, float centreXPx, float relativeY,
             float wPx, float hPx) {
-        super("battery.png", centreXPx - wPx / 2f, 0, wPx, hPx);
+        super("charge.png", centreXPx - wPx / 2f, 0, wPx, hPx);
         this.body = body;
         this.relativeY = relativeY;
         this.expired = false;

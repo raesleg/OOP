@@ -14,14 +14,21 @@ import io.github.raesleg.game.movement.SensorComponent;
 
 public class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
 
+    private static final float PREVIEW_DURATION = 0.8f;
+
     private final int laneIndex;
     private final SensorComponent sensor;
+    private final float approachSpeed;
     private boolean expired;
+    private boolean inPreview;
+    private float previewTimer;
+    private float lifeTimer;
 
     public NPCCar(String filename,
             float x, float y,
             float w, float h,
             int laneIndex,
+            float approachSpeed,
             ControlSource controls,
             MovementStrategy strategy,
             MovementModel movementModel,
@@ -31,29 +38,48 @@ public class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
         setMovementStrategy(strategy);
         this.laneIndex = laneIndex;
         this.sensor = sensor;
+        this.approachSpeed = approachSpeed;
         this.expired = false;
+        this.inPreview = true;
+        this.previewTimer = 0f;
+        this.lifeTimer = 0f;
     }
 
+    private static final float MAX_LIFETIME = 10f;
+
     public void updateLifeCycle(float scrollPixelsPerSecond, float deltaTime, float screenHeight) {
-        if (getPhysicsBody() == null) {
+        if (getPhysicsBody() == null || getPhysicsBody().isDestroyed()) {
+            expired = true;
             return;
         }
 
-        // Move NPC body down the screen at the same rate as the world scroll
+        lifeTimer += deltaTime;
+
+        if (inPreview) {
+            previewTimer += deltaTime;
+            if (previewTimer >= PREVIEW_DURATION) {
+                inPreview = false;
+            }
+            syncSpriteFromBody();
+            return;
+        }
+
+        // After preview: slide down at scroll + approach speed
+        float totalSpeed = scrollPixelsPerSecond + approachSpeed;
         float bodyX = getPhysicsBody().getPosition().x;
         float bodyY = getPhysicsBody().getPosition().y;
-        float scrollMetersPerSecond = scrollPixelsPerSecond / Constants.PPM;
-        getPhysicsBody().setPosition(bodyX, bodyY - scrollMetersPerSecond * deltaTime);
+        getPhysicsBody().setPosition(bodyX, bodyY - (totalSpeed / Constants.PPM) * deltaTime);
 
-        // Sync sprite position from physics body
-        float newY = getPhysicsBody().getPosition().y * Constants.PPM - getH() / 2f;
-        setX(getPhysicsBody().getPosition().x * Constants.PPM - getW() / 2f);
-        setY(newY);
+        syncSpriteFromBody();
 
-        // Expire when scrolled off the bottom of the screen
-        if (newY < -getH() * 2f) {
+        if (getY() < -getH() * 2f || lifeTimer > MAX_LIFETIME) {
             expired = true;
         }
+    }
+
+    private void syncSpriteFromBody() {
+        setX(getPhysicsBody().getPosition().x * Constants.PPM - getW() / 2f);
+        setY(getPhysicsBody().getPosition().y * Constants.PPM - getH() / 2f);
     }
 
     @Override

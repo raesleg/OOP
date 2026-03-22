@@ -14,6 +14,7 @@ import io.github.raesleg.engine.movement.AIControlled;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 
+import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.entities.vehicles.NPCCar;
 import io.github.raesleg.game.movement.NpcDrivingStrategy;
 import io.github.raesleg.game.movement.AIPerceptionService;
@@ -22,7 +23,7 @@ import io.github.raesleg.game.movement.SensorComponent;
 import io.github.raesleg.game.movement.VehicleProfile;
 import io.github.raesleg.game.scene.RoadRenderer;
 
-public class NPCCarSpawner {
+public class NPCCarSpawner implements ILaneOccupancy {
 
     private final EntityManager entityManager;
     private final PhysicsWorld world;
@@ -42,11 +43,16 @@ public class NPCCarSpawner {
     private final List<float[]> exclusionZones;
 
     /** Optional reference to hazard spawner for lane-overlap prevention. */
-    private RoadHazardSpawner hazardSpawner;
+    private ILaneOccupancy hazardOccupancy;
 
-    /* NPC car dimensions (pixels) */
-    private static final float NPC_WIDTH = 70f;
-    private static final float NPC_HEIGHT = 120f;
+    /** When false, no new NPC cars will spawn (e.g. active crosswalk on screen). */
+    private boolean spawningEnabled = true;
+
+    /** Pixels of NPC visible at top of screen during preview peek. */
+    private static final float PREVIEW_PEEK = 35f;
+
+    /** Extra downward speed (px/s) so NPCs slide past the player. */
+    private static final float APPROACH_SPEED = 250f;
 
     /**
      * Creates an NPC car spawner.
@@ -68,15 +74,22 @@ public class NPCCarSpawner {
         this.world = world;
         this.screenHeight = screenHeight;
         this.spawnInterval = spawnInterval;
-        this.spawnYOffset = screenHeight + 40f; // Spawn just above screen
+        this.spawnYOffset = screenHeight - PREVIEW_PEEK; // Peek position at top of screen
         this.spawnTimer = 0f;
         this.activeNPCs = new ArrayList<>();
         this.exclusionZones = (exclusionZones != null) ? exclusionZones : new ArrayList<>();
     }
 
-    /** Sets the hazard spawner reference for lane-overlap prevention. */
-    public void setHazardSpawner(RoadHazardSpawner hazardSpawner) {
-        this.hazardSpawner = hazardSpawner;
+    /** Sets the hazard occupancy reference for lane-overlap prevention. */
+    public void setHazardOccupancy(ILaneOccupancy hazardOccupancy) {
+        this.hazardOccupancy = hazardOccupancy;
+    }
+
+    /**
+     * Enables or disables NPC spawning (e.g. suppress during active crosswalks).
+     */
+    public void setSpawningEnabled(boolean enabled) {
+        this.spawningEnabled = enabled;
     }
 
     /**
@@ -86,8 +99,8 @@ public class NPCCarSpawner {
         // Update spawn timer
         spawnTimer += deltaTime;
 
-        // Spawn new car if interval passed
-        if (spawnTimer >= spawnInterval) {
+        // Spawn new car if interval passed and spawning is enabled
+        if (spawnTimer >= spawnInterval && spawningEnabled) {
             spawnTimer = 0f;
             spawnRandomCar();
         }
@@ -104,33 +117,36 @@ public class NPCCarSpawner {
         });
     }
 
+    /** Chance (0–1) that a second NPC spawns alongside the first. */
+    private static final float DOUBLE_SPAWN_CHANCE = 0.30f;
+
     /**
-     * Spawns a new NPC car in a random lane, ensuring at most 2 lanes are
-     * occupied near the spawn Y to always leave a gap for the player.
+     * Spawns one or two NPC cars in random lanes, always leaving at least
+     * one lane free for the player.
      */
     private void spawnRandomCar() {
         float relativeY = spawnYOffset;
 
         // Skip if spawn Y falls inside an exclusion zone (e.g. crosswalk)
         for (float[] zone : exclusionZones) {
-            if (relativeY >= zone[0] - NPC_HEIGHT && relativeY <= zone[1] + NPC_HEIGHT) {
+            if (relativeY >= zone[0] - GameConstants.NPC_HEIGHT && relativeY <= zone[1] + GameConstants.NPC_HEIGHT) {
                 return;
             }
         }
 
         // Determine which lanes are already occupied near the spawn Y
-        Set<Integer> occupied = getOccupiedLanesNear(relativeY, NPC_HEIGHT * 2.5f);
+        Set<Integer> occupied = getOccupiedLanesNear(relativeY, GameConstants.NPC_HEIGHT * 2.5f);
 
         // Also check hazard lanes to prevent visual overlap
-        if (hazardSpawner != null) {
-            occupied.addAll(hazardSpawner.getOccupiedLanesNear(relativeY, 400f));
+        if (hazardOccupancy != null) {
+            occupied.addAll(hazardOccupancy.getOccupiedLanesNear(relativeY, 400f));
         }
 
         if (occupied.size() >= 2) {
             return; // already 2 lanes blocked — leave at least 1 free
         }
 
-        // Pick a random lane that is NOT already occupied
+        // Collect free lanes
         List<Integer> freeLanes = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             if (!occupied.contains(i))
@@ -141,23 +157,33 @@ public class NPCCarSpawner {
             return;
         }
 
-        int laneIndex = freeLanes.get((int) (Math.random() * freeLanes.size()));
+        // Always spawn one NPC
+        int firstIdx = (int) (Math.random() * freeLanes.size());
+        int firstLane = freeLanes.remove(firstIdx);
+        spawnSingleNPC(firstLane, relativeY);
 
+        // Possibly spawn a second NPC — only if ≥ 1 free lane remains
+        if (freeLanes.size() >= 2 && Math.random() < DOUBLE_SPAWN_CHANCE) {
+            int secondIdx = (int) (Math.random() * freeLanes.size());
+            int secondLane = freeLanes.get(secondIdx);
+            spawnSingleNPC(secondLane, relativeY);
+        }
+    }
+
+    /** Creates a single NPC car in the given lane at the given Y offset. */
+    private void spawnSingleNPC(int laneIndex, float relativeY) {
         float laneX = RoadRenderer.ROAD_LEFT + (laneIndex + 0.5f) * RoadRenderer.ROAD_WIDTH / 3f;
-        // float bodyX = laneX / Constants.PPM;
-        // float bodyY = (relativeY + NPC_HEIGHT / 2f) / Constants.PPM;
 
         PhysicsBody body = world.createBody(
-                BodyType.DYNAMIC,
+                BodyType.KINEMATIC,
                 (laneX) / Constants.PPM,
-                (relativeY + NPC_HEIGHT / 2f) / Constants.PPM,
-                (NPC_WIDTH / Constants.PPM) / 2f * 0.3f,
-                (NPC_HEIGHT / Constants.PPM) / 2f * 0.3f,
+                (relativeY + GameConstants.NPC_HEIGHT / 2f) / Constants.PPM,
+                (GameConstants.NPC_WIDTH / Constants.PPM) / 2f * 0.3f,
+                (GameConstants.NPC_HEIGHT / Constants.PPM) / 2f * 0.3f,
                 50f,
                 0f,
                 false,
                 null);
-        body.setLinearDamping(8f);
 
         AIPerceptionService perceptionService = new AIPerceptionService(entityManager);
 
@@ -170,17 +196,17 @@ public class NPCCarSpawner {
 
         NPCCar npc = new NPCCar(
                 "car2.png",
-                laneX - NPC_WIDTH / 2f,
+                laneX - GameConstants.NPC_WIDTH / 2f,
                 relativeY,
-                NPC_WIDTH,
-                NPC_HEIGHT,
+                GameConstants.NPC_WIDTH,
+                GameConstants.NPC_HEIGHT,
                 laneIndex,
+                APPROACH_SPEED,
                 new AIControlled(),
                 new NpcDrivingStrategy(perceptionService, sensor),
                 new CarMovementModel(VehicleProfile.npcTraffic()),
                 body,
                 sensor);
-        // Add to manager and active list
         entityManager.addEntity(npc);
         activeNPCs.add(npc);
 
@@ -221,8 +247,8 @@ public class NPCCarSpawner {
     /**
      * Returns the set of lane indices (0-2) that have an active NPC
      * whose relativeY is within {@code range} pixels of {@code nearY}.
-     * Used by HazardSpawner to avoid overlapping with NPC cars.
      */
+    @Override
     public Set<Integer> getOccupiedLanesNear(float nearY, float range) {
         Set<Integer> lanes = new HashSet<>();
         for (NPCCar npc : activeNPCs) {

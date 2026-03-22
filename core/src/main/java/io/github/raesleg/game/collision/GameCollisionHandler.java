@@ -16,6 +16,7 @@ import io.github.raesleg.game.collision.handlers.PedestrianCollisionHandler;
 import io.github.raesleg.game.collision.handlers.PickupCollisionHandler;
 import io.github.raesleg.game.collision.handlers.ZoneCollisionHandler;
 import io.github.raesleg.game.collision.handlers.ExplosionCollisionHandler;
+import io.github.raesleg.game.collision.listeners.PickupListener;
 import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
 
 /**
@@ -92,8 +93,15 @@ public class GameCollisionHandler implements ICollisionListener {
         // Propagate to handlers that need it
         crosswalkHandler.setViolationListener(listener);
         pedestrianHandler.setViolationListener(listener);
-        pickupHandler.setViolationListener(listener);
         npcCarHandler.setViolationListener(listener);
+    }
+
+    /**
+     * Sets the listener notified on pickup collection (ISP — separate from
+     * violations).
+     */
+    public void setPickupListener(PickupListener listener) {
+        pickupHandler.setPickupListener(listener);
     }
 
     @Override

@@ -5,7 +5,11 @@ import com.badlogic.gdx.math.Vector2;
 import io.github.raesleg.game.entities.misc.Pedestrian;
 
 /**
- * Observer interface for traffic violation events
+ * Observer interface for traffic violation events.
+ * <p>
+ * <b>ISP:</b> Only violation-related callbacks live here.
+ * Pickup (reward) events are in {@link PickupListener}.
+ * Default methods allow implementors to override only what they need.
  */
 
 public interface TrafficViolationListener {
@@ -20,10 +24,6 @@ public interface TrafficViolationListener {
 
     // Called when player collides with an NPC vehicle
     default void onTrafficCrash() {
-    }
-
-    // Called when player picks up a collectible
-    default void onPickup() {
     }
 
 }

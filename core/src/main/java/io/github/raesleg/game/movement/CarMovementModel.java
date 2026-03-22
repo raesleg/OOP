@@ -43,7 +43,7 @@ public class CarMovementModel implements MovementModel {
 
         Vector2 velocity = body.getVelocity().cpy();
         float vx;
-        
+
         if (surface.isSlippery()) {
             if (!wasSlipping) {
                 if (surface.getStickyness() > 0f) {
@@ -56,7 +56,7 @@ public class CarMovementModel implements MovementModel {
                 }
             }
             wasSlipping = true;
- 
+
             // Unified slip calculation — same formula for all slippery surfaces
             driftVx *= surface.getMomentumRetention();
             float steerContrib = steerInput * profile.getMaxLateralSpeed()
@@ -66,17 +66,17 @@ public class CarMovementModel implements MovementModel {
             // stickiness = 0 means no drag (puddle), > 0 means surface fights movement
             float stuck = driftVx * surface.getStickyness();
             vx = driftVx + steerContrib - stuck;
- 
+
             vx = MathUtils.clamp(vx,
                     -profile.getMaxLateralSpeed() * 0.75f,
-                     profile.getMaxLateralSpeed() * 0.75f);
+                    profile.getMaxLateralSpeed() * 0.75f);
 
         } else {
             wasSlipping = false;
             driftVx = 0f;
-            float gripMultiplier   = getCurrentGripMultiplier(dt);
+            float gripMultiplier = getCurrentGripMultiplier(dt);
             float steeringResponse = profile.getSteeringResponse() * gripMultiplier;
-            float targetVx         = steerInput * profile.getMaxLateralSpeed() * gripMultiplier;
+            float targetVx = steerInput * profile.getMaxLateralSpeed() * gripMultiplier;
             vx = approach(velocity.x, targetVx, steeringResponse * dt);
         }
 
@@ -87,9 +87,20 @@ public class CarMovementModel implements MovementModel {
         body.setVelocity(vx, vy);
     }
 
+    private static final float REVERSE_MAX_SPEED = 3f;
+    private static final float REVERSE_ACCEL = 8f;
+
     private float computeForwardVelocity(float throttleInput, float dt) {
         if (!profile.allowsForwardMotion()) {
-            return 0f;
+            // Forward prohibited — handle optional reverse
+            if (profile.allowsReverseMotion() && throttleInput < 0f) {
+                float reverseTarget = throttleInput * REVERSE_MAX_SPEED;
+                currentForwardSpeed = approach(currentForwardSpeed, reverseTarget, REVERSE_ACCEL * dt);
+                return currentForwardSpeed;
+            }
+            // Decelerate back to zero when not pressing reverse
+            currentForwardSpeed = approach(currentForwardSpeed, 0f, REVERSE_ACCEL * dt);
+            return currentForwardSpeed;
         }
 
         float clampedThrottle = Math.max(0f, throttleInput);

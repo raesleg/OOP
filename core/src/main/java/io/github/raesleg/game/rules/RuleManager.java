@@ -1,32 +1,24 @@
 package io.github.raesleg.game.rules;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * RuleManager — tracks traffic-rule violations using a single generic counter.
+ * <p>
+ * All violation types are recorded through {@link #recordViolation()} (called
+ * by {@link BreakRuleCommand}). Per-type counters were removed to satisfy OCP:
+ * adding a new violation type no longer requires a new method here.
+ * <p>
+ * <b>SRP:</b> Only manages violation state — does not decide consequences.
+ * <b>OCP:</b> New violation types only require a new {@code ICommand}; this
+ * class stays closed for modification.
+ */
 public class RuleManager {
 
     private int rulesBroken;
-    private int redLightViolations;
-    private int speedingViolations;
-    private int pedestrianHits;
-    private int curbHits;
-    private boolean instantFail;
-
-    public void setRedLightViolation() {
-        redLightViolations++;
-        rulesBroken++;
-    }
-
-    public void setPedestrianHit() {
-        pedestrianHits++;
-        instantFail = true;
-    }
-
-    public void setCurbHit() {
-        curbHits++;
-        rulesBroken++;
-    }
-
-    public void recordCrosswalkViolation() {
-        rulesBroken++;
-    }
+    private final List<String> violationLog = new ArrayList<>();
 
     /**
      * Generic violation recorder — used by BreakRuleCommand for any violation type.
@@ -35,14 +27,23 @@ public class RuleManager {
         rulesBroken++;
     }
 
-    public void setSpeedingViolation() {
-        speedingViolations++;
+    /**
+     * Records a violation with a human-readable type label for the log.
+     */
+    public void recordViolation(String type) {
         rulesBroken++;
+        violationLog.add(type);
     }
 
-    public void undoLastViolation() { // ????
+    /**
+     * Reverses one violation (used by {@code BreakRuleCommand.undo()}).
+     */
+    public void undoLastViolation() {
         if (rulesBroken > 0) {
             rulesBroken--;
+        }
+        if (!violationLog.isEmpty()) {
+            violationLog.remove(violationLog.size() - 1);
         }
     }
 
@@ -50,45 +51,23 @@ public class RuleManager {
         return rulesBroken;
     }
 
-    public int getRedLightViolations() {
-        return redLightViolations;
-    }
-
-    public int getSpeedingViolations() {
-        return speedingViolations;
-    }
-
-    public int getPedestrianHits() {
-        return pedestrianHits;
-    }
-
-    public int getCurbHits() {
-        return curbHits;
+    /**
+     * Returns an unmodifiable view of all recorded violation labels.
+     */
+    public List<String> getViolationLog() {
+        return Collections.unmodifiableList(violationLog);
     }
 
     /**
      * Returns 0..1 aggression scale for police AI.
-     * 0 rules broken = calm
-     * 5 rules broken = max aggression
-     */ // dont know if supposed to be here
+     * 0 rules broken = calm, 5 rules broken = max aggression.
+     */
     public float getPoliceAggression() {
         return Math.min(1f, rulesBroken / 5f);
     }
 
-    public boolean isInstantFail() {
-        return instantFail;
-    }
-
-    public void clearInstantFail() {
-        instantFail = false;
-    }
-
     public void reset() {
         rulesBroken = 0;
-        redLightViolations = 0;
-        speedingViolations = 0;
-        pedestrianHits = 0;
-        curbHits = 0;
-        instantFail = false;
+        violationLog.clear();
     }
 }

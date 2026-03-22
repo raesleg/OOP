@@ -29,9 +29,8 @@ public class CrosswalkCollisionHandler {
         if (zone != null && player != null) {
             zone.setPlayerInside(true);
 
-            // Fire violation if pedestrian is crossing (TBC if want to implement)
             if (zone.isPedestrianCrossing() && zone.tryFireViolation() && violationListener != null) {
-                // violationListener.onCrosswalkViolation();
+                violationListener.onCrosswalkViolation();
             }
         }
     }

@@ -98,8 +98,7 @@ public final class VehicleProfile {
                 false,
                 false,
                 true,
-                2.8f
-        );
+                2.8f);
     }
 
     public static VehicleProfile npcTraffic() {
@@ -107,14 +106,13 @@ public final class VehicleProfile {
                 2.5f,
                 10f,
                 0.05f,
+                0f,
+                0f,
+                0f,
                 8f,
-                10f,
-                18f,
-                8f,
-                true,
                 false,
                 false,
-                0f
-        );
+                false,
+                0f);
     }
 }

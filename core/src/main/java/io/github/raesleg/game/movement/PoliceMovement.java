@@ -1,17 +1,16 @@
 package io.github.raesleg.game.movement;
 
+import io.github.raesleg.game.GameConstants;
+
 /**
  * Encapsulates the police-car chase algorithm.
  * <p>
- * Approach speed scales with aggression; maintaining high player speed
- * slows (or reverses) the chase. Horizontal position lerps toward the
- * player's lane.
+ * The police car's vertical position is determined by the player's
+ * current wanted-star count: more stars = closer to the player.
+ * At {@link GameConstants#MAX_WANTED_STARS} the police is on top of
+ * the player (caught). Horizontal position lerps toward the player's lane.
  */
 public class PoliceMovement {
-
-    private static final float BASE_APPROACH_SPEED = 70f;
-    private static final float AGGRESSION_BONUS = 130f;
-    private static final float LANE_TRACK_SPEED = 4f;
 
     private float screenY;
 
@@ -20,16 +19,16 @@ public class PoliceMovement {
     }
 
     /**
-     * Advances the chase vertically.
+     * Advances the chase vertically based on star count.
+     * Target Y = playerY - maxDistance * (1 - stars/maxStars).
+     * Police lerps smoothly toward target each frame.
      *
      * @return updated screenY
      */
-    public float advance(float dt, float playerSpeed, float maxSpeed, float aggression) {
-        float approachSpeed = BASE_APPROACH_SPEED + aggression * AGGRESSION_BONUS;
-        float speedRatio = (maxSpeed > 0) ? playerSpeed / maxSpeed : 0f;
-        float speedFactor = 1.0f - speedRatio * 1.15f;
-        speedFactor = Math.max(-0.3f, speedFactor);
-        screenY += approachSpeed * speedFactor * dt;
+    public float advance(float dt, float playerY, int starCount, int maxStars) {
+        float starRatio = (maxStars > 0) ? (float) starCount / maxStars : 0f;
+        float targetY = playerY - GameConstants.POLICE_STAR_MAX_DISTANCE * (1f - starRatio);
+        screenY += (targetY - screenY) * GameConstants.POLICE_LERP_SPEED * dt;
         return screenY;
     }
 
@@ -39,7 +38,7 @@ public class PoliceMovement {
      * @return interpolated X position
      */
     public float lerpX(float currentX, float targetX, float dt) {
-        return currentX + (targetX - currentX) * LANE_TRACK_SPEED * dt;
+        return currentX + (targetX - currentX) * GameConstants.POLICE_LANE_TRACK_SPEED * dt;
     }
 
     public float getScreenY() {

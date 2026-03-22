@@ -13,13 +13,13 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import io.github.raesleg.engine.entity.TextureObject;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 /**
  * DashboardUI — HUD with dashboard.png for speed, star.png for wanted,
  * and an optional police-distance progress bar for Level 2.
+ * <p>
+ * <b>SRP Composition:</b> Delegates score popup lifecycle to
+ * {@link ScorePopupManager}. This class is responsible only for
+ * HUD layout and rendering.
  */
 public class DashboardUI implements IDashboardObserver, Disposable {
 
@@ -57,18 +57,12 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     private int targetScore;
     private static final float SCORE_LERP_SPEED = 200f;
 
-    /* ── Score popups ── */
-    private final List<ScorePopup> popups = new ArrayList<>();
-    private BitmapFont popupFont;
+    /* ── Score popups (SRP — delegated to ScorePopupManager) ── */
+    private final ScorePopupManager popupManager;
 
-    private static class ScorePopup {
-        float x, y;
-        String text;
-        Color color;
-        float alpha;
-        float lifetime;
-        static final float MAX_LIFETIME = 1.2f;
-    }
+    /* ── Fuel bar ── */
+    private float currentFuel;
+    private final Texture chargeTex;
 
     /* ── Police distance mode (Level 2) ── */
     private boolean policeDistanceMode;
@@ -99,6 +93,7 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         policeDistance = 1f;
         displayScore = 0f;
         targetScore = 0;
+        currentFuel = 1f;
 
         // Load textures
         dashboardTex = TextureObject.getOrLoadTexture("dashboard.png");
@@ -107,10 +102,10 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         policeTex = TextureObject.getOrLoadTexture("policecar_noflash.png");
         finishIcon = TextureObject.getOrLoadTexture("finish_flag.png");
         startIcon = TextureObject.getOrLoadTexture("start_flag.png");
+        chargeTex = TextureObject.getOrLoadTexture("charge.png");
 
-        // Popup font
-        popupFont = new BitmapFont();
-        popupFont.getData().setScale(2.5f);
+        // Score popup manager (SRP extraction)
+        popupManager = new ScorePopupManager();
 
         // 1x1 white pixel for drawing lines/bars
         Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -172,6 +167,11 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         // Speed drawn on dashboard.png, no label needed
     }
 
+    @Override
+    public void onFuelUpdated(float percentage) {
+        currentFuel = Math.max(0f, Math.min(1f, percentage));
+    }
+
     /* ── Lifecycle ── */
 
     public void act(float deltaTime) {
@@ -184,16 +184,8 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         currentScore = (int) displayScore;
         scoreLabel.setText("SCORE: " + currentScore);
 
-        // Update popups
-        Iterator<ScorePopup> it = popups.iterator();
-        while (it.hasNext()) {
-            ScorePopup p = it.next();
-            p.lifetime -= deltaTime;
-            p.y += 60f * deltaTime;
-            p.alpha = Math.max(0f, p.lifetime / ScorePopup.MAX_LIFETIME);
-            if (p.lifetime <= 0)
-                it.remove();
-        }
+        // Delegate popup animation to ScorePopupManager
+        popupManager.update(deltaTime);
 
         stage.act(deltaTime);
     }
@@ -215,21 +207,15 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         } else {
             drawProgressBar(batch);
         }
-        drawScorePopups(batch);
+        drawFuelBar(batch);
+        popupManager.render(batch);
 
         batch.end();
     }
 
     /** Spawns a floating score popup (e.g. "+50" or "-100"). */
     public void showScorePopup(int delta) {
-        ScorePopup p = new ScorePopup();
-        p.x = 120f;
-        p.y = 680f;
-        p.text = (delta > 0 ? "+" : "") + delta;
-        p.color = delta > 0 ? Color.GREEN : Color.RED;
-        p.alpha = 1f;
-        p.lifetime = ScorePopup.MAX_LIFETIME;
-        popups.add(p);
+        popupManager.show(delta);
     }
 
     public void resize(int width, int height) {
@@ -241,15 +227,11 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         stage.dispose();
         font.dispose();
         speedFont.dispose();
-        popupFont.dispose();
-        dashboardTex.dispose();
-        starTex.dispose();
-        carTex.dispose();
-        policeTex.dispose();
+        popupManager.dispose();
+        // Only dispose locally-created textures. Shared Flyweight textures
+        // (dashboardTex, starTex, carTex, etc.) are owned by TextureObject's
+        // static cache and disposed at app shutdown via disposeAllTextures().
         pixelTex.dispose();
-        finishIcon.dispose();
-        startIcon.dispose();
-
     }
 
     /* ── Custom drawing ── */
@@ -369,12 +351,41 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         batch.draw(carTex, carX, carY, carW, carH);
     }
 
-    private void drawScorePopups(SpriteBatch batch) {
-        for (ScorePopup p : popups) {
-            popupFont.setColor(p.color.r, p.color.g, p.color.b, p.alpha);
-            popupFont.draw(batch, p.text, p.x, p.y);
+    private void drawFuelBar(SpriteBatch batch) {
+        float barX = 20f;
+        float barY = 30f;
+        float barW = 200f;
+        float barH = 18f;
+        float iconSize = 32f;
+
+        // Charge icon to the left of the bar
+        batch.setColor(1f, 1f, 1f, 1f);
+        batch.draw(chargeTex, barX, barY - 6f, iconSize, iconSize);
+
+        float fillX = barX + iconSize + 6f;
+
+        // Background track
+        batch.setColor(0.2f, 0.2f, 0.2f, 0.7f);
+        batch.draw(pixelTex, fillX, barY, barW, barH);
+
+        // Fill — color shifts green → yellow → red
+        float r, g;
+        if (currentFuel > 0.5f) {
+            r = 1f - (currentFuel - 0.5f) * 2f;
+            g = 1f;
+        } else {
+            r = 1f;
+            g = currentFuel * 2f;
         }
-        popupFont.setColor(Color.WHITE);
+        batch.setColor(r, g, 0.15f, 0.9f);
+        batch.draw(pixelTex, fillX, barY, barW * currentFuel, barH);
+
+        // "FUEL" label
+        batch.setColor(1f, 1f, 1f, 1f);
+        font.setColor(Color.WHITE);
+        font.getData().setScale(1.4f);
+        font.draw(batch, "FUEL", fillX, barY + barH + 22f);
+        font.getData().setScale(LABEL_SCALE);
     }
 
     private void refreshAllLabels() {

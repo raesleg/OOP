@@ -19,7 +19,7 @@ public class CrosswalkZone extends Shape implements IExpirable {
     private final SurfaceEffect surfaceEffect;
 
     public CrosswalkZone(float centreXPx, float relativeY,
-                         float widthPx, float heightPx, PhysicsBody body) {
+            float widthPx, float heightPx, PhysicsBody body) {
         super(centreXPx - widthPx / 2f, 0, widthPx, heightPx,
                 new Color(1f, 1f, 1f, 0.25f));
 
@@ -75,6 +75,10 @@ public class CrosswalkZone extends Shape implements IExpirable {
 
     public boolean isPedestrianCrossing() {
         return state.isPedestrianCrossing();
+    }
+
+    public boolean hasPlayerPassed() {
+        return state.hasPlayerPassed();
     }
 
     @Override

@@ -54,7 +54,7 @@ public class BreakRuleCommand implements ICommand {
     @Override
     public void execute() {
         for (int i = 0; i < weight; i++) {
-            ruleManager.recordViolation();
+            ruleManager.recordViolation(violationType);
         }
         Gdx.app.log("BreakRuleCommand",
                 "Rule broken: " + violationType + " (+" + weight + ")"
