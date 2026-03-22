@@ -100,6 +100,8 @@ public abstract class BaseGameScene extends Scene {
     private SoundDevice sound;
     private Music bgm;
     private static final float BGM_BASE_VOLUME = 0.2f;
+    private boolean accelPressedLastFrame = false;
+    private boolean brakePressedLastFrame = false;
 
     /* ── Explosion game-over delay ── */
     private boolean gameOverPending;
@@ -319,6 +321,8 @@ public abstract class BaseGameScene extends Scene {
         sound.addSound("drive", "car_sound.wav");
         sound.addSound("explosion", "crash_sound.wav");
         sound.addSound("explosion_big", "explosion.wav");
+        sound.addSound("accelerate", "accelerating.wav");
+        sound.addSound("brake", "braking.wav");
         sound.addSound("reward", "rewardsound.mp3");
         sound.addSound("negative", "negativesound.mp3");
         sound.addSound("gameover", "gameover_sound.wav");
@@ -354,13 +358,34 @@ public abstract class BaseGameScene extends Scene {
         /* Speed control via action bindings */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
 
+        // boolean upHeld = kb.isHeld(Constants.UP);
+        // boolean downHeld = kb.isHeld(Constants.DOWN);
+
         if (kb.isHeld(Constants.UP)) {
             simulatedSpeed = Math.min(getMaxSpeed(), simulatedSpeed + getAcceleration() * deltaTime);
+            
+            if (!accelPressedLastFrame) {
+                sound.playSound("accelerate", 1.0f);
+            }
+            sound.stopSound("brake");
+
         } else if (kb.isHeld(Constants.DOWN)) {
             simulatedSpeed = Math.max(0f, simulatedSpeed - getBrakeRate() * deltaTime);
+            
+            if (!brakePressedLastFrame && simulatedSpeed > 10f) {
+                sound.playSound("brake", 1.0f);
+            }
+            sound.stopSound("accelerate");
+
         } else {
             simulatedSpeed = Math.max(0f, simulatedSpeed - PASSIVE_DECEL * deltaTime);
+
+            sound.stopSound("brake");
+            sound.stopSound("accelerate");
         }
+
+        accelPressedLastFrame = kb.isHeld(Constants.UP);
+        brakePressedLastFrame = kb.isHeld(Constants.DOWN);
 
         float scrollSpeed = getScrollSpeedPixelsPerSecond();
         scrollOffset -= scrollSpeed * deltaTime;

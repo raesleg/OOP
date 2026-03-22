@@ -41,7 +41,7 @@ public class ExplosionCollisionHandler {
         if (aiEntity != null && userEntity != null) {
             // Play explosion sound
             if (soundManager != null) {
-                soundManager.playSound("explosion", 1.0f);
+                soundManager.playSound("explosion", 0.5f);
             }
 
             // Create radial explosion force

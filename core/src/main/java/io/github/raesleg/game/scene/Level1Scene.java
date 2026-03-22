@@ -173,7 +173,7 @@ public class Level1Scene extends BaseGameScene {
                     @Override
                     public void onPickup() {
                         addScore(50);
-                        getSound().playSound("reward", 1.0f);
+                        getSound().playSound("reward", 0.5f);
                     }
                 });
 
@@ -385,7 +385,7 @@ public class Level1Scene extends BaseGameScene {
                 if (!encounter.rewarded) {
                     encounter.rewarded = true;
                     addScore(200);
-                    getSound().playSound("reward", 1.0f);
+                    getSound().playSound("reward", 0.5f);
                 }
 
                 pedestrian.markExpired();

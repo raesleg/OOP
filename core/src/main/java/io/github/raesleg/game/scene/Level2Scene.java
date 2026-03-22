@@ -161,7 +161,7 @@ public class Level2Scene extends BaseGameScene {
                     @Override
                     public void onPickup() {
                         addScore(50);
-                        getSound().playSound("reward", 1.0f);
+                        getSound().playSound("reward", 0.5f);
                     }
                 });
 
@@ -180,12 +180,23 @@ public class Level2Scene extends BaseGameScene {
             Gdx.app.log("Level2Scene", "Could not load policesiren sound: " + e.getMessage());
         }
 
-        // Rain sound
         try {
             getSound().addSound("rain", "rainsound.wav");
         } catch (Exception e) {
             Gdx.app.log("Level2Scene", "Could not load rain sound: " + e.getMessage());
         }
+
+        // try {
+        //     getSound().addSound("puddle", "puddlesound.wav");
+        // } catch (Exception e) {
+        //     Gdx.app.log("Level2Scene", "Could not load puddle sound: " + e.getMessage());
+        // }
+
+        // try {
+        //     getSound().addSound("mud", "mudsound.wav");
+        // } catch (Exception e) {
+        //     Gdx.app.log("Level2Scene", "Could not load rain sound: " + e.getMessage());
+        // }
 
         // Enable police distance mode on dashboard
         getDashboard().setPoliceDistanceMode(true);
