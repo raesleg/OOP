@@ -388,6 +388,8 @@ public class Level2Scene extends BaseGameScene {
     @Override
     protected void disposeLevelData() {
         getSound().stopSound("rain");
+        getSound().stopSound("policesiren");
+      
         if (npcSpawner != null) {
             npcSpawner.clearAll();
             npcSpawner = null;
