@@ -4,13 +4,11 @@ import java.util.List;
 
 import io.github.raesleg.engine.entity.Entity;
 import io.github.raesleg.engine.entity.EntityManager;
-import io.github.raesleg.game.entities.misc.Pedestrian;
-import io.github.raesleg.game.entities.misc.StopSign;
-import io.github.raesleg.game.entities.misc.Tree;
-import io.github.raesleg.game.entities.vehicles.NPCCar;
+import io.github.raesleg.game.entities.IPerceivable;
 
 /**
- * Reads nearby entities and builds a lightweight perception snapshot for NPC AI.
+ * Reads nearby entities and builds a lightweight perception snapshot for NPC
+ * AI.
  */
 public class AIPerceptionService {
 
@@ -20,8 +18,7 @@ public class AIPerceptionService {
         this.entityManager = entityManager;
     }
 
-    public PerceptionSnapshot scan(NPCCar self) {
-        SensorComponent sensor = self.getSensor();
+    public PerceptionSnapshot scan(Entity self, SensorComponent sensor) {
         float defaultDistance = sensor.getForwardRange();
 
         float nearestPedestrianDistance = defaultDistance;
@@ -33,8 +30,7 @@ public class AIPerceptionService {
         List<Entity> entities = entityManager.getSnapshot();
 
         float selfCenterX = self.getX() + self.getW() * 0.5f;
-        // NPCs move downward on screen, so "ahead" = lower Y
-        float selfFrontY = self.getY(); // bottom edge of sprite is in front
+        float selfFrontY = self.getY();
 
         for (Entity entity : entities) {
             if (entity == self) {
@@ -47,7 +43,6 @@ public class AIPerceptionService {
                 continue;
             }
 
-            // "ahead" = lower Y; dy is positive when entity is below (in front of) NPC
             float dy = selfFrontY - entity.getY();
             if (dy < 0f || dy > sensor.getForwardRange()) {
                 continue;
@@ -58,12 +53,21 @@ public class AIPerceptionService {
                 nearestEntity = entity;
             }
 
-            if (entity instanceof Pedestrian && dy < nearestPedestrianDistance) {
-                nearestPedestrianDistance = dy;
-            } else if (entity instanceof NPCCar && dy < nearestVehicleDistance) {
-                nearestVehicleDistance = dy;
-            } else if ((entity instanceof Tree || entity instanceof StopSign) && dy < nearestObstacleDistance) {
-                nearestObstacleDistance = dy;
+            if (entity instanceof IPerceivable perceivable) {
+                switch (perceivable.getPerceptionCategory()) {
+                    case PEDESTRIAN -> {
+                        if (dy < nearestPedestrianDistance)
+                            nearestPedestrianDistance = dy;
+                    }
+                    case VEHICLE -> {
+                        if (dy < nearestVehicleDistance)
+                            nearestVehicleDistance = dy;
+                    }
+                    case OBSTACLE -> {
+                        if (dy < nearestObstacleDistance)
+                            nearestObstacleDistance = dy;
+                    }
+                }
             }
         }
 
@@ -75,7 +79,6 @@ public class AIPerceptionService {
                 nearestEntity,
                 nearestPedestrianDistance,
                 nearestVehicleDistance,
-                nearestObstacleDistance
-        );
+                nearestObstacleDistance);
     }
 }

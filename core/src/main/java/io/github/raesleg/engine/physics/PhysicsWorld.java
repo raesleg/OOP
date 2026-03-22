@@ -10,10 +10,10 @@ import com.badlogic.gdx.physics.box2d.World;
 
 public class PhysicsWorld {
 
-    // referencing from box2d 
+    // referencing from box2d
     private final BodyDef bd = new BodyDef();
     private final FixtureDef fix = new FixtureDef();
-    private final PolygonShape shape = new PolygonShape();    
+    private final PolygonShape shape = new PolygonShape();
     private final World world;
 
     public PhysicsWorld(Vector2 gravity) {
@@ -29,15 +29,14 @@ public class PhysicsWorld {
     }
 
     public PhysicsBody createBody(
-            BodyDef.BodyType type,
+            BodyType type,
             float xM, float yM,
             float halfW, float halfH,
             float density,
             float friction,
             boolean isSensor,
-            Object userData
-    ) {
-        bd.type = type;
+            Object userData) {
+        bd.type = toBox2D(type);
         bd.position.set(xM, yM);
 
         Body body = world.createBody(bd);
@@ -48,7 +47,7 @@ public class PhysicsWorld {
         fix.density = density;
         fix.friction = friction;
         fix.isSensor = isSensor;
-        fix.restitution = 0f;  
+        fix.restitution = 0f;
 
         body.createFixture(fix);
         body.setUserData(userData);
@@ -64,6 +63,12 @@ public class PhysicsWorld {
         world.dispose();
         shape.dispose();
     }
+
+    private BodyDef.BodyType toBox2D(BodyType type) {
+        return switch (type) {
+            case STATIC -> BodyDef.BodyType.StaticBody;
+            case DYNAMIC -> BodyDef.BodyType.DynamicBody;
+            case KINEMATIC -> BodyDef.BodyType.KinematicBody;
+        };
+    }
 }
-
-

@@ -1,4 +1,4 @@
-package io.github.raesleg.game.entities.vehicles;
+package io.github.raesleg.game.entities;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -6,21 +6,28 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.TextureObject;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.entities.IChaseEntity;
-import io.github.raesleg.game.movement.PoliceMovement;
 
 /**
  * PoliceCar — A chase entity that spawns when the player accumulates
  * too many rule violations (WANTED stars).
  * <p>
- * Chase algorithm is delegated to {@link PoliceMovement} (SRP).
- * Implements {@link IChaseEntity} so Level2Scene depends on the
- * abstraction rather than this concrete class (DIP).
+ * The police car approaches from behind the player and gradually closes
+ * the gap. The approach speed increases with the player's violation count
+ * (via aggression factor). The player can maintain distance by driving at
+ * high speed.
+ * <p>
+ * Game Over occurs when the police car reaches the player's Y position.
  * <p>
  * <b>Design Pattern:</b> Flyweight (TextureObject texture cache),
- * Strategy (chase behaviour delegated to PoliceMovement).
+ * Strategy (chase behaviour is data-driven via aggression parameter).
+ * <p>
+ * <b>Engine/Game Boundary:</b> Extends engine's TextureObject.
+ * Lives entirely in the game layer.
  */
-public class PoliceCar extends TextureObject implements IChaseEntity {
+public class PoliceCar extends TextureObject {
+
+    private static final float BASE_APPROACH_SPEED = 70f;
+    private static final float AGGRESSION_BONUS = 130f;
 
     /* ── Siren flash animation ── */
     private static final float FLASH_INTERVAL = 0.15f;
@@ -34,7 +41,6 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
     private int flashIndex;
 
     private final PhysicsBody body;
-    private final PoliceMovement movement;
     private float screenY;
     private boolean caught;
 
@@ -50,21 +56,44 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
         this.caught = false;
         this.flashTimer = 0f;
         this.flashIndex = 0;
-        this.movement = new PoliceMovement(screenY);
 
         if (body != null) {
             body.setUserData(this);
         }
     }
 
-    @Override
+    /** Lerp factor for horizontal tracking (0 = instant, lower = smoother). */
+    private static final float LANE_TRACK_SPEED = 4f;
+
+    /**
+     * Advances the police car toward the player every frame.
+     *
+     * @param deltaTime   frame delta
+     * @param playerX     player car's screen X position (left edge)
+     * @param playerY     player car's screen Y position
+     * @param playerSpeed current player speed in KM/H
+     * @param maxSpeed    maximum speed for this level
+     * @param aggression  0..1 aggression factor from RuleManager
+     */
     public void updateChase(float deltaTime, float playerX, float playerY,
             float playerSpeed, float maxSpeed,
             float aggression) {
-        // Delegate chase algorithm to PoliceMovement
-        screenY = movement.advance(deltaTime, playerSpeed, maxSpeed, aggression);
+        // Approach speed = base + aggression bonus
+        float approachSpeed = BASE_APPROACH_SPEED + aggression * AGGRESSION_BONUS;
 
-        float newX = movement.lerpX(getX(), playerX, deltaTime);
+        // Player maintaining high speed slows the police approach
+        // At max speed (speedRatio=1.0), speedFactor goes negative → police falls
+        // behind
+        float speedRatio = (maxSpeed > 0) ? playerSpeed / maxSpeed : 0f;
+        float speedFactor = 1.0f - speedRatio * 1.15f;
+        speedFactor = Math.max(-0.3f, speedFactor);
+
+        screenY += approachSpeed * speedFactor * deltaTime;
+
+        // Smoothly follow player's X position (lerp toward player lane)
+        float targetX = playerX;
+        float currentX = getX();
+        float newX = currentX + (targetX - currentX) * LANE_TRACK_SPEED * deltaTime;
         setX(newX);
         setY(screenY);
 
@@ -75,7 +104,9 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
             body.setPosition(bodyX, bodyY);
         }
 
-        caught = movement.hasCaught(screenY, getH(), playerY);
+        // Live check — recomputed each frame so knockback recovery
+        // clears a false-positive "caught" within the same second.
+        caught = (screenY + getH() >= playerY);
 
         // Advance siren flash animation
         flashTimer += deltaTime;
@@ -85,12 +116,12 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
         }
     }
 
-    @Override
+    /** True while the police car overlaps the player vertically. */
     public boolean hasCaughtPlayer() {
         return caught;
     }
 
-    @Override
+    /** Current screen-Y position (pixels). Used for distance-based siren volume. */
     public float getScreenY() {
         return screenY;
     }
@@ -98,9 +129,7 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
     @Override
     public void draw(SpriteBatch batch) {
         Texture frame = TextureObject.getOrLoadTexture(FLASH_FRAMES[flashIndex]);
-        if (frame != null) {
-            batch.draw(frame, getX(), getY(), getW(), getH());
-        }
+        batch.draw(frame, getX(), getY(), getW(), getH());
     }
 
     @Override

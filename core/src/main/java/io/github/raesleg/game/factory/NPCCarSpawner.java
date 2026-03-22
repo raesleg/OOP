@@ -5,7 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.Gdx;
+import io.github.raesleg.engine.physics.BodyType;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.EntityManager;
@@ -80,7 +81,7 @@ public class NPCCarSpawner {
 
     /**
      * scrollPixelsPerSecond = road/world downward speed in pixels/sec
-    */
+     */
     public void update(float deltaTime, float scrollPixelsPerSecond) {
         // Update spawn timer
         spawnTimer += deltaTime;
@@ -100,7 +101,7 @@ public class NPCCarSpawner {
 
             npc.updateLifeCycle(scrollPixelsPerSecond, deltaTime, screenHeight);
             return npc.isExpired();
-        });        
+        });
     }
 
     /**
@@ -147,7 +148,7 @@ public class NPCCarSpawner {
         // float bodyY = (relativeY + NPC_HEIGHT / 2f) / Constants.PPM;
 
         PhysicsBody body = world.createBody(
-                BodyDef.BodyType.DynamicBody,
+                BodyType.DYNAMIC,
                 (laneX) / Constants.PPM,
                 (relativeY + NPC_HEIGHT / 2f) / Constants.PPM,
                 (NPC_WIDTH / Constants.PPM) / 2f * 0.3f,
@@ -155,17 +156,16 @@ public class NPCCarSpawner {
                 50f,
                 0f,
                 false,
-                null
-        );
+                null);
         body.setLinearDamping(8f);
 
         AIPerceptionService perceptionService = new AIPerceptionService(entityManager);
 
         SensorComponent sensor = new SensorComponent(
-                220f,  // forward range
-                60f,   // side range
-                70f,   // stop distance
-                120f   // follow distance
+                220f, // forward range
+                60f, // side range
+                70f, // stop distance
+                120f // follow distance
         );
 
         NPCCar npc = new NPCCar(
@@ -176,22 +176,17 @@ public class NPCCarSpawner {
                 NPC_HEIGHT,
                 laneIndex,
                 new AIControlled(),
-                new NpcDrivingStrategy(perceptionService),
+                new NpcDrivingStrategy(perceptionService, sensor),
                 new CarMovementModel(VehicleProfile.npcTraffic()),
                 body,
-                sensor
-        );
+                sensor);
         // Add to manager and active list
         entityManager.addEntity(npc);
         activeNPCs.add(npc);
 
-        System.out.println("NPC spawned: lane=" + laneIndex + ", x=" + npc.getX() + ", y=" + npc.getY());
-        System.out.println("Active NPC count = " + activeNPCs.size());
-        System.out.println("spawnYOffset = " + spawnYOffset);
-        System.out.println("spawn body y px = " + ((body.getPosition().y * Constants.PPM) - NPC_HEIGHT / 2f));
-        System.out.println("npc initial y = " + npc.getY());
-
-        // System.out.println("NPC car spawned in lane " + laneIndex);
+        Gdx.app.log("NPCCarSpawner", "NPC spawned: lane=" + laneIndex
+                + ", x=" + npc.getX() + ", y=" + npc.getY()
+                + ", active=" + activeNPCs.size());
     }
 
     /**

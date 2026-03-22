@@ -2,14 +2,15 @@ package io.github.raesleg.game.movement;
 
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.movement.MovementStrategy;
-import io.github.raesleg.game.entities.vehicles.NPCCar;
 
 public class NpcDrivingStrategy implements MovementStrategy {
 
     private final AIPerceptionService perceptionService;
+    private final SensorComponent sensor;
 
-    public NpcDrivingStrategy(AIPerceptionService perceptionService) {
+    public NpcDrivingStrategy(AIPerceptionService perceptionService, SensorComponent sensor) {
         this.perceptionService = perceptionService;
+        this.sensor = sensor;
     }
 
     @Override
@@ -19,11 +20,7 @@ public class NpcDrivingStrategy implements MovementStrategy {
 
     @Override
     public float getY(MovableEntity entity, float dt) {
-        if (!(entity instanceof NPCCar npc)) {
-            return 0f;
-        }
-
-        PerceptionSnapshot snapshot = perceptionService.scan(npc);
+        PerceptionSnapshot snapshot = perceptionService.scan(entity, sensor);
 
         if (snapshot == null) {
             return 0f;

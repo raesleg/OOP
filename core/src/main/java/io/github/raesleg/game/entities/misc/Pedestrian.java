@@ -6,8 +6,10 @@ import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.IExpirable;
 import io.github.raesleg.engine.entity.TextureObject;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.game.entities.IPerceivable;
+import io.github.raesleg.game.entities.PerceptionCategory;
 
-public class Pedestrian extends TextureObject implements IExpirable {
+public class Pedestrian extends TextureObject implements IExpirable, IPerceivable {
 
     private final PhysicsBody body;
     private final float relativeY;
@@ -80,6 +82,11 @@ public class Pedestrian extends TextureObject implements IExpirable {
     @Override
     public boolean isExpired() {
         return expired;
+    }
+
+    @Override
+    public PerceptionCategory getPerceptionCategory() {
+        return PerceptionCategory.PEDESTRIAN;
     }
 
     @Override

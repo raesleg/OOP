@@ -1,17 +1,16 @@
-package io.github.raesleg.game.entities.misc;
+package io.github.raesleg.game.entities;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import io.github.raesleg.engine.Constants;
-import io.github.raesleg.engine.entity.IExpirable;
 import io.github.raesleg.engine.entity.TextureObject;
+import io.github.raesleg.engine.entity.IExpirable;
 import io.github.raesleg.engine.physics.PhysicsBody;
 
 /**
- * Pickupable — A collectable battery that awards +50 score.
- * Uses a DYNAMIC sensor body for reliable collision detection.
- * Extends TextureObject to participate in the Flyweight texture cache.
+ * Pickupable — A collectable yellow square that awards +50 score.
+ * Uses a sensor physics body so the player drives through it.
  * Implements IExpirable for automatic removal by EntityManager.
  */
 public class Pickupable extends TextureObject implements IExpirable {
@@ -36,16 +35,12 @@ public class Pickupable extends TextureObject implements IExpirable {
         float screenY = relativeY + scrollOffset;
         setY(screenY);
 
-        // Manually set body position every frame (kinematic-like behavior)
         if (body != null) {
-            float bodyX = (getX() + getW() / 2f) / Constants.PPM;
-            float bodyY = (screenY + getH() / 2f) / Constants.PPM;
-
-            body.setPosition(bodyX, bodyY);
-            body.setVelocity(0f, 0f); // Zero velocity to prevent drift
+            body.setPosition(
+                    (getX() + getW() / 2f) / Constants.PPM,
+                    (screenY + getH() / 2f) / Constants.PPM);
         }
 
-        // Expire when scrolled off screen
         if (screenY < -getH() * 3f) {
             expired = true;
         }

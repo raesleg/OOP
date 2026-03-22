@@ -9,7 +9,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import io.github.raesleg.engine.physics.BodyType;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.io.CommandHistory;
@@ -217,7 +217,6 @@ public class Level1Scene extends BaseGameScene {
             Gdx.app.log("Level1Scene", "Could not load scream sound: " + e.getMessage());
         }
 
-
         Gdx.app.log("Level1Scene", "=== INIT LEVEL DATA COMPLETE ===");
     }
 
@@ -226,7 +225,7 @@ public class Level1Scene extends BaseGameScene {
         float zoneHalfH = (CROSSWALK_HEIGHT / Constants.PPM) / 2f;
 
         PhysicsBody zoneBody = getWorld().createBody(
-                BodyDef.BodyType.DynamicBody,
+                BodyType.DYNAMIC,
                 ROAD_CENTRE_X / Constants.PPM,
                 worldY / Constants.PPM,
                 zoneHalfW,
@@ -262,15 +261,15 @@ public class Level1Scene extends BaseGameScene {
         float hitboxHalfH = pedHalfH * 0.4f;
 
         PhysicsBody pedBody = getWorld().createBody(
-            BodyDef.BodyType.DynamicBody,
-            (pedStartX + pedW / 2f) / Constants.PPM,
-            (worldY + pedH / 2f) / Constants.PPM,
-            hitboxHalfW,
-            hitboxHalfH,
-            0f,
-            0f,
-            false,
-            null);
+                BodyType.DYNAMIC,
+                (pedStartX + pedW / 2f) / Constants.PPM,
+                (worldY + pedH / 2f) / Constants.PPM,
+                hitboxHalfW,
+                hitboxHalfH,
+                0f,
+                0f,
+                false,
+                null);
 
         Pedestrian pedestrian = new Pedestrian(pedStartX, worldY, pedW, pedH, pedBody);
         PedestrianIntent intent = new PedestrianIntent(direction);
@@ -335,7 +334,6 @@ public class Level1Scene extends BaseGameScene {
             Pedestrian pedestrian = encounter.pedestrian;
             CrosswalkZone zone = encounter.zone;
 
-
             if (pedestrian.isExpired() || zone.isExpired()) {
                 encounterIter.remove();
                 continue;
@@ -358,7 +356,8 @@ public class Level1Scene extends BaseGameScene {
                 zone.setCrossingActive(false);
             }
 
-            // Check for fail: either animation just finished, or failQueued with no active reaction
+            // Check for fail: either animation just finished, or failQueued with no active
+            // reaction
             if (encounter.failQueued && !encounter.crashHandled
                     && (encounter.hitReaction.isFinished() || !encounter.hitReaction.isActive())) {
                 encounter.crashHandled = true;

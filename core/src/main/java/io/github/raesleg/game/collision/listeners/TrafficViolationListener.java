@@ -11,17 +11,19 @@ import io.github.raesleg.game.entities.misc.Pedestrian;
 public interface TrafficViolationListener {
 
     // Called when player enters a crosswalk while a pedestrian is crossing
-    void onCrosswalkViolation();
+    default void onCrosswalkViolation() {
+    }
 
     // Called when player directly hits a pedestrian
-    void onPedestrianHit(Pedestrian pedestrian, Vector2 knockbackDirection, float knockbackForce);
+    default void onPedestrianHit(Pedestrian pedestrian, Vector2 knockbackDirection, float knockbackForce) {
+    }
 
     // Called when player collides with an NPC vehicle
-    void onTrafficCrash();
+    default void onTrafficCrash() {
+    }
 
     // Called when player picks up a collectible
     default void onPickup() {
-        // Default empty
     }
-    
+
 }

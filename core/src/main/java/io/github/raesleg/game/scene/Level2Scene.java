@@ -8,14 +8,13 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import io.github.raesleg.engine.physics.BodyType;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.io.CommandHistory;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
-import io.github.raesleg.game.entities.misc.Pedestrian;
+import io.github.raesleg.game.entities.IChaseEntity;
 import io.github.raesleg.game.entities.vehicles.PoliceCar;
 import io.github.raesleg.game.factory.NPCCarSpawner;
 import io.github.raesleg.game.factory.PickupableSpawner;
@@ -36,7 +35,7 @@ import io.github.raesleg.game.rules.RuleManager;
  * <p>
  * <b>No crosswalks or pedestrians</b> — this is a pure expressway
  * survival level.
-*/
+ */
 public class Level2Scene extends BaseGameScene {
 
     /* ── Level parameters ── */
@@ -57,7 +56,7 @@ public class Level2Scene extends BaseGameScene {
     private TreeSpawner treeSpawner;
     private RuleManager ruleManager;
     private CommandHistory commandHistory;
-    private PoliceCar policeCar;
+    private IChaseEntity policeCar;
     private boolean policeSpawned;
     private boolean sirenStarted;
 
@@ -71,8 +70,8 @@ public class Level2Scene extends BaseGameScene {
 
     /* ── Rain rendering state ── */
     private static final int DROP_COUNT = 150;
-    private final float[] dropX   = new float[DROP_COUNT];
-    private final float[] dropY   = new float[DROP_COUNT];
+    private final float[] dropX = new float[DROP_COUNT];
+    private final float[] dropY = new float[DROP_COUNT];
     private final float[] dropLen = new float[DROP_COUNT];
     private final float[] dropSpd = new float[DROP_COUNT];
     private boolean dropsReady = false;
@@ -126,12 +125,12 @@ public class Level2Scene extends BaseGameScene {
                 getEntityManager(), getWorld(), VIRTUAL_HEIGHT, 3.5f,
                 npcSpawner, null,
                 SurfaceEffect.PUDDLE, "puddle.png"));
- 
+
         hazardSpawners.add(new RoadHazardSpawner(
                 getEntityManager(), getWorld(), VIRTUAL_HEIGHT, 6.0f,
                 npcSpawner, null,
                 SurfaceEffect.MUD, "mud.png"));
- 
+
         npcSpawner.setHazardSpawner(hazardSpawners.get(1));
 
         // Pickupable spawner — collectible yellow squares
@@ -152,21 +151,11 @@ public class Level2Scene extends BaseGameScene {
         getCollisionHandler().setTrafficViolationListener(
                 new TrafficViolationListener() {
                     @Override
-                    public void onCrosswalkViolation() {
-                        // No crosswalks in Level 2
-                    }
-
-                    @Override
                     public void onTrafficCrash() {
                         commandHistory.executeAndRecord(
                                 new BreakRuleCommand(ruleManager, "TRAFFIC_CRASH", 1));
                         incrementCrashCount();
                         addScore(-100);
-                    }
-                    
-                    @Override
-                    public void onPedestrianHit(Pedestrian pedestrian, Vector2 knockbackDirection, float knockbackForce) {
-                        // No pedestrians in Level 2
                     }
 
                     @Override
@@ -268,14 +257,15 @@ public class Level2Scene extends BaseGameScene {
         float centreX = ROAD_CENTRE_X / Constants.PPM;
         float startY = -50f;
         PhysicsBody policeBody = getWorld().createBody(
-                BodyDef.BodyType.KinematicBody,
+                BodyType.KINEMATIC,
                 centreX,
                 startY / Constants.PPM,
                 (80f / Constants.PPM) / 2f,
                 (140f / Constants.PPM) / 2f,
                 0f, 0f, true, null);
-        policeCar = new PoliceCar(policeBody);
-        getEntityManager().addEntity(policeCar);
+        PoliceCar car = new PoliceCar(policeBody);
+        policeCar = car;
+        getEntityManager().addEntity(car);
         Gdx.app.log("Level2Scene", "Police spawned — chase begins!");
     }
 
@@ -313,21 +303,21 @@ public class Level2Scene extends BaseGameScene {
 
     @Override
     protected void renderLevelEffects(ShapeRenderer sr, SpriteBatch batch) {
- 
+
         // Init rain drops once
         if (!dropsReady) {
             for (int i = 0; i < DROP_COUNT; i++) {
-                dropX[i]   = MathUtils.random(0f, VIRTUAL_WIDTH);
-                dropY[i]   = MathUtils.random(0f, VIRTUAL_HEIGHT);
+                dropX[i] = MathUtils.random(0f, VIRTUAL_WIDTH);
+                dropY[i] = MathUtils.random(0f, VIRTUAL_HEIGHT);
                 dropLen[i] = MathUtils.random(10f, 28f);
                 dropSpd[i] = MathUtils.random(500f, 900f);
             }
             dropsReady = true;
         }
- 
+
         float dt = Gdx.graphics.getDeltaTime();
         rainTime += dt;
- 
+
         for (int i = 0; i < DROP_COUNT; i++) {
             dropY[i] -= dropSpd[i] * dt;
             dropX[i] -= dropSpd[i] * 0.12f * dt;
@@ -336,41 +326,41 @@ public class Level2Scene extends BaseGameScene {
                 dropX[i] = MathUtils.random(0f, VIRTUAL_WIDTH);
             }
         }
- 
+
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
- 
+
         sr.begin(ShapeRenderer.ShapeType.Filled);
- 
+
         // 1. Subtle blue-grey atmosphere — NOT so dark it creates black bars
         sr.setColor(0.10f, 0.13f, 0.22f, 0.22f);
         sr.rect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
- 
+
         // 2. "Wet lens" blur fake — multiple tiny offset passes smear the image
-        //    Use very low alpha so they layer without creating solid blocks
+        // Use very low alpha so they layer without creating solid blocks
         for (int pass = 0; pass < 5; pass++) {
             float ox = MathUtils.sin(pass * 1.3f) * 2.5f;
             float oy = MathUtils.cos(pass * 1.1f) * 2.5f;
             sr.setColor(0.12f, 0.18f, 0.28f, 0.045f);
             sr.rect(ox, oy, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
         }
- 
+
         // 3. Soft vignette — only darken the very edges, fade quickly inward
-        //    Thin strips so no harsh black column effect
+        // Thin strips so no harsh black column effect
         float vigAlpha = 0.40f + MathUtils.sin(rainTime * 1.6f) * 0.04f;
- 
+
         // Side strips — only 45px wide, soft alpha
         sr.setColor(0.02f, 0.03f, 0.06f, vigAlpha * 0.7f);
         sr.rect(0, 0, 45f, VIRTUAL_HEIGHT);
         sr.rect(VIRTUAL_WIDTH - 45f, 0, 45f, VIRTUAL_HEIGHT);
- 
+
         // Top/bottom strips
         sr.setColor(0.02f, 0.03f, 0.06f, vigAlpha * 0.8f);
         sr.rect(0, VIRTUAL_HEIGHT - 55f, VIRTUAL_WIDTH, 55f);
         sr.rect(0, 0, VIRTUAL_WIDTH, 45f);
- 
+
         sr.end();
- 
+
         // 4. Rain streaks
         sr.begin(ShapeRenderer.ShapeType.Line);
         for (int i = 0; i < DROP_COUNT; i++) {
@@ -385,9 +375,9 @@ public class Level2Scene extends BaseGameScene {
             }
         }
         sr.end();
- 
+
         Gdx.gl.glDisable(GL20.GL_BLEND);
- 
+
         // Render all hazard types in one loop
         batch.begin();
         for (RoadHazardSpawner spawner : hazardSpawners)
@@ -403,7 +393,8 @@ public class Level2Scene extends BaseGameScene {
             npcSpawner = null;
         }
 
-        for (RoadHazardSpawner s : hazardSpawners) s.clearAll();
+        for (RoadHazardSpawner s : hazardSpawners)
+            s.clearAll();
         hazardSpawners.clear();
 
         if (pickupSpawner != null) {

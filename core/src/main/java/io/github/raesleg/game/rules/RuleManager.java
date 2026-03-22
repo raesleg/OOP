@@ -28,12 +28,19 @@ public class RuleManager {
         rulesBroken++;
     }
 
+    /**
+     * Generic violation recorder — used by BreakRuleCommand for any violation type.
+     */
+    public void recordViolation() {
+        rulesBroken++;
+    }
+
     public void setSpeedingViolation() {
         speedingViolations++;
         rulesBroken++;
     }
 
-    public void undoLastViolation() { //????
+    public void undoLastViolation() { // ????
         if (rulesBroken > 0) {
             rulesBroken--;
         }

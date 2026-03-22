@@ -4,10 +4,11 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import io.github.raesleg.engine.physics.BodyType;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.IExpirable;
+import io.github.raesleg.engine.entity.TextureObject;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.game.movement.SurfaceEffect;
 
@@ -18,16 +19,12 @@ import io.github.raesleg.game.movement.SurfaceEffect;
  * no duplicated zone logic needed (Open/Closed Principle).
  *
  * Usage:
- *   new RoadHazard(world, x, y, w, h, SurfaceEffect.PUDDLE,   "puddle.png")
- *   new RoadHazard(world, x, y, w, h, SurfaceEffect.MUD, "mud.png")
+ * new RoadHazard(world, x, y, w, h, SurfaceEffect.PUDDLE, "puddle.png")
+ * new RoadHazard(world, x, y, w, h, SurfaceEffect.MUD, "mud.png")
  */
 public class RoadHazard extends MotionZone implements IExpirable {
 
-    private static Texture puddleTexture;
-    private static Texture oilTexture;
-
     private final float relativeY;
-    private final String texturePath;
     private Texture texture;
     private boolean expired;
 
@@ -37,29 +34,15 @@ public class RoadHazard extends MotionZone implements IExpirable {
                 effect,
                 new Color(0.3f, 0.5f, 0.9f, 0.35f),
                 world.createBody(
-                        BodyDef.BodyType.KinematicBody,
+                        BodyType.KINEMATIC,
                         centreXPx / Constants.PPM,
                         relativeY / Constants.PPM,
                         (wPx / Constants.PPM) / 2f,
                         (hPx / Constants.PPM) / 2f,
                         0f, 0f, true, null));
         this.relativeY = relativeY;
-        this.texturePath = texturePath;
         this.expired = false;
-        loadTexture();
-    }
-
-    private void loadTexture() {
-        // Cache per texture path to avoid reloading same texture repeatedly
-        if (texturePath.equals("puddle.png")) {
-            if (puddleTexture == null) puddleTexture = new Texture(texturePath);
-            texture = puddleTexture;
-        } else if (texturePath.equals("oilspill.png")) {
-            if (oilTexture == null) oilTexture = new Texture(texturePath);
-            texture = oilTexture;
-        } else {
-            texture = new Texture(texturePath);
-        }
+        this.texture = TextureObject.getOrLoadTexture(texturePath);
     }
 
     public void updatePosition(float scrollOffset) {

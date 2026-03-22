@@ -2,7 +2,7 @@ package io.github.raesleg.game.zone;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import io.github.raesleg.engine.physics.BodyType;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.Shape;
@@ -32,7 +32,7 @@ public class MotionZone extends Shape {
         this.tuning = tuning;
 
         this.body = world.createBody(
-                BodyDef.BodyType.StaticBody,
+                BodyType.STATIC,
                 x, y,
                 w, h,
                 0f, 0f,

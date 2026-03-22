@@ -8,7 +8,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import io.github.raesleg.engine.physics.BodyType;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -251,13 +251,13 @@ public abstract class BaseGameScene extends Scene {
         float roadLeftM = RoadRenderer.ROAD_LEFT / Constants.PPM;
         float roadRightM = RoadRenderer.ROAD_RIGHT / Constants.PPM;
 
-        world.createBody(BodyDef.BodyType.StaticBody,
+        world.createBody(BodyType.STATIC,
                 roadLeftM - t / 2f, worldH / 2f, t / 2f, worldH / 2f, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody,
+        world.createBody(BodyType.STATIC,
                 roadRightM + t / 2f, worldH / 2f, t / 2f, worldH / 2f, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody,
+        world.createBody(BodyType.STATIC,
                 worldW / 2f, -t / 2f, worldW / 2f, t / 2f, 0, 0.4f, false, null);
-        world.createBody(BodyDef.BodyType.StaticBody,
+        world.createBody(BodyType.STATIC,
                 worldW / 2f, worldH + t / 2f, worldW / 2f, t / 2f, 0, 0.4f, false, null);
 
         /* Player car — centre lane, near bottom */
@@ -267,7 +267,7 @@ public abstract class BaseGameScene extends Scene {
         float carH = 185f; // 64f
 
         PhysicsBody carBody = world.createBody(
-                BodyDef.BodyType.DynamicBody,
+                BodyType.DYNAMIC,
                 carPixelX / Constants.PPM,
                 (carPixelY + carH / 2f) / Constants.PPM,
                 (carW / Constants.PPM) / 2f,
@@ -283,7 +283,7 @@ public abstract class BaseGameScene extends Scene {
                 "car.png",
                 carPixelX - carW / 2f, carPixelY,
                 carW, carH,
-                user, 
+                user,
                 new PlayerMovementStrategy(),
                 new CarMovementModel(VehicleProfile.playerArcade()),
                 carBody);
@@ -623,11 +623,11 @@ public abstract class BaseGameScene extends Scene {
         float px = playerCar.getX() + playerCar.getW() / 2f;
         float py = playerCar.getY() + playerCar.getH() / 2f;
         ExplosionParticle.spawnExplosion(getEntityManager(),
-                        new com.badlogic.gdx.math.Vector2(px / Constants.PPM, py / Constants.PPM), 50f);
+                new com.badlogic.gdx.math.Vector2(px / Constants.PPM, py / Constants.PPM), 50f);
 
         // Large explode.png overlay
         getEntityManager().addEntity(new ExplosionOverlay(
-        "explode.png", px - 100f, py - 100f, 200f, 200f, EXPLOSION_DELAY));
+                "explode.png", px - 100f, py - 100f, 200f, 200f, EXPLOSION_DELAY));
 
         sound.playSound("explosion_big", 0.5f);
         stopMoveLoop();

@@ -8,23 +8,25 @@ import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.movement.MovementStrategy;
 import io.github.raesleg.engine.physics.PhysicsBody;
 
+import io.github.raesleg.game.entities.IPerceivable;
+import io.github.raesleg.game.entities.PerceptionCategory;
 import io.github.raesleg.game.movement.SensorComponent;
 
-public class NPCCar extends MovableEntity implements IExpirable {
+public class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
 
     private final int laneIndex;
     private final SensorComponent sensor;
     private boolean expired;
 
     public NPCCar(String filename,
-                  float x, float y,
-                  float w, float h,
-                  int laneIndex,
-                  ControlSource controls,
-                  MovementStrategy strategy,
-                  MovementModel movementModel,
-                  PhysicsBody body,
-                  SensorComponent sensor) {
+            float x, float y,
+            float w, float h,
+            int laneIndex,
+            ControlSource controls,
+            MovementStrategy strategy,
+            MovementModel movementModel,
+            PhysicsBody body,
+            SensorComponent sensor) {
         super(filename, x, y, w, h, controls, movementModel, body);
         setMovementStrategy(strategy);
         this.laneIndex = laneIndex;
@@ -42,21 +44,26 @@ public class NPCCar extends MovableEntity implements IExpirable {
         float bodyY = getPhysicsBody().getPosition().y;
         float scrollMetersPerSecond = scrollPixelsPerSecond / Constants.PPM;
         getPhysicsBody().setPosition(bodyX, bodyY - scrollMetersPerSecond * deltaTime);
- 
+
         // Sync sprite position from physics body
         float newY = getPhysicsBody().getPosition().y * Constants.PPM - getH() / 2f;
         setX(getPhysicsBody().getPosition().x * Constants.PPM - getW() / 2f);
         setY(newY);
- 
+
         // Expire when scrolled off the bottom of the screen
         if (newY < -getH() * 2f) {
             expired = true;
-        }    
+        }
     }
 
     @Override
     public boolean isExpired() {
         return expired;
+    }
+
+    @Override
+    public PerceptionCategory getPerceptionCategory() {
+        return PerceptionCategory.VEHICLE;
     }
 
     public void markExpired() {
