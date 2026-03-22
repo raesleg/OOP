@@ -76,7 +76,7 @@ public class NPCCarCollisionHandler {
 
         // Play crash sound
         if (soundManager != null) {
-            soundManager.playSound("explosion", 1.0f);
+            soundManager.playSound("explosion", 0.5f);
         }
 
         // Notify observer (with cooldown)
