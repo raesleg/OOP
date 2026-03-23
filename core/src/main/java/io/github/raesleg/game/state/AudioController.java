@@ -17,9 +17,11 @@ public final class AudioController implements IGameSystem {
 
     private final SoundDevice sound;
     private Music bgm;
-    private static final float BGM_BASE_VOLUME = 0.2f;
+    private static final float BGM_BASE_VOLUME = 0.3f;
 
     private boolean playerMoving;
+    private boolean accelerating;
+    private boolean braking;
 
     public AudioController(SoundDevice sound) {
         this.sound = sound;
@@ -40,6 +42,14 @@ public final class AudioController implements IGameSystem {
      */
     public void setPlayerMoving(boolean moving) {
         this.playerMoving = moving;
+    }
+    
+    public void setAccelerating(boolean accelerating) {
+        this.accelerating = accelerating;
+    }
+
+    public void setBraking(boolean braking) {
+        this.braking = braking;
     }
 
     @Override
@@ -93,13 +103,45 @@ public final class AudioController implements IGameSystem {
     }
 
     private void updateMoveLoop() {
-        if (sound.isMuted() || !playerMoving) {
-            stopMoveLoop();
+        if (sound.isMuted()) {
+            sound.stopSound("drive");
+            sound.stopSound("accelerate");
+            sound.stopSound("brake");
             return;
         }
-        if (!sound.isLooping("drive")) {
-            sound.loopSound("drive");
+
+        if (braking) {
+            sound.stopSound("drive");
+            sound.stopSound("accelerate");
+
+            if (!sound.isLooping("brake")) {
+                sound.loopSound("brake");
+            }
+            return;
         }
+        sound.stopSound("brake");
+
+        // Accelerating
+        if (accelerating) {
+            sound.stopSound("drive");
+            
+            if(!sound.isLooping("accelerate")) {
+                sound.loopSound("accelerate");
+            }
+            return;
+        } 
+
+        // Cruising
+        if (playerMoving) {
+            sound.stopSound("accelerate");
+
+            if (!sound.isLooping("drive")) {
+                sound.loopSound("drive");
+            }
+            return;
+        }
+        sound.stopSound("drive");
+        sound.stopSound("accelerate");
     }
 
     private void syncBgmVolume() {

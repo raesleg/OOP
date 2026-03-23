@@ -282,6 +282,8 @@ public abstract class BaseGameScene extends Scene {
         /* Common scene sounds */
         sound.addSound("drive", "car_sound.wav");
         sound.addSound("explosion", "crash_sound.wav");
+        sound.addSound("accelerate", "accelerating.wav");
+        sound.addSound("brake", "braking.wav");
         sound.addSound("explosion_big", "explosion.wav");
         sound.addSound("reward", "rewardsound.mp3");
         sound.addSound("negative", "negativesound.mp3");
@@ -353,7 +355,12 @@ public abstract class BaseGameScene extends Scene {
         dashboard.onFuelUpdated(fuelController.getFuel());
 
         /* Delegate audio to extracted system */
+        Keyboard kb = getIOManager().getInputs(Keyboard.class);
+
         audioController.setPlayerMoving(playerCar.isMoving());
+        audioController.setAccelerating(kb.isHeld(Constants.UP) || kb.isHeld(Constants.LEFT) || kb.isHeld(Constants.RIGHT));
+        audioController.setBraking(kb.isHeld(Constants.DOWN));
+
         audioController.update(deltaTime);
 
         /* Level-specific update (Template Method hook) */
