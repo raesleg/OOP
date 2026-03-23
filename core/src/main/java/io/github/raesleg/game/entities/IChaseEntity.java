@@ -7,7 +7,7 @@ package io.github.raesleg.game.entities;
 public interface IChaseEntity {
 
     void updateChase(float deltaTime, float playerX, float playerY,
-            int starCount, int maxStars);
+            int starCount, int maxStars, float playerSpeed, float maxSpeed);
 
     boolean hasCaughtPlayer();
 

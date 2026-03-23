@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 
-import io.github.raesleg.engine.scene.Scene;
 import io.github.raesleg.game.GameConstants;
 
 /**
@@ -21,9 +20,6 @@ import io.github.raesleg.game.GameConstants;
  * systems to compose; this system is only instantiated in Level 2.
  */
 public final class RainEffectSystem {
-
-    private static final float VIRTUAL_WIDTH = Scene.VIRTUAL_WIDTH;
-    private static final float VIRTUAL_HEIGHT = Scene.VIRTUAL_HEIGHT;
 
     private final int dropCount;
     private final float[] dropX;
@@ -47,81 +43,93 @@ public final class RainEffectSystem {
      * Renders the complete rain overlay (atmosphere + vignette + streaks).
      * Must be called between the road draw and the entity draw pass.
      */
-    public void render(ShapeRenderer sr, SpriteBatch batch) {
-        initDropsIfNeeded();
+    public void render(ShapeRenderer sr, SpriteBatch batch,
+            float visMinX, float visMinY, float visMaxX, float visMaxY) {
+        initDropsIfNeeded(visMinX, visMinY, visMaxX, visMaxY);
 
         float dt = Gdx.graphics.getDeltaTime();
         rainTime += dt;
-        advanceDrops(dt);
+
+        float visW = visMaxX - visMinX;
+        float visH = visMaxY - visMinY;
+        advanceDrops(dt, visMinX, visMinY, visW, visH);
 
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
         sr.begin(ShapeRenderer.ShapeType.Filled);
-        drawAtmosphere(sr);
-        drawWetLensBlur(sr);
-        drawVignette(sr);
+        drawAtmosphere(sr, visMinX, visMinY, visW, visH);
+        drawWetLensBlur(sr, visMinX, visMinY, visW, visH);
+        drawVignette(sr, visMinX, visMinY, visW, visH);
         sr.end();
 
         sr.begin(ShapeRenderer.ShapeType.Line);
-        drawRainStreaks(sr);
+        drawRainStreaks(sr, visMinX, visMinY);
         sr.end();
-
-        Gdx.gl.glDisable(GL20.GL_BLEND);
+        // Do NOT disable GL_BLEND — SpriteBatch requires it for texture alpha
     }
 
     /* ── Private helpers ── */
 
-    private void initDropsIfNeeded() {
+    private void initDropsIfNeeded(float visMinX, float visMinY, float visMaxX, float visMaxY) {
         if (dropsReady)
             return;
+        float visW = visMaxX - visMinX;
+        float visH = visMaxY - visMinY;
         for (int i = 0; i < dropCount; i++) {
-            dropX[i] = MathUtils.random(0f, VIRTUAL_WIDTH);
-            dropY[i] = MathUtils.random(0f, VIRTUAL_HEIGHT);
+            dropX[i] = MathUtils.random(visMinX, visMinX + visW);
+            dropY[i] = MathUtils.random(visMinY, visMinY + visH);
             dropLen[i] = MathUtils.random(10f, 28f);
             dropSpd[i] = MathUtils.random(500f, 900f);
         }
         dropsReady = true;
     }
 
-    private void advanceDrops(float dt) {
+    private void advanceDrops(float dt, float visMinX, float visMinY, float visW, float visH) {
         for (int i = 0; i < dropCount; i++) {
             dropY[i] -= dropSpd[i] * dt;
             dropX[i] -= dropSpd[i] * 0.12f * dt;
-            if (dropY[i] < -dropLen[i]) {
-                dropY[i] = VIRTUAL_HEIGHT + dropLen[i];
-                dropX[i] = MathUtils.random(0f, VIRTUAL_WIDTH);
+            if (dropY[i] < visMinY - dropLen[i]) {
+                dropY[i] = visMinY + visH + dropLen[i];
+                dropX[i] = MathUtils.random(visMinX, visMinX + visW);
+            }
+            if (dropX[i] < visMinX - dropLen[i]) {
+                dropX[i] = visMinX + visW + dropLen[i];
             }
         }
     }
 
-    private void drawAtmosphere(ShapeRenderer sr) {
+    private void drawAtmosphere(ShapeRenderer sr, float visMinX, float visMinY, float visW, float visH) {
         sr.setColor(0.10f, 0.13f, 0.22f, 0.22f);
-        sr.rect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+        sr.rect(visMinX, visMinY, visW, visH);
     }
 
-    private void drawWetLensBlur(ShapeRenderer sr) {
+    private void drawWetLensBlur(ShapeRenderer sr, float visMinX, float visMinY, float visW, float visH) {
         for (int pass = 0; pass < 5; pass++) {
             float ox = MathUtils.sin(pass * 1.3f) * 2.5f;
             float oy = MathUtils.cos(pass * 1.1f) * 2.5f;
             sr.setColor(0.12f, 0.18f, 0.28f, 0.045f);
-            sr.rect(ox, oy, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+            sr.rect(visMinX + ox, visMinY + oy, visW, visH);
         }
     }
 
-    private void drawVignette(ShapeRenderer sr) {
+    private void drawVignette(ShapeRenderer sr, float visMinX, float visMinY, float visW, float visH) {
         float vigAlpha = 0.40f + MathUtils.sin(rainTime * 1.6f) * 0.04f;
 
+        float edgeW = 45f;
+        float topH = 55f;
+        float bottomH = 45f;
+
         sr.setColor(0.02f, 0.03f, 0.06f, vigAlpha * 0.7f);
-        sr.rect(0, 0, 45f, VIRTUAL_HEIGHT);
-        sr.rect(VIRTUAL_WIDTH - 45f, 0, 45f, VIRTUAL_HEIGHT);
+        sr.rect(visMinX, visMinY, edgeW, visH);
+        sr.rect(visMinX + visW - edgeW, visMinY, edgeW, visH);
 
         sr.setColor(0.02f, 0.03f, 0.06f, vigAlpha * 0.8f);
-        sr.rect(0, VIRTUAL_HEIGHT - 55f, VIRTUAL_WIDTH, 55f);
-        sr.rect(0, 0, VIRTUAL_WIDTH, 45f);
+        sr.rect(visMinX, visMinY + visH - topH, visW, topH);
+        sr.rect(visMinX, visMinY, visW, bottomH);
     }
 
-    private void drawRainStreaks(ShapeRenderer sr) {
+    private void drawRainStreaks(ShapeRenderer sr, float visMinX, float visMinY) {
         for (int i = 0; i < dropCount; i++) {
             float alpha = MathUtils.random(0.28f, 0.60f);
             sr.setColor(0.72f, 0.84f, 1.0f, alpha);

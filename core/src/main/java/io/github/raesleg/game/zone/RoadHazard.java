@@ -17,62 +17,62 @@ import io.github.raesleg.game.movement.SurfaceEffect;
  * RoadHazard — Generic scrollable MotionZone for surface hazards.
  */
 public class RoadHazard extends MotionZone implements IExpirable {
-    
+
     private final float relativeY;
     private Texture texture;
     private boolean expired;
 
     public RoadHazard(PhysicsWorld world, float centreXPx, float relativeY,
             float wPx, float hPx, SurfaceEffect effect, String texturePath) {
-        
+
         // Call super with inline body creation
         super(centreXPx - wPx / 2f, 0, wPx, hPx,
-            effect,
-            new Color(0.3f, 0.5f, 0.9f, 0.35f),
-            createDynamicSensorBody(world, centreXPx, relativeY, wPx, hPx));
-        
+                effect,
+                new Color(0.3f, 0.5f, 0.9f, 0.35f),
+                createDynamicSensorBody(world, centreXPx, relativeY, wPx, hPx));
+
         this.relativeY = relativeY;
         this.expired = false;
         this.texture = TextureObject.getOrLoadTexture(texturePath);
     }
-    
+
     /**
      * Helper method to create dynamic sensor body.
      * Called before super() - compatible with older Java versions.
      */
-    private static PhysicsBody createDynamicSensorBody(PhysicsWorld world, 
+    private static PhysicsBody createDynamicSensorBody(PhysicsWorld world,
             float centreXPx, float relativeY, float wPx, float hPx) {
         PhysicsBody body = world.createBody(
-            BodyType.DYNAMIC,  // Changed from KINEMATIC for reliable collision
-            centreXPx / Constants.PPM,
-            relativeY / Constants.PPM,
-            (wPx / Constants.PPM) / 2f,
-            (hPx / Constants.PPM) / 2f,
-            0.1f,   // Density (very light)
-            0f,     // Friction
-            true,   // Sensor = true (pass through)
-            null
-        );
-        
-        // Set high damping to prevent drift
+                BodyType.DYNAMIC, // Changed from KINEMATIC for reliable collision
+                centreXPx / Constants.PPM,
+                relativeY / Constants.PPM,
+                (wPx / Constants.PPM) / 2f,
+                (hPx / Constants.PPM) / 2f,
+                0.1f, // Density (very light)
+                0f, // Friction
+                true, // Sensor = true (pass through)
+                null);
+
+        // Set high damping to prevent drift, disable sleep for reliable collision
         body.setLinearDamping(999f);
-        
+        body.setSleepingAllowed(false);
+
         return body;
     }
 
     public void updatePosition(float scrollOffset) {
         float screenY = relativeY + scrollOffset;
         setY(screenY);
-        
+
         // Update body position
         getBody().setPosition(
-            (getX() + getW() / 2f) / Constants.PPM,
-            (screenY + getH() / 2f) / Constants.PPM
-        );
-        
-        // Zero velocity to prevent drift (like Pickupable) - TBC
+                (getX() + getW() / 2f) / Constants.PPM,
+                (screenY + getH() / 2f) / Constants.PPM);
+
+        // Zero velocity and keep awake to prevent Box2D sleep
         getBody().setVelocity(0f, 0f);
-        
+        getBody().setAwake(true);
+
         if (screenY < -getH() * 3f) {
             expired = true;
         }

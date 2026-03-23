@@ -113,6 +113,7 @@ public class PickupableSpawner {
 
         // Very high damping so it doesn't drift or move
         body.setLinearDamping(999f);
+        body.setSleepingAllowed(false);
 
         Pickupable pickup = new Pickupable(body, laneX, relativeY,
                 PICKUP_SIZE, PICKUP_SIZE);

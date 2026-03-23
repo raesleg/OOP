@@ -7,7 +7,7 @@ import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.entities.misc.ExplosionOverlay;
-import io.github.raesleg.game.entities.misc.ExplosionParticle;
+import io.github.raesleg.game.entities.misc.Particle;
 
 /**
  * ExplosionSystem — Spawns explosion particles and overlay at a given
@@ -33,7 +33,7 @@ public final class ExplosionSystem {
      */
     public static void trigger(EntityManager entityManager, SoundDevice sound,
             float centreX, float centreY) {
-        ExplosionParticle.spawnExplosion(entityManager,
+        Particle.spawnExplosion(entityManager,
                 new Vector2(centreX / Constants.PPM, centreY / Constants.PPM), 50f);
 
         entityManager.addEntity(new ExplosionOverlay(

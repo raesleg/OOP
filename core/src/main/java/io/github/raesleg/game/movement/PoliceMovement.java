@@ -19,15 +19,28 @@ public class PoliceMovement {
     }
 
     /**
-     * Advances the chase vertically based on star count.
-     * Target Y = playerY - maxDistance * (1 - stars/maxStars).
-     * Police lerps smoothly toward target each frame.
+     * Advances the chase vertically based on star count and player speed.
+     * Target Y = playerY - maxDistance * (1 - stars/maxStars) * speedModifier.
+     * When the player is slow, the police closes the gap faster.
      *
+     * @param playerSpeed current scroll speed (px/s or km/h)
+     * @param maxSpeed    maximum possible speed for normalisation
      * @return updated screenY
      */
-    public float advance(float dt, float playerY, int starCount, int maxStars) {
+    public float advance(float dt, float playerY, int starCount, int maxStars,
+            float playerSpeed, float maxSpeed) {
         float starRatio = (maxStars > 0) ? (float) starCount / maxStars : 0f;
-        float targetY = playerY - GameConstants.POLICE_STAR_MAX_DISTANCE * (1f - starRatio);
+
+        // speedRatio: 1 at max speed, 0 when stopped
+        float speedRatio = (maxSpeed > 0) ? Math.min(1f, Math.max(0f, playerSpeed / maxSpeed)) : 0f;
+        // When slow, reduce effective distance (police gets closer)
+        float speedModifier = GameConstants.POLICE_SPEED_FACTOR
+                + (1f - GameConstants.POLICE_SPEED_FACTOR) * speedRatio;
+
+        float effectiveDistance = GameConstants.POLICE_STAR_MAX_DISTANCE
+                * (1f - starRatio) * speedModifier;
+        float targetY = playerY - effectiveDistance;
+
         screenY += (targetY - screenY) * GameConstants.POLICE_LERP_SPEED * dt;
         return screenY;
     }

@@ -2,6 +2,7 @@ package io.github.raesleg.game.scene;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -25,7 +26,7 @@ import io.github.raesleg.engine.scene.Scene;
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.collision.GameCollisionHandler;
 import io.github.raesleg.game.entities.misc.ExplosionOverlay;
-import io.github.raesleg.game.entities.misc.ExplosionParticle;
+import io.github.raesleg.game.entities.misc.Particle;
 import io.github.raesleg.game.entities.misc.Trees;
 import io.github.raesleg.game.factory.BoundaryFactory;
 import io.github.raesleg.game.factory.PlayerFactory;
@@ -110,8 +111,6 @@ public abstract class BaseGameScene extends Scene {
 
     /* ── Audio (direct reference for subclass access) ── */
     private SoundDevice sound;
-    private Music bgm;
-    private static final float BGM_BASE_VOLUME = 0.2f;
 
     /* ── Explosion game-over delay ── */
     private boolean gameOverPending;
@@ -257,16 +256,7 @@ public abstract class BaseGameScene extends Scene {
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         UserControlled user = new UserControlled(kb);
 
-        playerCar = new PlayerCar(
-                "car.png",
-                carPixelX - carW / 2f, carPixelY,
-                carW, carH,
-                user,
-                new PlayerMovementStrategy(),
-                new CarMovementModel(VehicleProfile.playerArcade()),
-                carBody);
-
-        getEntityManager().addEntity(playerCar);
+        playerCar = PlayerFactory.create(world, getEntityManager(), user);
 
         kb.bindAction(Input.Keys.A, Constants.LEFT);
         kb.bindAction(Input.Keys.LEFT, Constants.LEFT);
@@ -336,19 +326,8 @@ public abstract class BaseGameScene extends Scene {
         getEntityManager().update(deltaTime);
         getMovementManager().update(deltaTime);
 
-        /* Speed control via action bindings */
-        Keyboard kb = getIOManager().getInputs(Keyboard.class);
-
-        if (kb.isHeld(Constants.UP)) {
-            simulatedSpeed = Math.min(getMaxSpeed(), simulatedSpeed + getAcceleration() * deltaTime);
-        } else if (kb.isHeld(Constants.DOWN)) {
-            simulatedSpeed = Math.max(0f, simulatedSpeed - getBrakeRate() * deltaTime);
-        } else {
-            simulatedSpeed = Math.max(0f, simulatedSpeed - PASSIVE_DECEL * deltaTime);
-        }
-
-        float scrollSpeed = getScrollSpeedPixelsPerSecond();
-        scrollOffset -= scrollSpeed * deltaTime;
+        /* Speed/scroll — fully delegated to SpeedScrollController (SRP) */
+        speedScroll.update(deltaTime);
 
         /* Dashboard updates — score only increases when moving toward goal */
         float simSpeed = speedScroll.getSimulatedSpeed();
@@ -417,6 +396,7 @@ public abstract class BaseGameScene extends Scene {
         renderLevelEffects(shapeRenderer, batch);
 
         batch.begin();
+        batch.setColor(1f, 1f, 1f, 1f);
         getEntityManager().render(batch);
         batch.end();
 
@@ -427,18 +407,12 @@ public abstract class BaseGameScene extends Scene {
     public void pause() {
         isPaused = true;
         stopMoveLoop();
-        if (bgm != null)
-            bgm.pause();
         Gdx.app.log(getClass().getSimpleName(), "Scene paused");
     }
 
     @Override
     public void resume() {
         isPaused = false;
-        if (bgm != null) {
-            syncBgmVolume();
-            bgm.play();
-        }
         Gdx.app.log(getClass().getSimpleName(), "Scene resumed");
     }
 
@@ -690,17 +664,15 @@ public abstract class BaseGameScene extends Scene {
 
         float px = playerCar.getX() + playerCar.getW() / 2f;
         float py = playerCar.getY() + playerCar.getH() / 2f;
-        ExplosionParticle.spawnExplosion(getEntityManager(),
+        Particle.spawnExplosion(getEntityManager(),
                 new com.badlogic.gdx.math.Vector2(px / Constants.PPM, py / Constants.PPM), 50f);
 
         // Large explode.png overlay
         getEntityManager().addEntity(new ExplosionOverlay(
-                "explode.png", px - 100f, py - 100f, 200f, 200f, EXPLOSION_DELAY));
+                "explode.png", px - 100f, py - 100f, 200f, 200f, GameConstants.EXPLOSION_DELAY));
 
         sound.playSound("explosion_big", 0.5f);
         stopMoveLoop();
-        if (bgm != null)
-            bgm.setVolume(0.05f);
     }
 
     /*

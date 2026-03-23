@@ -58,7 +58,7 @@ public final class PlayerFactory {
                 carW, carH,
                 controls,
                 new PlayerMovementStrategy(),
-                new CarMovementModel(VehicleProfile.playerArcade()),
+                new CarMovementModel(VehicleProfile.playerArcade(), entityManager),
                 carBody);
 
         entityManager.addEntity(car);

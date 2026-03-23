@@ -59,9 +59,10 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
 
     @Override
     public void updateChase(float deltaTime, float playerX, float playerY,
-            int starCount, int maxStars) {
+            int starCount, int maxStars, float playerSpeed, float maxSpeed) {
         // Delegate chase algorithm to PoliceMovement
-        screenY = movement.advance(deltaTime, playerY, starCount, maxStars);
+        screenY = movement.advance(deltaTime, playerY, starCount, maxStars,
+                playerSpeed, maxSpeed);
 
         float newX = movement.lerpX(getX(), playerX, deltaTime);
         setX(newX);

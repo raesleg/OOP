@@ -104,7 +104,7 @@ public class Level2Scene extends BaseGameScene {
          */
         trafficSystem = new TrafficSpawningSystem(
                 getEntityManager(), getWorld(), GameConstants.L2_SPAWN_SCREEN_HEIGHT,
-                GameConstants.L2_NPC_SPAWN_SEC, Float.MAX_VALUE, 2.5f);
+                GameConstants.L2_NPC_SPAWN_SEC, GameConstants.L2_PICKUP_SPAWN_SEC, 2.5f);
 
         /* Road hazards (puddles, mud) — NPC spawner provides lane occupancy */
         hazardSpawners.add(new RoadHazardSpawner(
@@ -126,23 +126,6 @@ public class Level2Scene extends BaseGameScene {
 
         /* Wire collision listeners — extracted standalone class (SRP + DIP) */
         getCollisionHandler().setTrafficViolationListener(
-                new TrafficViolationListener() {
-                    @Override
-                    public void onTrafficCrash() {
-                        commandHistory.executeAndRecord(
-                                new BreakRuleCommand(ruleManager, "TRAFFIC_CRASH", 1));
-                        incrementCrashCount();
-                        addScore(-100);
-                    }
-
-                    @Override
-                    public void onPickup() {
-                        addScore(50);
-                        getSound().playSound("reward", 0.5f);
-                    }
-                });
-
-        // Police is NOT spawned immediately — spawns on first rule break
                 new Level2TrafficListener(
                         getRuleManager(), getCommandHistory(),
                         this::addScore, this::incrementCrashCount,
@@ -182,15 +165,15 @@ public class Level2Scene extends BaseGameScene {
         }
 
         // try {
-        //     getSound().addSound("puddle", "puddlesound.wav");
+        // getSound().addSound("puddle", "puddlesound.wav");
         // } catch (Exception e) {
-        //     Gdx.app.log("Level2Scene", "Could not load puddle sound: " + e.getMessage());
+        // Gdx.app.log("Level2Scene", "Could not load puddle sound: " + e.getMessage());
         // }
 
         // try {
-        //     getSound().addSound("mud", "mudsound.wav");
+        // getSound().addSound("mud", "mudsound.wav");
         // } catch (Exception e) {
-        //     Gdx.app.log("Level2Scene", "Could not load rain sound: " + e.getMessage());
+        // Gdx.app.log("Level2Scene", "Could not load rain sound: " + e.getMessage());
         // }
 
         /* Dashboard — enable police distance mode */
@@ -258,7 +241,9 @@ public class Level2Scene extends BaseGameScene {
                     getPlayerCar().getX(),
                     getPlayerCar().getY(),
                     getRuleManager().getRulesBroken(),
-                    GameConstants.MAX_WANTED_STARS);
+                    GameConstants.MAX_WANTED_STARS,
+                    getSimulatedSpeedKmh(),
+                    getMaxSpeed());
 
             /* Police siren — start on first frame, volume scales with distance */
             if (!sirenStarted) {
@@ -322,7 +307,7 @@ public class Level2Scene extends BaseGameScene {
     @Override
     protected void renderLevelEffects(ShapeRenderer sr, SpriteBatch batch) {
         /* Rain overlay (SRP — delegated to RainEffectSystem) */
-        rainEffect.render(sr, batch);
+        rainEffect.render(sr, batch, getVisMinX(), getVisMinY(), getVisMaxX(), getVisMaxY());
 
         /* Police red/blue glow at bottom edge of visible area */
         policeLightSystem.render(sr, getVisMinX(), getVisMinY(), getVisMaxX());
@@ -342,10 +327,6 @@ public class Level2Scene extends BaseGameScene {
     protected void disposeLevelData() {
         getSound().stopSound("rain");
         getSound().stopSound("policesiren");
-      
-        if (npcSpawner != null) {
-            npcSpawner.clearAll();
-            npcSpawner = null;
         if (trafficSystem != null) {
             trafficSystem.dispose();
             trafficSystem = null;

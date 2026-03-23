@@ -43,6 +43,7 @@ public class Pickupable extends TextureObject implements IExpirable {
 
             body.setPosition(bodyX, bodyY);
             body.setVelocity(0f, 0f); // Zero velocity to prevent drift
+            body.setAwake(true); // Prevent Box2D sleep — keeps sensor in broadphase
         }
 
         // Expire when scrolled off screen

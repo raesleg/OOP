@@ -102,6 +102,9 @@ public final class GameConstants {
     /** Mud hazard spawn interval (seconds). */
     public static final float L2_MUD_INTERVAL = 6.0f;
 
+    /** Pickup (battery) spawn interval in Level 2 (seconds). */
+    public static final float L2_PICKUP_SPAWN_SEC = 5.0f;
+
     /*
      * ════════════════════════════════════════════════════════════
      * Fuel
@@ -223,6 +226,8 @@ public final class GameConstants {
     public static final float POLICE_LERP_SPEED = 3f;
     /** Horizontal lane-tracking lerp speed (units/sec). */
     public static final float POLICE_LANE_TRACK_SPEED = 4f;
+    /** Police speed-awareness factor — how much low speed shrinks the gap. */
+    public static final float POLICE_SPEED_FACTOR = 0.55f;
     /** Police siren flash interval (seconds). */
     public static final float POLICE_FLASH_INTERVAL = 0.15f;
 
