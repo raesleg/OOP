@@ -204,7 +204,7 @@ public class NPCCarSpawner implements ILaneOccupancy {
                 APPROACH_SPEED,
                 new AIControlled(),
                 new NpcDrivingStrategy(perceptionService, sensor),
-                new CarMovementModel(VehicleProfile.npcTraffic()),
+                new CarMovementModel(VehicleProfile.npcTraffic(), entityManager),
                 body,
                 sensor);
         entityManager.addEntity(npc);

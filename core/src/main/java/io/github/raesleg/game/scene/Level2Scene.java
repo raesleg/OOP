@@ -126,6 +126,23 @@ public class Level2Scene extends BaseGameScene {
 
         /* Wire collision listeners — extracted standalone class (SRP + DIP) */
         getCollisionHandler().setTrafficViolationListener(
+                new TrafficViolationListener() {
+                    @Override
+                    public void onTrafficCrash() {
+                        commandHistory.executeAndRecord(
+                                new BreakRuleCommand(ruleManager, "TRAFFIC_CRASH", 1));
+                        incrementCrashCount();
+                        addScore(-100);
+                    }
+
+                    @Override
+                    public void onPickup() {
+                        addScore(50);
+                        getSound().playSound("reward", 0.5f);
+                    }
+                });
+
+        // Police is NOT spawned immediately — spawns on first rule break
                 new Level2TrafficListener(
                         getRuleManager(), getCommandHistory(),
                         this::addScore, this::incrementCrashCount,
@@ -157,11 +174,24 @@ public class Level2Scene extends BaseGameScene {
         } catch (Exception e) {
             Gdx.app.log("Level2Scene", "Sound: " + e.getMessage());
         }
+
         try {
             getSound().addSound("scream", GameConstants.SFX_SCREAM);
         } catch (Exception e) {
             Gdx.app.log("Level2Scene", "Sound: " + e.getMessage());
         }
+
+        // try {
+        //     getSound().addSound("puddle", "puddlesound.wav");
+        // } catch (Exception e) {
+        //     Gdx.app.log("Level2Scene", "Could not load puddle sound: " + e.getMessage());
+        // }
+
+        // try {
+        //     getSound().addSound("mud", "mudsound.wav");
+        // } catch (Exception e) {
+        //     Gdx.app.log("Level2Scene", "Could not load rain sound: " + e.getMessage());
+        // }
 
         /* Dashboard — enable police distance mode */
         getDashboard().setPoliceDistanceMode(true);
@@ -311,6 +341,11 @@ public class Level2Scene extends BaseGameScene {
     @Override
     protected void disposeLevelData() {
         getSound().stopSound("rain");
+        getSound().stopSound("policesiren");
+      
+        if (npcSpawner != null) {
+            npcSpawner.clearAll();
+            npcSpawner = null;
         if (trafficSystem != null) {
             trafficSystem.dispose();
             trafficSystem = null;

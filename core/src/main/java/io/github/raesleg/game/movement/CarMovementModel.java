@@ -3,6 +3,7 @@ package io.github.raesleg.game.movement;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
+import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.physics.PhysicsBody;
 
@@ -24,8 +25,15 @@ public class CarMovementModel implements MovementModel {
     private boolean wasSlipping = false;
     private float driftVx = 0f;
 
-    public CarMovementModel(VehicleProfile profile) {
+    // Particle spawning effect
+    private final EntityManager entityManager;
+    private boolean inHazardZone = false;
+    private float splashTimer = 0f;
+    private static final float SPLASH_INTERVAL = 0.08f;
+
+    public CarMovementModel(VehicleProfile profile, EntityManager entityManager) {
         this.profile = profile;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -78,6 +86,31 @@ public class CarMovementModel implements MovementModel {
             float steeringResponse = profile.getSteeringResponse() * gripMultiplier;
             float targetVx = steerInput * profile.getMaxLateralSpeed() * gripMultiplier;
             vx = approach(velocity.x, targetVx, steeringResponse * dt);
+        }
+
+        // Spawn continuous splash particles while in hazard
+        if (inHazardZone && entityManager != null) {
+            splashTimer += dt;
+            if (splashTimer >= SPLASH_INTERVAL) {
+                splashTimer = 0f;
+                
+                // Get car center position (in pixels)
+                Vector2 pos = body.getPosition();
+                float px = pos.x * io.github.raesleg.engine.Constants.PPM;
+                float py = pos.y * io.github.raesleg.engine.Constants.PPM;
+                
+                // Spawn appropriate particle type based on surface
+                if (surface == SurfaceEffect.PUDDLE) {
+                    io.github.raesleg.game.entities.misc.Particle
+                        .spawnContinuousSplash(entityManager, px, py);
+                } else if (surface == SurfaceEffect.MUD) {
+                    // Mud particles less frequent - only spawn 50% of the time
+                    if (Math.random() > 0.5) {
+                        io.github.raesleg.game.entities.misc.Particle
+                            .spawnMudSplatter(entityManager, px, py, 2);
+                    }
+                }
+            }
         }
 
         float vy = computeForwardVelocity(throttleInput, dt);
@@ -145,8 +178,28 @@ public class CarMovementModel implements MovementModel {
     public void onEnterZone(PhysicsBody body, Object zoneTuning) {
         if (zoneTuning instanceof SurfaceEffect effect) {
             surface = effect;
+            inHazardZone = true;
+            splashTimer = 0f;     
+            
             if (body != null) {
                 body.setLinearDamping(profile.getLinearDamping() * surface.getDampingMultiplier());
+                
+                // Spawn initial splash burst
+                if (entityManager != null) {
+                    Vector2 pos = body.getPosition();
+                    float px = pos.x * io.github.raesleg.engine.Constants.PPM;
+                    float py = pos.y * io.github.raesleg.engine.Constants.PPM;
+                    
+                    if (effect == SurfaceEffect.PUDDLE) {
+                        // Big splash on entry
+                        io.github.raesleg.game.entities.misc.Particle
+                            .spawnWaterSplash(entityManager, px, py, 12);
+                    } else if (effect == SurfaceEffect.MUD) {
+                        // Heavy splatter on entry
+                        io.github.raesleg.game.entities.misc.Particle
+                            .spawnMudSplatter(entityManager, px, py, 8);
+                    }
+                }
             }
         }
     }
@@ -159,6 +212,9 @@ public class CarMovementModel implements MovementModel {
         }
 
         surface = SurfaceEffect.DEFAULT;
+        inHazardZone = false;
+        splashTimer = 0f;
+
         if (body != null) {
             body.setLinearDamping(profile.getLinearDamping());
         }

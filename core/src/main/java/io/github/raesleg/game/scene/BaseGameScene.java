@@ -24,6 +24,8 @@ import io.github.raesleg.engine.scene.Scene;
 /* Game Imports */
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.collision.GameCollisionHandler;
+import io.github.raesleg.game.entities.misc.ExplosionOverlay;
+import io.github.raesleg.game.entities.misc.ExplosionParticle;
 import io.github.raesleg.game.entities.misc.Trees;
 import io.github.raesleg.game.factory.BoundaryFactory;
 import io.github.raesleg.game.factory.PlayerFactory;
@@ -108,6 +110,8 @@ public abstract class BaseGameScene extends Scene {
 
     /* ── Audio (direct reference for subclass access) ── */
     private SoundDevice sound;
+    private Music bgm;
+    private static final float BGM_BASE_VOLUME = 0.2f;
 
     /* ── Explosion game-over delay ── */
     private boolean gameOverPending;
@@ -252,7 +256,17 @@ public abstract class BaseGameScene extends Scene {
         /* Player car — delegated to factory (SRP) */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         UserControlled user = new UserControlled(kb);
-        playerCar = PlayerFactory.create(world, getEntityManager(), user);
+
+        playerCar = new PlayerCar(
+                "car.png",
+                carPixelX - carW / 2f, carPixelY,
+                carW, carH,
+                user,
+                new PlayerMovementStrategy(),
+                new CarMovementModel(VehicleProfile.playerArcade()),
+                carBody);
+
+        getEntityManager().addEntity(playerCar);
 
         kb.bindAction(Input.Keys.A, Constants.LEFT);
         kb.bindAction(Input.Keys.LEFT, Constants.LEFT);
@@ -275,14 +289,14 @@ public abstract class BaseGameScene extends Scene {
         /* BGM via AudioController */
         audioController.startBgm(getBgmPath());
 
-        /* Common scene sounds (paths from GameConstants) */
-        sound.addSound("drive", GameConstants.SFX_DRIVE);
-        sound.addSound("explosion", GameConstants.SFX_EXPLOSION);
-        sound.addSound("explosion_big", GameConstants.SFX_EXPLOSION_BIG);
-        sound.addSound("reward", GameConstants.SFX_REWARD);
-        sound.addSound("negative", GameConstants.SFX_NEGATIVE);
-        sound.addSound("gameover", GameConstants.SFX_GAMEOVER);
-        sound.addSound("win", GameConstants.SFX_WIN);
+        /* Common scene sounds */
+        sound.addSound("drive", "car_sound.wav");
+        sound.addSound("explosion", "crash_sound.wav");
+        sound.addSound("explosion_big", "explosion.wav");
+        sound.addSound("reward", "rewardsound.mp3");
+        sound.addSound("negative", "negativesound.mp3");
+        sound.addSound("gameover", "gameover_sound.wav");
+        sound.addSound("win", "winning_sound.wav");
 
         /* Level-specific setup (Template Method hook) */
         initLevelData();
@@ -322,8 +336,19 @@ public abstract class BaseGameScene extends Scene {
         getEntityManager().update(deltaTime);
         getMovementManager().update(deltaTime);
 
-        /* Delegate speed/scroll to extracted system */
-        speedScroll.update(deltaTime);
+        /* Speed control via action bindings */
+        Keyboard kb = getIOManager().getInputs(Keyboard.class);
+
+        if (kb.isHeld(Constants.UP)) {
+            simulatedSpeed = Math.min(getMaxSpeed(), simulatedSpeed + getAcceleration() * deltaTime);
+        } else if (kb.isHeld(Constants.DOWN)) {
+            simulatedSpeed = Math.max(0f, simulatedSpeed - getBrakeRate() * deltaTime);
+        } else {
+            simulatedSpeed = Math.max(0f, simulatedSpeed - PASSIVE_DECEL * deltaTime);
+        }
+
+        float scrollSpeed = getScrollSpeedPixelsPerSecond();
+        scrollOffset -= scrollSpeed * deltaTime;
 
         /* Dashboard updates — score only increases when moving toward goal */
         float simSpeed = speedScroll.getSimulatedSpeed();
@@ -401,14 +426,19 @@ public abstract class BaseGameScene extends Scene {
     @Override
     public void pause() {
         isPaused = true;
-        audioController.onPause();
+        stopMoveLoop();
+        if (bgm != null)
+            bgm.pause();
         Gdx.app.log(getClass().getSimpleName(), "Scene paused");
     }
 
     @Override
     public void resume() {
         isPaused = false;
-        audioController.onResume();
+        if (bgm != null) {
+            syncBgmVolume();
+            bgm.play();
+        }
         Gdx.app.log(getClass().getSimpleName(), "Scene resumed");
     }
 
@@ -660,8 +690,37 @@ public abstract class BaseGameScene extends Scene {
 
         float px = playerCar.getX() + playerCar.getW() / 2f;
         float py = playerCar.getY() + playerCar.getH() / 2f;
-        ExplosionSystem.trigger(getEntityManager(), sound, px, py);
-        audioController.dimBgm();
+        ExplosionParticle.spawnExplosion(getEntityManager(),
+                new com.badlogic.gdx.math.Vector2(px / Constants.PPM, py / Constants.PPM), 50f);
+
+        // Large explode.png overlay
+        getEntityManager().addEntity(new ExplosionOverlay(
+                "explode.png", px - 100f, py - 100f, 200f, 200f, EXPLOSION_DELAY));
+
+        sound.playSound("explosion_big", 0.5f);
+        stopMoveLoop();
+        if (bgm != null)
+            bgm.setVolume(0.05f);
+    }
+
+    /*
+     * ══════════════════════════════════════════════════════════════
+     * Private helpers
+     * ══════════════════════════════════════════════════════════════
+     */
+
+    private void stopMoveLoop() {
+        sound.stopSound("drive");
+    }
+
+    private void updateMoveLoop(boolean moving) {
+        if (sound.isMuted() || !moving) {
+            stopMoveLoop();
+            return;
+        }
+        if (!sound.isLooping("drive")) {
+            sound.loopSound("drive");
+        }
     }
 
     private void openPause() {
