@@ -7,35 +7,23 @@ import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.collision.PedestrianHitReaction;
 import io.github.raesleg.game.entities.misc.Pedestrian;
-import io.github.raesleg.game.movement.PedestrianIntent;
 import io.github.raesleg.game.movement.PedestrianMovement;
 import io.github.raesleg.game.scene.RoadRenderer;
 import io.github.raesleg.game.zone.CrosswalkZone;
 
-/**
- * CrosswalkFactory — Creates crosswalk zone bodies and pedestrian
- * encounter bodies with their associated entities.
- * <p>
- * Extracted from {@code CrosswalkEncounterSystem} to satisfy SRP:
- * the system should orchestrate encounters, not calculate PPM
- * conversions or create Box2D bodies directly.
- * <p>
- * <b>DIP:</b> Depends on engine abstractions ({@link PhysicsWorld},
- * {@link PhysicsBody}, {@link BodyType}) — never imports Box2D directly.
- */
+// Creates crosswalk zone and pedestrian encounter bodies with their associated entities
+// Orchestrate encounters, not calculate PPM conversions or create Box2D bodies directly (SRP)
 public final class CrosswalkFactory {
 
-    private CrosswalkFactory() {
-    }
+    private CrosswalkFactory() {}
 
-    /**
-     * Creates a crosswalk zone sensor body and returns the zone entity.
-     *
-     * @param world       physics world for body creation
-     * @param worldY      the absolute Y position of the crosswalk
-     * @param roadCentreX the horizontal centre of the road (pixels)
-     * @return the new CrosswalkZone entity
-     */
+    /*
+        Creates crosswalk zone sensor body and returns zone entity
+        @param world       physics world for body creation
+        @param worldY      the absolute Y position of the crosswalk
+        @param roadCentreX the horizontal centre of the road (pixels)
+        @return the new CrosswalkZone entity
+    */
     public static CrosswalkZone createZone(PhysicsWorld world, float worldY, float roadCentreX) {
         float zoneHalfW = (RoadRenderer.ROAD_WIDTH / Constants.PPM) / 2f;
         float zoneHalfH = (GameConstants.CROSSWALK_ZONE_HEIGHT / Constants.PPM) / 2f;
@@ -51,29 +39,21 @@ public final class CrosswalkFactory {
                 RoadRenderer.ROAD_WIDTH, GameConstants.CROSSWALK_ZONE_HEIGHT, zoneBody);
     }
 
-    /**
-     * Result record holding all components of a pedestrian encounter.
-     */
+    // Holding all components of a pedestrian encounter together for easy passing between factory and scene
     public static final class EncounterComponents {
         private final Pedestrian pedestrian;
-        private final PedestrianIntent intent;
         private final PedestrianMovement movement;
         private final PedestrianHitReaction hitReaction;
 
-        public EncounterComponents(Pedestrian pedestrian, PedestrianIntent intent,
+        public EncounterComponents(Pedestrian pedestrian,
                 PedestrianMovement movement, PedestrianHitReaction hitReaction) {
             this.pedestrian = pedestrian;
-            this.intent = intent;
             this.movement = movement;
             this.hitReaction = hitReaction;
         }
 
         public Pedestrian getPedestrian() {
             return pedestrian;
-        }
-
-        public PedestrianIntent getIntent() {
-            return intent;
         }
 
         public PedestrianMovement getMovement() {
@@ -85,15 +65,13 @@ public final class CrosswalkFactory {
         }
     }
 
-    /**
-     * Creates a pedestrian with its physics body and movement components.
-     *
-     * @param world  physics world for body creation
-     * @param index  encounter index (even → left-to-right, odd → right-to-left)
-     * @param worldY the absolute Y position of the crosswalk
-     * @return the encounter components (pedestrian + intent + movement + hit
-     *         reaction)
-     */
+    /*
+        Creates a pedestrian with its physics body and movement components.
+        @param world  physics world for body creation
+        @param index  encounter index (even → left-to-right, odd → right-to-left)
+        @param worldY the absolute Y position of the crosswalk
+        @return the encounter components (pedestrian + intent + movement + hit reaction)
+    */
     public static EncounterComponents createEncounter(PhysicsWorld world, int index, float worldY) {
         float direction = (index % 2 == 0) ? 1f : -1f;
         float pedW = GameConstants.PEDESTRIAN_WIDTH;
@@ -116,10 +94,9 @@ public final class CrosswalkFactory {
                 0f, 0f, false, null);
 
         Pedestrian pedestrian = new Pedestrian(pedStartX, worldY, pedW, pedH, pedBody);
-        PedestrianIntent intent = new PedestrianIntent(direction);
-        PedestrianMovement movement = new PedestrianMovement(GameConstants.CROSSING_SPEED, pedW);
+        PedestrianMovement movement = new PedestrianMovement(GameConstants.CROSSING_SPEED, pedW, direction);
         PedestrianHitReaction hit = new PedestrianHitReaction();
 
-        return new EncounterComponents(pedestrian, intent, movement, hit);
+        return new EncounterComponents(pedestrian, movement, hit);
     }
 }

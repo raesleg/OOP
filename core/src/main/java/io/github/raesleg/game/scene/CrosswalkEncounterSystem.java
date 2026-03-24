@@ -19,7 +19,6 @@ import io.github.raesleg.game.event.InstantFailEvent;
 import io.github.raesleg.game.event.ScoreChangedEvent;
 import io.github.raesleg.engine.io.CommandHistory;
 import io.github.raesleg.game.factory.CrosswalkFactory;
-import io.github.raesleg.game.movement.PedestrianIntent;
 import io.github.raesleg.game.movement.PedestrianMovement;
 import io.github.raesleg.game.rules.BreakRuleCommand;
 import io.github.raesleg.game.rules.RuleManager;
@@ -70,7 +69,6 @@ public final class CrosswalkEncounterSystem implements IGameSystem {
      */
     static final class PedestrianEncounter {
         final Pedestrian pedestrian;
-        final PedestrianIntent intent;
         final PedestrianMovement movement;
         final PedestrianHitReaction hitReaction;
         final CrosswalkZone zone;
@@ -79,11 +77,11 @@ public final class CrosswalkEncounterSystem implements IGameSystem {
         boolean failQueued;
         boolean stopViolationFired;
 
-        PedestrianEncounter(Pedestrian pedestrian, PedestrianIntent intent,
+        PedestrianEncounter(
+                Pedestrian pedestrian, 
                 PedestrianMovement movement, PedestrianHitReaction hitReaction,
                 CrosswalkZone zone) {
             this.pedestrian = pedestrian;
-            this.intent = intent;
             this.movement = movement;
             this.hitReaction = hitReaction;
             this.zone = zone;
@@ -118,7 +116,7 @@ public final class CrosswalkEncounterSystem implements IGameSystem {
 
             CrosswalkFactory.EncounterComponents ec = CrosswalkFactory.createEncounter(world, i, worldY);
             PedestrianEncounter encounter = new PedestrianEncounter(
-                    ec.getPedestrian(), ec.getIntent(), ec.getMovement(),
+                    ec.getPedestrian(), ec.getMovement(),
                     ec.getHitReaction(), zone);
             encounters.add(encounter);
             entityManager.addEntity(encounter.pedestrian);
@@ -279,7 +277,7 @@ public final class CrosswalkEncounterSystem implements IGameSystem {
                         sound.playSound("negative", 1.0f);
                     }
                 } else {
-                    enc.movement.update(ped, enc.intent, deltaTime);
+                    enc.movement.update(ped, deltaTime);
                 }
             }
 

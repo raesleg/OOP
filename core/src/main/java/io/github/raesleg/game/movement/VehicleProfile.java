@@ -1,10 +1,11 @@
 package io.github.raesleg.game.movement;
 
-/**
- * Base movement stats for a vehicle type.
- */
+import io.github.raesleg.game.GameConstants;
+
+// Base movement + sensing stats for vehicle types 
 public final class VehicleProfile {
 
+    // Movement parameters
     private final float maxLateralSpeed;
     private final float steeringResponse;
     private final float steeringDeadzone;
@@ -17,6 +18,11 @@ public final class VehicleProfile {
     private final boolean puddleSlideRecovery;
     private final float slideRecoveryTime;
 
+    // Sensing parameters
+    private final float pedestrianStopDistance;
+    private final float vehicleFollowDistance;
+    private final float obstacleStopDistance;
+    
     public VehicleProfile(
             float maxLateralSpeed,
             float steeringResponse,
@@ -28,7 +34,10 @@ public final class VehicleProfile {
             boolean allowForwardMotion,
             boolean allowReverseMotion,
             boolean puddleSlideRecovery,
-            float slideRecoveryTime) {
+            float slideRecoveryTime,
+            float pedestrianStopDistance,
+            float vehicleFollowDistance,
+            float obstacleStopDistance) {
         this.maxLateralSpeed = maxLateralSpeed;
         this.steeringResponse = steeringResponse;
         this.steeringDeadzone = steeringDeadzone;
@@ -40,6 +49,9 @@ public final class VehicleProfile {
         this.allowReverseMotion = allowReverseMotion;
         this.puddleSlideRecovery = puddleSlideRecovery;
         this.slideRecoveryTime = slideRecoveryTime;
+        this.pedestrianStopDistance = pedestrianStopDistance;
+        this.vehicleFollowDistance = vehicleFollowDistance;
+        this.obstacleStopDistance = obstacleStopDistance;
     }
 
     public float getMaxLateralSpeed() {
@@ -86,6 +98,18 @@ public final class VehicleProfile {
         return slideRecoveryTime;
     }
 
+    public float getPedestrianStopDistance() {
+        return pedestrianStopDistance;
+    }
+
+    public float getVehicleFollowDistance() {
+        return vehicleFollowDistance;
+    }
+
+    public float getObstacleStopDistance() {
+        return obstacleStopDistance;
+    }
+
     public static VehicleProfile playerArcade() {
         return new VehicleProfile(
                 12.5f,
@@ -98,7 +122,11 @@ public final class VehicleProfile {
                 false,
                 false,
                 true,
-                2.8f);
+                2.8f,
+                0f,
+                0f,
+                0f
+            );
     }
 
     public static VehicleProfile npcTraffic() {
@@ -113,6 +141,10 @@ public final class VehicleProfile {
                 false,
                 false,
                 false,
-                0f);
+                0f,
+                GameConstants.NPC_PEDESTRIAN_STOP_DIST,
+                GameConstants.NPC_VEHICLE_SLOW_DIST,
+                GameConstants.NPC_OBSTACLE_SLOW_DIST
+            );
     }
 }

@@ -21,8 +21,6 @@ import io.github.raesleg.engine.movement.MovementManager;
 import io.github.raesleg.engine.movement.UserControlled;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.Scene;
-
-/* Game Imports */
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.collision.GameCollisionHandler;
 import io.github.raesleg.game.entities.misc.ExplosionOverlay;
@@ -501,9 +499,9 @@ public abstract class BaseGameScene extends Scene {
         this.rulesBroken = n;
     }
 
-    protected void setInstantFail(boolean flag) {
-        this.instantFail = flag;
-    }
+    // protected void setInstantFail(boolean flag) {
+    //     this.instantFail = flag;
+    // }
 
     protected void setInstantFail(boolean flag, String reason) {
         this.instantFail = flag;

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import com.badlogic.gdx.Gdx;
 import io.github.raesleg.engine.physics.BodyType;
 
@@ -204,7 +203,7 @@ public class NPCCarSpawner implements ILaneOccupancy {
                 APPROACH_SPEED,
                 new AIControlled(),
                 new NpcDrivingStrategy(perceptionService, sensor),
-                new CarMovementModel(VehicleProfile.npcTraffic(), entityManager),
+                new CarMovementModel(VehicleProfile.npcTraffic()),
                 body,
                 sensor);
         entityManager.addEntity(npc);

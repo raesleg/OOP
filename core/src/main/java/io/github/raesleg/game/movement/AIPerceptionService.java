@@ -4,12 +4,10 @@ import java.util.List;
 
 import io.github.raesleg.engine.entity.Entity;
 import io.github.raesleg.engine.entity.EntityManager;
+
 import io.github.raesleg.game.entities.IPerceivable;
 
-/**
- * Reads nearby entities and builds a lightweight perception snapshot for NPC
- * AI.
- */
+// Look at nearby entities and extract summarised information for NpcDrivingStrategy to use for decision making
 public class AIPerceptionService {
 
     private final EntityManager entityManager;
@@ -19,8 +17,11 @@ public class AIPerceptionService {
     }
 
     public PerceptionSnapshot scan(Entity self, SensorComponent sensor) {
-        float defaultDistance = sensor.getForwardRange();
+        if (self == null || sensor == null) {
+            return PerceptionSnapshot.clear(0f);
+        }
 
+        float defaultDistance = sensor.getForwardRange();
         float nearestPedestrianDistance = defaultDistance;
         float nearestVehicleDistance = defaultDistance;
         float nearestObstacleDistance = defaultDistance;
@@ -28,26 +29,15 @@ public class AIPerceptionService {
         Entity nearestEntity = null;
 
         List<Entity> entities = entityManager.getSnapshot();
-
         float selfCenterX = self.getX() + self.getW() * 0.5f;
         float selfFrontY = self.getY();
 
         for (Entity entity : entities) {
-            if (entity == self) {
-                continue;
-            }
-
-            float otherCenterX = entity.getX() + entity.getW() * 0.5f;
-            float dx = Math.abs(otherCenterX - selfCenterX);
-            if (dx > sensor.getSideRange()) {
+            if (!isRelevantTarget(self, entity, selfCenterX, selfFrontY, sensor)) {
                 continue;
             }
 
             float dy = selfFrontY - entity.getY();
-            if (dy < 0f || dy > sensor.getForwardRange()) {
-                continue;
-            }
-
             if (dy < nearestDistance) {
                 nearestDistance = dy;
                 nearestEntity = entity;
@@ -55,18 +45,9 @@ public class AIPerceptionService {
 
             if (entity instanceof IPerceivable perceivable) {
                 switch (perceivable.getPerceptionCategory()) {
-                    case PEDESTRIAN -> {
-                        if (dy < nearestPedestrianDistance)
-                            nearestPedestrianDistance = dy;
-                    }
-                    case VEHICLE -> {
-                        if (dy < nearestVehicleDistance)
-                            nearestVehicleDistance = dy;
-                    }
-                    case OBSTACLE -> {
-                        if (dy < nearestObstacleDistance)
-                            nearestObstacleDistance = dy;
-                    }
+                    case PEDESTRIAN -> nearestPedestrianDistance = Math.min(nearestPedestrianDistance, dy);
+                    case VEHICLE -> nearestVehicleDistance = Math.min(nearestVehicleDistance, dy);
+                    case OBSTACLE -> nearestObstacleDistance = Math.min(nearestObstacleDistance, dy);
                 }
             }
         }
@@ -80,5 +61,25 @@ public class AIPerceptionService {
                 nearestPedestrianDistance,
                 nearestVehicleDistance,
                 nearestObstacleDistance);
+    }
+
+    private boolean isRelevantTarget(
+            Entity self,
+            Entity candidate,
+            float selfCenterX,
+            float selfFrontY,
+            SensorComponent sensor) {
+        if (candidate == null || candidate == self) {
+            return false;
+        }
+
+        float otherCenterX = candidate.getX() + candidate.getW() * 0.5f;
+        float dx = Math.abs(otherCenterX - selfCenterX);
+        if (dx > sensor.getSideRange()) {
+            return false;
+        }
+
+        float dy = selfFrontY - candidate.getY();
+        return dy >= 0f && dy <= sensor.getForwardRange();
     }
 }

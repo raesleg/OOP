@@ -2,18 +2,20 @@ package io.github.raesleg.game.scene;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 import io.github.raesleg.engine.Constants;
+
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.collision.listeners.Level2TrafficListener;
 import io.github.raesleg.game.entities.IChaseEntity;
+import io.github.raesleg.game.entities.misc.Particle;
 import io.github.raesleg.game.factory.PoliceCarFactory;
 import io.github.raesleg.game.factory.RoadHazardSpawner;
 import io.github.raesleg.game.io.Keyboard;
+import io.github.raesleg.game.movement.CarMovementModel;
 import io.github.raesleg.game.movement.SurfaceEffect;
 import io.github.raesleg.game.zone.RoadHazard;
 
@@ -203,6 +205,8 @@ public class Level2Scene extends BaseGameScene {
         for (RoadHazardSpawner spawner : hazardSpawners)
             spawner.update(deltaTime, getScrollOffset());
 
+        updateHazardEffects(); // this one has the sound and visual effects
+
         setRulesBroken(getRuleManager().getRulesBroken());
 
         /*
@@ -342,5 +346,55 @@ public class Level2Scene extends BaseGameScene {
             policeLightSystem = null;
         }
         Gdx.app.log("Level2Scene", "Level 2 data disposed");
+    }
+
+    // private methods to spawn hazard effects based on player's current surface (called from updateGame)
+    private void updateHazardEffects() {
+        CarMovementModel model = getPlayerCar().getCarMovementModel();
+        SurfaceEffect effect = model.getSurfaceEffect();
+
+        if (model.consumeEntryEffectSignal()) {
+            spawnPlayerSurfaceEntryEffect(effect);
+        }
+
+        if (model.didEmitTrailEffectThisStep()) {
+            spawnPlayerSurfaceTrailEffect(effect);
+        }
+
+        if (model.consumeExitEffectSignal()) {
+            spawnPlayerSurfaceExitEffect(effect);
+        }
+    }
+    private void spawnPlayerSurfaceEntryEffect(SurfaceEffect effect) {
+        float px = getPlayerCar().getX() + getPlayerCar().getW() * 0.5f;
+        float py = getPlayerCar().getY() + getPlayerCar().getH() * 0.5f;
+
+        if (effect == SurfaceEffect.PUDDLE) {
+            Particle.spawnWaterSplash(getEntityManager(), px, py, 12);
+        } else if (effect == SurfaceEffect.MUD) {
+            Particle.spawnMudSplatter(getEntityManager(), px, py, 8);
+        }
+    }
+    private void spawnPlayerSurfaceTrailEffect(SurfaceEffect effect) {
+        float px = getPlayerCar().getX() + getPlayerCar().getW() * 0.5f;
+        float py = getPlayerCar().getY() + getPlayerCar().getH() * 0.5f;
+
+        if (effect == SurfaceEffect.PUDDLE) {
+            Particle.spawnContinuousSplash(getEntityManager(), px, py);
+        } else if (effect == SurfaceEffect.MUD) {
+            if (Math.random() > 0.5) {
+                Particle.spawnMudSplatter(getEntityManager(), px, py, 2);
+            }
+        }
+    }
+    private void spawnPlayerSurfaceExitEffect(SurfaceEffect effect) {
+        float px = getPlayerCar().getX() + getPlayerCar().getW() * 0.5f;
+        float py = getPlayerCar().getY() + getPlayerCar().getH() * 0.5f;
+
+        if (effect == SurfaceEffect.PUDDLE) {
+            Particle.spawnWaterSplash(getEntityManager(), px, py, 6);
+        } else if (effect == SurfaceEffect.MUD) {
+            Particle.spawnMudSplatter(getEntityManager(), px, py, 4);
+        }
     }
 }

@@ -6,12 +6,11 @@ import com.badlogic.gdx.math.Vector2;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.game.GameConstants;
 
-/**
- * Shared movement execution for both player and NPC cars.
- * Player and AI differ by their strategy/input source and VehicleProfile,
- * not by needing completely separate movement models.
- */
+// Shared movement execution for both player and NPC cars
+// Player and AI differ by their strategy/input source and VehicleProfilew
+// Exposes effect signals for scene layer, does not handle spawning of particles
 public class CarMovementModel implements MovementModel {
 
     private final VehicleProfile profile;
@@ -21,19 +20,23 @@ public class CarMovementModel implements MovementModel {
     private boolean slideRecoveryActive = false;
     private float slideRecoveryTimer = 0f;
 
-    // Slip state — used by all slippery surfaces, not just puddles
+    // Slip state
     private boolean wasSlipping = false;
     private float driftVx = 0f;
 
-    // Particle spawning effect
-    private final EntityManager entityManager;
+    // Hazard visual effect state
     private boolean inHazardZone = false;
-    private float splashTimer = 0f;
-    private static final float SPLASH_INTERVAL = 0.08f;
+    private float effectTimer = 0f;
+    private boolean emitTrailEffectThisStep = false;
+    private boolean emitEntryEffect = false;
+    private boolean emitExitEffect = false;
 
-    public CarMovementModel(VehicleProfile profile, EntityManager entityManager) {
+    public CarMovementModel(VehicleProfile profile) {
         this.profile = profile;
-        this.entityManager = entityManager;
+    }
+
+    public CarMovementModel(VehicleProfile profile, EntityManager ignoredEntityManager) {
+        this(profile);
     }
 
     @Override
@@ -42,98 +45,79 @@ public class CarMovementModel implements MovementModel {
             return;
         }
 
-        float steerInput = MathUtils.clamp(x, -1f, 1f);
+        emitTrailEffectThisStep = false;
+
+        float steerInput = sanitizeSteeringInput(x);
         float throttleInput = MathUtils.clamp(y, -1f, 1f);
 
-        if (Math.abs(steerInput) < profile.getSteeringDeadzone()) {
-            steerInput = 0f;
-        }
-
         Vector2 velocity = body.getVelocity().cpy();
-        float vx;
-
-        if (surface.isSlippery()) {
-            if (!wasSlipping) {
-                if (surface.getStickyness() > 0f) {
-                    // Oil — seed from real velocity, no kick, just locks you in
-                    driftVx = velocity.x;
-                } else {
-                    // Puddle — random sideways kick for dramatic uncontrolled sway
-                    float kickDir = (Math.random() > 0.5f) ? 1f : -1f;
-                    driftVx = kickDir * profile.getMaxLateralSpeed() * 0.7f;
-                }
-            }
-            wasSlipping = true;
-
-            // Unified slip calculation — same formula for all slippery surfaces
-            driftVx *= surface.getMomentumRetention();
-            float steerContrib = steerInput * profile.getMaxLateralSpeed()
-                    * surface.getSteerInfluence();
-
-            // Oil: actively drag vx back toward zero each frame — feels like glue
-            // stickiness = 0 means no drag (puddle), > 0 means surface fights movement
-            float stuck = driftVx * surface.getStickyness();
-            vx = driftVx + steerContrib - stuck;
-
-            vx = MathUtils.clamp(vx,
-                    -profile.getMaxLateralSpeed() * 0.75f,
-                    profile.getMaxLateralSpeed() * 0.75f);
-
-        } else {
-            wasSlipping = false;
-            driftVx = 0f;
-            float gripMultiplier = getCurrentGripMultiplier(dt);
-            float steeringResponse = profile.getSteeringResponse() * gripMultiplier;
-            float targetVx = steerInput * profile.getMaxLateralSpeed() * gripMultiplier;
-            vx = approach(velocity.x, targetVx, steeringResponse * dt);
-        }
-
-        // Spawn continuous splash particles while in hazard
-        if (inHazardZone && entityManager != null) {
-            splashTimer += dt;
-            if (splashTimer >= SPLASH_INTERVAL) {
-                splashTimer = 0f;
-                
-                // Get car center position (in pixels)
-                Vector2 pos = body.getPosition();
-                float px = pos.x * io.github.raesleg.engine.Constants.PPM;
-                float py = pos.y * io.github.raesleg.engine.Constants.PPM;
-                
-                // Spawn appropriate particle type based on surface
-                if (surface == SurfaceEffect.PUDDLE) {
-                    io.github.raesleg.game.entities.misc.Particle
-                        .spawnContinuousSplash(entityManager, px, py);
-                } else if (surface == SurfaceEffect.MUD) {
-                    // Mud particles less frequent - only spawn 50% of the time
-                    if (Math.random() > 0.5) {
-                        io.github.raesleg.game.entities.misc.Particle
-                            .spawnMudSplatter(entityManager, px, py, 2);
-                    }
-                }
-            }
-        }
-
+        float vx = computeLateralVelocity(velocity, steerInput, dt);
         float vy = computeForwardVelocity(throttleInput, dt);
+
+        if (inHazardZone) {
+            effectTimer += dt;
+            if (effectTimer >= GameConstants.EFFECT_INTERVAL) {
+                effectTimer = 0f;
+                emitTrailEffectThisStep = true;
+            }
+        }
 
         body.setLinearDamping(profile.getLinearDamping() * surface.getDampingMultiplier());
         body.setAngularVelocity(0f);
         body.setVelocity(vx, vy);
     }
 
-    private static final float REVERSE_MAX_SPEED = 3f;
-    private static final float REVERSE_ACCEL = 8f;
+    private float sanitizeSteeringInput(float input) {
+        float steerInput = MathUtils.clamp(input, -1f, 1f);
+        if (Math.abs(steerInput) < profile.getSteeringDeadzone()) {
+            return 0f;
+        }
+        return steerInput;
+    }
+
+    private float computeLateralVelocity(Vector2 velocity, float steerInput, float dt) {
+        if (surface.isSlippery()) {
+            return computeSlipperyLateralVelocity(velocity, steerInput);
+        }
+
+        wasSlipping = false;
+        driftVx = 0f;
+
+        float gripMultiplier = getCurrentGripMultiplier(dt);
+        float steeringResponse = profile.getSteeringResponse() * gripMultiplier;
+        float targetVx = steerInput * profile.getMaxLateralSpeed() * gripMultiplier;
+        return approach(velocity.x, targetVx, steeringResponse * dt);
+    }
+
+    private float computeSlipperyLateralVelocity(Vector2 velocity, float steerInput) {
+        if (!wasSlipping) {
+            driftVx = createInitialSlipVelocity(velocity.x);
+        }
+        wasSlipping = true;
+
+        driftVx *= surface.getMomentumRetention();
+        float steerContrib = steerInput * profile.getMaxLateralSpeed() * surface.getSteerInfluence();
+        float stuck = driftVx * surface.getStickyness();
+        float vx = driftVx + steerContrib - stuck;
+
+        return MathUtils.clamp(
+                vx,
+                -profile.getMaxLateralSpeed() * 0.75f,
+                profile.getMaxLateralSpeed() * 0.75f);
+    }
+
+    private float createInitialSlipVelocity(float currentVelocityX) {
+        if (surface.getStickyness() > 0f) {
+            return currentVelocityX;
+        }
+
+        float kickDirection = Math.random() > 0.5f ? 1f : -1f;
+        return kickDirection * profile.getMaxLateralSpeed() * 0.7f;
+    }
 
     private float computeForwardVelocity(float throttleInput, float dt) {
         if (!profile.allowsForwardMotion()) {
-            // Forward prohibited — handle optional reverse
-            if (profile.allowsReverseMotion() && throttleInput < 0f) {
-                float reverseTarget = throttleInput * REVERSE_MAX_SPEED;
-                currentForwardSpeed = approach(currentForwardSpeed, reverseTarget, REVERSE_ACCEL * dt);
-                return currentForwardSpeed;
-            }
-            // Decelerate back to zero when not pressing reverse
-            currentForwardSpeed = approach(currentForwardSpeed, 0f, REVERSE_ACCEL * dt);
-            return currentForwardSpeed;
+            return computeRestrictedForwardVelocity(throttleInput, dt);
         }
 
         float clampedThrottle = Math.max(0f, throttleInput);
@@ -157,6 +141,17 @@ public class CarMovementModel implements MovementModel {
         return currentForwardSpeed;
     }
 
+    private float computeRestrictedForwardVelocity(float throttleInput, float dt) {
+        if (profile.allowsReverseMotion() && throttleInput < 0f) {
+            float reverseTarget = throttleInput * GameConstants.REVERSE_MAX_SPEED;
+            currentForwardSpeed = approach(currentForwardSpeed, reverseTarget, GameConstants.REVERSE_ACCEL * dt);
+            return currentForwardSpeed;
+        }
+
+        currentForwardSpeed = approach(currentForwardSpeed, 0f, GameConstants.REVERSE_ACCEL * dt);
+        return currentForwardSpeed;
+    }
+
     private float getCurrentGripMultiplier(float dt) {
         if (!slideRecoveryActive) {
             return surface.getLateralGripMultiplier();
@@ -176,31 +171,17 @@ public class CarMovementModel implements MovementModel {
 
     @Override
     public void onEnterZone(PhysicsBody body, Object zoneTuning) {
-        if (zoneTuning instanceof SurfaceEffect effect) {
-            surface = effect;
-            inHazardZone = true;
-            splashTimer = 0f;     
-            
-            if (body != null) {
-                body.setLinearDamping(profile.getLinearDamping() * surface.getDampingMultiplier());
-                
-                // Spawn initial splash burst
-                if (entityManager != null) {
-                    Vector2 pos = body.getPosition();
-                    float px = pos.x * io.github.raesleg.engine.Constants.PPM;
-                    float py = pos.y * io.github.raesleg.engine.Constants.PPM;
-                    
-                    if (effect == SurfaceEffect.PUDDLE) {
-                        // Big splash on entry
-                        io.github.raesleg.game.entities.misc.Particle
-                            .spawnWaterSplash(entityManager, px, py, 12);
-                    } else if (effect == SurfaceEffect.MUD) {
-                        // Heavy splatter on entry
-                        io.github.raesleg.game.entities.misc.Particle
-                            .spawnMudSplatter(entityManager, px, py, 8);
-                    }
-                }
-            }
+        if (!(zoneTuning instanceof SurfaceEffect effect)) {
+            return;
+        }
+
+        surface = effect;
+        inHazardZone = true;
+        effectTimer = 0f;
+        emitEntryEffect = true;
+
+        if (body != null) {
+            body.setLinearDamping(profile.getLinearDamping() * surface.getDampingMultiplier());
         }
     }
 
@@ -213,11 +194,36 @@ public class CarMovementModel implements MovementModel {
 
         surface = SurfaceEffect.DEFAULT;
         inHazardZone = false;
-        splashTimer = 0f;
+        effectTimer = 0f;
+        emitExitEffect = true;
 
         if (body != null) {
             body.setLinearDamping(profile.getLinearDamping());
         }
+    }
+
+    public boolean consumeEntryEffectSignal() {
+        boolean result = emitEntryEffect;
+        emitEntryEffect = false;
+        return result;
+    }
+
+    public boolean consumeExitEffectSignal() {
+        boolean result = emitExitEffect;
+        emitExitEffect = false;
+        return result;
+    }
+
+    public boolean didEmitTrailEffectThisStep() {
+        return emitTrailEffectThisStep;
+    }
+
+    public boolean isInHazardZone() {
+        return inHazardZone;
+    }
+
+    public SurfaceEffect getSurfaceEffect() {
+        return surface;
     }
 
     private float approach(float current, float target, float amount) {

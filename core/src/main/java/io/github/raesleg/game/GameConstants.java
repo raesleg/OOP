@@ -300,4 +300,9 @@ public final class GameConstants {
 
     /** Effective visible-top Y for Level 2 spawning (zoom 1.6). */
     public static final float L2_SPAWN_SCREEN_HEIGHT = 1080f;
+
+    // Surface effect parameters for different terrain types (Level 2)
+    public static final float REVERSE_MAX_SPEED = 3f;
+    public static final float REVERSE_ACCEL = 8f;
+    public static final float EFFECT_INTERVAL = 0.08f;
 }

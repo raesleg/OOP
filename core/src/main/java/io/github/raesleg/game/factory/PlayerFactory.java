@@ -6,6 +6,7 @@ import io.github.raesleg.engine.io.ControlSource;
 import io.github.raesleg.engine.physics.BodyType;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
+
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.entities.vehicles.PlayerCar;
 import io.github.raesleg.game.movement.CarMovementModel;
@@ -13,28 +14,19 @@ import io.github.raesleg.game.movement.PlayerMovementStrategy;
 import io.github.raesleg.game.movement.VehicleProfile;
 import io.github.raesleg.game.scene.RoadRenderer;
 
-/**
- * PlayerFactory — Creates the player car entity with its physics body.
- * <p>
- * Extracted from {@code BaseGameScene.show()} to satisfy SRP: the scene
- * should not calculate PPM conversions or create Box2D bodies directly.
- * <p>
- * <b>DIP:</b> Depends on engine abstractions ({@link PhysicsWorld},
- * {@link PhysicsBody}, {@link BodyType}) — never imports Box2D directly.
- */
+// Creates player car entity with physics body and registers it with the entity manager.
 public final class PlayerFactory {
 
-    private PlayerFactory() {
-    }
+    private PlayerFactory() {}
 
-    /**
-     * Creates a player car centred on the road at the default start position,
-     * registers it with the entity manager, and returns the entity.
-     *
-     * @param world         physics world for body creation
-     * @param entityManager entity manager to register the car in
-     * @param controls      user input control source
-     * @return the spawned PlayerCar
+    /*
+        Creates a player car centred on the road at the default start position,
+        registers it with the entity manager, and returns the entity.
+
+        @param world         physics world for body creation
+        @param entityManager entity manager to register the car in
+        @param controls      user input control source
+        @return the spawned PlayerCar
      */
     public static PlayerCar create(PhysicsWorld world, EntityManager entityManager,
             ControlSource controls) {
@@ -58,7 +50,7 @@ public final class PlayerFactory {
                 carW, carH,
                 controls,
                 new PlayerMovementStrategy(),
-                new CarMovementModel(VehicleProfile.playerArcade(), entityManager),
+                new CarMovementModel(VehicleProfile.playerArcade()),
                 carBody);
 
         entityManager.addEntity(car);

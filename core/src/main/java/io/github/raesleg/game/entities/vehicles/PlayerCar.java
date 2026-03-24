@@ -10,10 +10,9 @@ import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.movement.MovementStrategy;
 import io.github.raesleg.engine.physics.PhysicsBody;
 
-/**
- * PlayerCar is only the player-car entity plus flash effect.
- * It does not decide which movement classes to use.
- */
+import io.github.raesleg.game.movement.CarMovementModel;
+
+// PlayerCar Entity with flashing effect, does not decide which movement classes to use (SRP)
 public class PlayerCar extends MovableEntity implements IFlashable {
 
     private static final float FLASH_DURATION = 0.8f;
@@ -82,5 +81,9 @@ public class PlayerCar extends MovableEntity implements IFlashable {
         batch.draw(getTexture(), getX(), getY(), getW(), getH());
 
         batch.setColor(oldColor);
+    }
+
+    public CarMovementModel getCarMovementModel() {
+        return (CarMovementModel) getMovementModel();
     }
 }
