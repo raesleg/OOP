@@ -7,18 +7,21 @@ import io.github.raesleg.game.zone.CrosswalkZone;
 import io.github.raesleg.game.zone.MotionZone;
 
 /**
- * Handles motion zone entry/exit (friction, ice, etc.)
+ * Handles motion zone entry/exit (friction, puddles, etc.)
  */
+
 public class ZoneCollisionHandler {
 
-    /** Helper record to normalize entity pairs (DRY). */
+    // Helper record to normalize entity pairs (DRY)
     private record ZoneCollision(MovableEntity movable, Object tuning) {
     }
 
+    // Check if collision involves movable entity and a tuning zone
     public boolean canHandle(Entity a, Entity b) {
         return extractZoneCollision(a, b) != null;
     }
 
+    // Notify movement model to apply surface effect (friction, grip, etc.)
     public void handleBegin(Entity entityA, Entity entityB) {
         ZoneCollision zc = extractZoneCollision(entityA, entityB);
         if (zc != null) {
@@ -27,6 +30,7 @@ public class ZoneCollisionHandler {
         }
     }
 
+    // Notify movement model to remove surface effect (restore default grip)
     public void handleEnd(Entity entityA, Entity entityB) {
         ZoneCollision zc = extractZoneCollision(entityA, entityB);
         if (zc != null) {
@@ -35,6 +39,7 @@ public class ZoneCollisionHandler {
         }
     }
 
+    // Extract zone collision if non-AI entity collides with physics zone (player only)
     private ZoneCollision extractZoneCollision(Entity a, Entity b) {
         // Only apply surface effects to player-controlled vehicles, not NPCs
         if (a instanceof MovableEntity m && !m.isAIControlled() && b instanceof MotionZone z) {

@@ -7,16 +7,8 @@ import io.github.raesleg.game.rules.RuleManager;
 
 /**
  * Level2TrafficListener — Standalone listener for Level 2 traffic violations.
- * <p>
- * Extracted from Level2Scene's anonymous inner class to satisfy SRP:
- * violation reaction logic is a single cohesive responsibility.
- * <p>
- * Level 2 has no crosswalks or pedestrians, so only {@link #onTrafficCrash()}
- * is overridden; the other callbacks remain no-ops via the default methods
- * on {@link TrafficViolationListener} (ISP compliance).
- * <p>
- * <b>DIP:</b> All dependencies are injected via constructor.
  */
+
 public final class Level2TrafficListener implements TrafficViolationListener {
 
     @FunctionalInterface

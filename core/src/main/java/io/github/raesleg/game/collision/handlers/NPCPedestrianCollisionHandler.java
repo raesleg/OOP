@@ -18,6 +18,7 @@ public class NPCPedestrianCollisionHandler {
         this.soundManager = soundManager;
     }
 
+    // Check if collision involves AI vehicle and an alive pedestrian
     public boolean canHandle(Entity a, Entity b) {
         Pedestrian ped = GameCollisionHandler.extractEntity(a, b, Pedestrian.class);
         if (ped == null || ped.isExpired())
@@ -26,10 +27,11 @@ public class NPCPedestrianCollisionHandler {
         return mover != null && mover.isAIControlled();
     }
 
+    // Remove pedestrian without penalty (AI traffic accidents don't trigger game-over)
     public void handleBegin(Entity entityA, Entity entityB) {
         Pedestrian ped = GameCollisionHandler.extractEntity(entityA, entityB, Pedestrian.class);
         if (ped != null && !ped.isExpired()) {
-            ped.markExpired();
+            ped.markExpired(); // Silent removal from world
             if (soundManager != null) {
                 soundManager.playSound("scream", 1.0f);
             }

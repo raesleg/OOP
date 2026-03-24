@@ -15,7 +15,6 @@ import io.github.raesleg.game.collision.handlers.NPCPedestrianCollisionHandler;
 import io.github.raesleg.game.collision.handlers.PedestrianCollisionHandler;
 import io.github.raesleg.game.collision.handlers.PickupCollisionHandler;
 import io.github.raesleg.game.collision.handlers.ZoneCollisionHandler;
-import io.github.raesleg.game.collision.handlers.ExplosionCollisionHandler;
 import io.github.raesleg.game.collision.listeners.PickupListener;
 import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
 
@@ -52,7 +51,6 @@ public class GameCollisionHandler implements ICollisionListener {
     private final PickupCollisionHandler pickupHandler;
     private final NPCCarCollisionHandler npcCarHandler;
     private final NPCPedestrianCollisionHandler npcPedestrianHandler;
-    private final ExplosionCollisionHandler explosionHandler;
 
     /* Observer for traffic violations */
 
@@ -83,7 +81,6 @@ public class GameCollisionHandler implements ICollisionListener {
         this.pickupHandler = new PickupCollisionHandler();
         this.npcCarHandler = new NPCCarCollisionHandler(soundManager);
         this.npcPedestrianHandler = new NPCPedestrianCollisionHandler(soundManager);
-        this.explosionHandler = new ExplosionCollisionHandler(entityManager, soundManager, explosionForceThreshold);
     }
 
     /**
@@ -166,10 +163,6 @@ public class GameCollisionHandler implements ICollisionListener {
             return; // NPC collisions don't trigger explosions
         }
 
-        // 2. Explosion effects (legacy AI entities)
-        if (explosionHandler.canHandle(entityA, entityB)) {
-            explosionHandler.handleImpact(entityA, entityB, impactForce, impactPoint);
-        }
     }
 
     // ═══════════════════════════════════════════════════════════

@@ -12,22 +12,18 @@ import io.github.raesleg.game.scene.CrosswalkEncounterSystem;
 
 /**
  * Level1TrafficListener — Standalone listener for Level 1 traffic violations.
- * <p>
- * Extracted from Level1Scene's anonymous inner class to satisfy SRP:
- * violation reaction logic (score penalties, sound effects, rule recording)
- * is a single cohesive responsibility that should not be inlined.
- * <p>
- * <b>DIP:</b> All dependencies are injected via constructor.
+ * Violation reaction logic (score penalties, sound effects, rule recording)
  */
+
 public final class Level1TrafficListener implements TrafficViolationListener {
 
-    /** Callback for score changes — avoids coupling to BaseGameScene. */
+    // Callback for score changes — avoids coupling to BaseGameScene
     @FunctionalInterface
     public interface ScoreCallback {
         void addScore(int delta);
     }
 
-    /** Callback for crash count — avoids coupling to BaseGameScene. */
+    // Callback for crash count — avoids coupling to BaseGameScene
     @FunctionalInterface
     public interface CrashCallback {
         void incrementCrashCount();

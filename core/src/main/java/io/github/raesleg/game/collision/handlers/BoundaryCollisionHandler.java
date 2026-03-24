@@ -15,6 +15,7 @@ import io.github.raesleg.game.scene.RoadRenderer;
 /**
  * Handles player collisions with road boundaries.
  */
+
 public class BoundaryCollisionHandler {
 
     private final SoundDevice soundManager;

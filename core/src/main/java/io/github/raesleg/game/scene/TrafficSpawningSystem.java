@@ -11,23 +11,21 @@ import java.util.List;
 
 /**
  * TrafficSpawningSystem — Coordinates NPC car, pickup, and tree spawning.
- * <p>
  * Extracted from Level1Scene/Level2Scene to satisfy SRP: spawn lifecycle
  * management is one responsibility, independent of crosswalk encounters,
  * scoring, or audio.
- * <p>
  * Supports external spawn suppression (e.g. active crosswalks on screen).
  */
+
 public final class TrafficSpawningSystem implements IGameSystem {
 
     private final NPCCarSpawner npcSpawner;
     private final PickupableSpawner pickupSpawner;
     private final TreeSpawner treeSpawner;
 
-    /** Frame-scoped values supplied by the owning scene. */
+    // Frame-scoped values supplied by the owning scene
     private float npcScrollSpeed;
     private float scrollOffset;
-    private float playerY;
     private float playerX; // Player X position for lane exclusion
     private boolean spawningEnabled = true;
 
@@ -42,7 +40,7 @@ public final class TrafficSpawningSystem implements IGameSystem {
         this.treeSpawner = new TreeSpawner(entityManager, screenHeight, treeSpawnInterval);
     }
 
-    /** Alternative constructor without crosswalk exclusions (Level 2). */
+    // Alternative constructor without crosswalk exclusions (Level 2)
     public TrafficSpawningSystem(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float npcSpawnInterval,
             float pickupSpawnInterval, float treeSpawnInterval) {
@@ -50,15 +48,14 @@ public final class TrafficSpawningSystem implements IGameSystem {
                 pickupSpawnInterval, treeSpawnInterval, List.of());
     }
 
-    /** Called by the scene each frame before update(). */
-    public void setFrameState(float npcScrollSpeed, float scrollOffset, float simulatedSpeed, float playerY, float playerX) {
+    // Called by the scene each frame before update()
+    public void setFrameState(float npcScrollSpeed, float scrollOffset, float simulatedSpeed, float playerX) {
         this.npcScrollSpeed = npcScrollSpeed;
         this.scrollOffset = scrollOffset;
-        this.playerY = playerY;
         this.playerX = playerX;
     }
 
-    /** Enables or disables NPC car spawning (e.g. active crosswalk suppression). */
+    // Enables or disables NPC car spawning (e.g. active crosswalk suppression)
     public void setSpawningEnabled(boolean enabled) {
         this.spawningEnabled = enabled;
     }
@@ -66,7 +63,6 @@ public final class TrafficSpawningSystem implements IGameSystem {
     @Override
     public void update(float deltaTime) {
         npcSpawner.setSpawningEnabled(spawningEnabled);
-        npcSpawner.setPlayerY(playerY);
         npcSpawner.setPlayerX(playerX);  // Pass player X for lane exclusion
         npcSpawner.update(deltaTime, npcScrollSpeed);
         pickupSpawner.update(deltaTime, scrollOffset);

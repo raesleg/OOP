@@ -10,27 +10,17 @@ import io.github.raesleg.game.entities.misc.ExplosionOverlay;
 import io.github.raesleg.game.entities.misc.Particle;
 
 /**
- * ExplosionSystem — Spawns explosion particles and overlay at a given
- * position, and plays the explosion sound.
- * <p>
- * Extracted from {@code BaseGameScene.triggerExplosionGameOver()} to
- * satisfy SRP: entity spawning is a separate responsibility from
- * level-end state management.
+ * ExplosionSystem — Static factory for spawning explosion visual and audio effects at a game position.
+ * Extracted to satisfy SRP: particle/overlay spawning is separate from level-end state management.
+ * Provides a clean, reusable interface for any code that needs explosion feedback.
  */
 public final class ExplosionSystem {
 
+    // Prevent instantiation; this is a static utility class
     private ExplosionSystem() {
     }
 
-    /**
-     * Spawns a ring of explosion particles, places a large overlay sprite,
-     * and plays the explosion sound.
-     *
-     * @param entityManager manager to register new entities in
-     * @param sound         audio device for the explosion sound
-     * @param centreX       centre X of the explosion (pixels)
-     * @param centreY       centre Y of the explosion (pixels)
-     */
+    // Spawn explosion particles, overlay sprite, and sound at the given world position
     public static void trigger(EntityManager entityManager, SoundDevice sound,
             float centreX, float centreY) {
         Particle.spawnExplosion(entityManager,

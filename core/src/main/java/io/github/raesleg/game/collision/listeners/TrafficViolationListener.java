@@ -6,10 +6,7 @@ import io.github.raesleg.game.entities.misc.Pedestrian;
 
 /**
  * Observer interface for traffic violation events.
- * <p>
- * <b>ISP:</b> Only violation-related callbacks live here.
- * Pickup (reward) events are in {@link PickupListener}.
- * Default methods allow implementors to override only what they need.
+ * Only violation-related callbacks live here.
  */
 
 public interface TrafficViolationListener {

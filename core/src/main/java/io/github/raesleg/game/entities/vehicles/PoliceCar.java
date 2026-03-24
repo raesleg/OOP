@@ -13,11 +13,11 @@ import io.github.raesleg.game.movement.PoliceMovement;
 /**
  * PoliceCar — A chase entity that spawns when the player accumulates
  * too many rule violations (WANTED stars).
- * <p>
- * Chase algorithm is delegated to {@link PoliceMovement} (SRP).
- * Implements {@link IChaseEntity} so Level2Scene depends on the
+ * 
+ * Chase algorithm is delegated to PoliceMovement
+ * Implements IChaseEntity so Level2Scene depends on the
  * abstraction rather than this concrete class (DIP).
- * <p>
+ * 
  * <b>Design Pattern:</b> Flyweight (TextureObject texture cache),
  * Strategy (chase behaviour delegated to PoliceMovement).
  */

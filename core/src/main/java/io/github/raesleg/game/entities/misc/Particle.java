@@ -63,7 +63,7 @@ public class Particle extends TextureObject implements IExpirable {
     /**
      * Static factory — creates and registers a full ring of particles centred on
      * {@code impactPoint}.
-     * <p>
+     * 
      * Encapsulating the visual spawn math here
      * keeps {@link GameCollisionHandler} free of presentation-layer concerns.
      *

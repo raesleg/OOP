@@ -138,7 +138,7 @@ public class Level1Scene extends BaseGameScene {
         trafficSystem.setSpawningEnabled(!crosswalkSystem.isCrosswalkActiveOnScreen());
         trafficSystem.setFrameState(
                 getNpcScrollSpeedPixelsPerSecond(), getScrollOffset(), getSimulatedSpeedKmh(), 
-                getPlayerCar().getY(), getPlayerCar().getX());
+                getPlayerCar().getX());
         trafficSystem.update(deltaTime);
 
         /* Sync rule count to base scene */

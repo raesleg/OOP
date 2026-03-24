@@ -2,7 +2,6 @@ package io.github.raesleg.game.scene;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -46,19 +45,19 @@ import java.util.List;
 
 /**
  * BaseGameScene — Abstract template for all gameplay levels.
- * <p>
- * Uses the <b>Template Method</b> pattern to define a strict contract for
+ * 
+ * Uses the Template Method pattern to define a strict contract for
  * level scenes. Common infrastructure (physics, managers, player car, HUD,
  * input, audio) is initialised here. Subclasses customise behaviour through
  * well-defined hooks.
- * <p>
- * <b>SRP Composition:</b> Delegates speed/scroll to
+ * 
+ * SRP Composition: Delegates speed/scroll to
  * {@link SpeedScrollController},
  * fuel lifecycle to {@link FuelController}, and audio management to
  * {@link AudioController}. Cross-system communication uses the
  * {@link EventBus}.
- * <p>
- * <b>Scene Sovereignty:</b> Each level owns its own EntityManager,
+ * 
+ * Scene Sovereignty: Each level owns its own EntityManager,
  * MovementManager, CollisionManager, PhysicsWorld, and EventBus.
  */
 public abstract class BaseGameScene extends Scene {
@@ -139,11 +138,7 @@ public abstract class BaseGameScene extends Scene {
         this.gameOverTimer = 0f;
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Abstract hooks — subclasses MUST implement
-     * ══════════════════════════════════════════════════════════════
-     */
+    /** Abstract Hooks */
 
     protected abstract float getLevelLength();
 
@@ -169,11 +164,7 @@ public abstract class BaseGameScene extends Scene {
 
     protected abstract float getMaxScrollPixelsPerSecond();
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Optional hooks — subclasses MAY override
-     * ══════════════════════════════════════════════════════════════
-     */
+    /** Optional Hooks */
 
     protected void renderLevelEffects(ShapeRenderer sr, SpriteBatch batch) {
     }
@@ -190,23 +181,14 @@ public abstract class BaseGameScene extends Scene {
         return Collections.emptyList();
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Viewport factory — ExtendViewport for gameplay
-     * ══════════════════════════════════════════════════════════════
-     */
 
+    // Viewport factory
     @Override
     protected Viewport createViewport(OrthographicCamera cam) {
         return new ExtendViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, cam);
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Scene lifecycle — Template Method
-     * ══════════════════════════════════════════════════════════════
-     */
-
+    // Scene Lifecycle
     @Override
     public final void show() {
         Gdx.input.setInputProcessor(null);
@@ -293,10 +275,6 @@ public abstract class BaseGameScene extends Scene {
 
         /*
          * Register base level-end conditions (OCP).
-         * NOTE: checkCrashExplosion is NOT registered here — subclasses
-         * that want crash-explosion behaviour must register it explicitly
-         * in initLevelData() via addEndCondition(this::checkCrashExplosion).
-         * This allows Level 2 to opt out of explosions on crash.
          */
         addEndCondition(this::checkWinCondition);
         addEndCondition(this::checkInstantFail);
@@ -437,11 +415,7 @@ public abstract class BaseGameScene extends Scene {
         Gdx.app.log(getClass().getSimpleName(), "Scene disposed — all resources cleaned up");
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Protected accessors for subclasses
-     * ══════════════════════════════════════════════════════════════
-     */
+    /** Protected accessors (for subclass) */
 
     protected PhysicsWorld getWorld() {
         return world;
@@ -498,10 +472,6 @@ public abstract class BaseGameScene extends Scene {
     protected void setRulesBroken(int n) {
         this.rulesBroken = n;
     }
-
-    // protected void setInstantFail(boolean flag) {
-    //     this.instantFail = flag;
-    // }
 
     protected void setInstantFail(boolean flag, String reason) {
         this.instantFail = flag;
@@ -617,7 +587,7 @@ public abstract class BaseGameScene extends Scene {
 
     /**
      * Checks whether the crash count has reached the explosion threshold.
-     * <p>
+     * 
      * NOT registered by default — subclasses that want crash-explosion
      * behaviour must call {@code addEndCondition(this::checkCrashExplosion)}
      * in their {@link #initLevelData()} method.
@@ -672,7 +642,7 @@ public abstract class BaseGameScene extends Scene {
         Particle.spawnExplosion(getEntityManager(),
                 new com.badlogic.gdx.math.Vector2(px / Constants.PPM, py / Constants.PPM), 50f);
 
-        // Large explode.png overlay
+
         getEntityManager().addEntity(new ExplosionOverlay(
                 "explode.png", px - 100f, py - 100f, 200f, 200f, GameConstants.EXPLOSION_DELAY));
 
@@ -680,25 +650,12 @@ public abstract class BaseGameScene extends Scene {
         stopMoveLoop();
     }
 
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Private helpers
-     * ══════════════════════════════════════════════════════════════
-     */
+    /** Private Helpers */
 
     private void stopMoveLoop() {
         sound.stopSound("drive");
     }
 
-    private void updateMoveLoop(boolean moving) {
-        if (sound.isMuted() || !moving) {
-            stopMoveLoop();
-            return;
-        }
-        if (!sound.isLooping("drive")) {
-            sound.loopSound("drive");
-        }
-    }
 
     private void openPause() {
         getSceneManager().push(new PauseScene());

@@ -12,8 +12,9 @@ import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
 import io.github.raesleg.game.entities.misc.Pedestrian;
 
 /**
- * Handles player hitting pedestrians.
+ * Handles player hitting pedestrians on crosswalk.
  */
+
 public class PedestrianCollisionHandler {
 
     private final SoundDevice soundManager;
@@ -23,50 +24,54 @@ public class PedestrianCollisionHandler {
         this.soundManager = soundManager;
     }
 
+    // Wire listener for game-over penalty (DIP)
     public void setViolationListener(TrafficViolationListener listener) {
         this.violationListener = listener;
     }
 
+    // Check if collision involves player and an alive pedestrian
     public boolean canHandle(Entity a, Entity b) {
         Pedestrian ped = GameCollisionHandler.extractEntity(a, b, Pedestrian.class);
         MovableEntity player = GameCollisionHandler.getPlayerEntity(a, b);
         return ped != null && player != null && !ped.isExpired();
     }
 
+    // Trigger damage flash, calculate knockback, and notify game for instant fail
     public void handleBegin(Entity entityA, Entity entityB) {
         Pedestrian ped = GameCollisionHandler.extractEntity(entityA, entityB, Pedestrian.class);
         MovableEntity player = GameCollisionHandler.getPlayerEntity(entityA, entityB);
 
         if (ped == null || player == null || ped.isExpired()) return;
 
-        // Trigger flash on player
+        // Visual damage feedback on player vehicle
         if (player instanceof IFlashable flashable) {
             flashable.triggerDamageFlash();
         }
 
-        // Calculate knockback direction for pedestrian
+        // Calculate knockback direction (velocity-based or position-based fallback)
         PhysicsBody playerBody = player.getPhysicsBody();
         Vector2 playerVelocity = playerBody.getVelocity();
 
         Vector2 knockbackDir;
         if (playerVelocity.len2() > 0.01f) {
-            // Send pedestrian in player's movement direction
+            // Pedestrian flies in player's direction of travel
             knockbackDir = playerVelocity.cpy().nor();
         } else {
-            // If player stationary, use position-based direction
+            // Use position direction when player stationary (away from car)
             Vector2 pedPos = ped.getPhysicsBody().getPosition();
             Vector2 playerPos = playerBody.getPosition();
             knockbackDir = pedPos.cpy().sub(playerPos).nor();
         }
 
-        // Pass knockback info to the scene-level reaction system.
+        // Scale knockback by player speed (faster impact = more knockback)
         float knockbackForce = Math.max(20f, playerVelocity.len() * 15f);
-        // Play impact sound
+        
+        // Audio impact feedback
         if (soundManager != null) {
             soundManager.playSound("explosion", 1.0f);
         }
 
-        // Notify observer (delayed game over)
+        // Delegate reaction system to handle physics animation and instant fail (SRP)
         if (violationListener != null) {
             violationListener.onPedestrianHit(ped, knockbackDir, knockbackForce);
         }
