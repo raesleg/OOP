@@ -61,7 +61,6 @@ public class PedestrianCollisionHandler {
 
         // Pass knockback info to the scene-level reaction system.
         float knockbackForce = Math.max(20f, playerVelocity.len() * 15f);
-
         // Play impact sound
         if (soundManager != null) {
             soundManager.playSound("explosion", 1.0f);

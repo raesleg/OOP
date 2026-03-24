@@ -15,6 +15,7 @@ import io.github.raesleg.engine.physics.PhysicsWorld;
 
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.entities.vehicles.NPCCar;
+import io.github.raesleg.game.entities.vehicles.PlayerCar;
 import io.github.raesleg.game.movement.NpcDrivingStrategy;
 import io.github.raesleg.game.movement.AIPerceptionService;
 import io.github.raesleg.game.movement.CarMovementModel;
@@ -36,6 +37,10 @@ public class NPCCarSpawner implements ILaneOccupancy {
     /* Active NPCs - tracked for counting/debugging only */
     private final List<NPCCar> activeNPCs;
 
+    /* Player position for collision avoidance at spawn */
+    private float playerY = -1f;
+    private float playerX = -1f; // Player X position to exclude their lane
+
     /*
      * Exclusion zones — Y ranges where no NPC may spawn (e.g. crosswalk positions)
      */
@@ -50,8 +55,8 @@ public class NPCCarSpawner implements ILaneOccupancy {
     /** Pixels of NPC visible at top of screen during preview peek. */
     private static final float PREVIEW_PEEK = 35f;
 
-    /** Extra downward speed (px/s) so NPCs slide past the player. */
-    private static final float APPROACH_SPEED = 250f;
+    /** Extra downward speed (px/s) — 10mph slower than player max speed. */
+    private static final float APPROACH_SPEED = -25f; // Negative = slower, player catches and overtakes
 
     /**
      * Creates an NPC car spawner.
@@ -73,7 +78,7 @@ public class NPCCarSpawner implements ILaneOccupancy {
         this.world = world;
         this.screenHeight = screenHeight;
         this.spawnInterval = spawnInterval;
-        this.spawnYOffset = screenHeight - PREVIEW_PEEK; // Peek position at top of screen
+        this.spawnYOffset = -150f; // Spawn above screen, will scroll into view
         this.spawnTimer = 0f;
         this.activeNPCs = new ArrayList<>();
         this.exclusionZones = (exclusionZones != null) ? exclusionZones : new ArrayList<>();
@@ -90,7 +95,15 @@ public class NPCCarSpawner implements ILaneOccupancy {
     public void setSpawningEnabled(boolean enabled) {
         this.spawningEnabled = enabled;
     }
+    /** Sets the player Y position each frame for spawn collision avoidance. */
+    public void setPlayerY(float playerY) {
+        this.playerY = playerY;
+    }
 
+    /** Sets the player X position each frame for lane exclusion. */
+    public void setPlayerX(float playerX) {
+        this.playerX = playerX;
+    }
     /**
      * scrollPixelsPerSecond = road/world downward speed in pixels/sec
      */
@@ -139,6 +152,12 @@ public class NPCCarSpawner implements ILaneOccupancy {
         // Also check hazard lanes to prevent visual overlap
         if (hazardOccupancy != null) {
             occupied.addAll(hazardOccupancy.getOccupiedLanesNear(relativeY, 400f));
+        }
+
+        // Exclude the lane the player is currently in — prevent collision at spawn
+        int playerLane = getPlayerLane();
+        if (playerLane >= 0 && playerLane < 3) {
+            occupied.add(playerLane);
         }
 
         if (occupied.size() >= 2) {
@@ -260,5 +279,24 @@ public class NPCCarSpawner implements ILaneOccupancy {
             }
         }
         return lanes;
+    }
+
+
+    /**
+     * Determines which lane (0-2) the player is currently in based on X position.
+     * Returns -1 if unavailable.
+     */
+    private int getPlayerLane() {
+        if (playerX < 0) return -1; // Not available
+        
+        float laneWidth = RoadRenderer.ROAD_WIDTH / 3f;
+        float relativeX = playerX - RoadRenderer.ROAD_LEFT;
+        
+        if (relativeX < 0 || relativeX > RoadRenderer.ROAD_WIDTH) {
+            return -1; // Player outside road
+        }
+        
+        int lane = (int) (relativeX / laneWidth);
+        return Math.max(0, Math.min(2, lane)); // Clamp to 0-2
     }
 }

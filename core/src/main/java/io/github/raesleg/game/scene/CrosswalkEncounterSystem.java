@@ -153,16 +153,18 @@ public final class CrosswalkEncounterSystem implements IGameSystem {
 
         for (PedestrianEncounter encounter : encounters) {
             if (encounter.pedestrian == hitPedestrian) {
+                // Only trigger the hit reaction if it's not already playing
                 if (!encounter.hitReaction.isActive() && !encounter.hitReaction.isFinished()) {
                     encounter.movement.markFinishedUnsuccessfully();
                     encounter.zone.setCrossingActive(false);
-                    encounter.crashHandled = true;
                     encounter.hitReaction.trigger(hitPedestrian, knockbackDirection, knockbackForce);
-
-                    // Immediate fail — do not wait for the knockback animation
-                    instantFailTriggered = true;
+                }
+                
+                // Set fail flag so the update loop publishes the event after animation finishes
+                // This ensures that even repeated hits during the animation will trigger a fail
+                if (!encounter.failQueued) {
+                    encounter.failQueued = true;
                     instantFailReason = "Hit a pedestrian and caused an accident";
-                    eventBus.publish(new InstantFailEvent(instantFailReason));
                 }
                 break;
             }

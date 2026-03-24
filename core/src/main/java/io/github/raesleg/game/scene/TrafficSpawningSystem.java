@@ -27,6 +27,8 @@ public final class TrafficSpawningSystem implements IGameSystem {
     /** Frame-scoped values supplied by the owning scene. */
     private float npcScrollSpeed;
     private float scrollOffset;
+    private float playerY;
+    private float playerX; // Player X position for lane exclusion
     private boolean spawningEnabled = true;
 
     public TrafficSpawningSystem(EntityManager entityManager, PhysicsWorld world,
@@ -49,9 +51,11 @@ public final class TrafficSpawningSystem implements IGameSystem {
     }
 
     /** Called by the scene each frame before update(). */
-    public void setFrameState(float npcScrollSpeed, float scrollOffset, float simulatedSpeed) {
+    public void setFrameState(float npcScrollSpeed, float scrollOffset, float simulatedSpeed, float playerY, float playerX) {
         this.npcScrollSpeed = npcScrollSpeed;
         this.scrollOffset = scrollOffset;
+        this.playerY = playerY;
+        this.playerX = playerX;
     }
 
     /** Enables or disables NPC car spawning (e.g. active crosswalk suppression). */
@@ -62,6 +66,8 @@ public final class TrafficSpawningSystem implements IGameSystem {
     @Override
     public void update(float deltaTime) {
         npcSpawner.setSpawningEnabled(spawningEnabled);
+        npcSpawner.setPlayerY(playerY);
+        npcSpawner.setPlayerX(playerX);  // Pass player X for lane exclusion
         npcSpawner.update(deltaTime, npcScrollSpeed);
         pickupSpawner.update(deltaTime, scrollOffset);
         treeSpawner.update(deltaTime, scrollOffset);

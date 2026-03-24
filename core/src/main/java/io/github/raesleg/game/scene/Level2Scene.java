@@ -198,7 +198,8 @@ public class Level2Scene extends BaseGameScene {
     protected void updateGame(float deltaTime) {
         /* Delegate NPC/pickup/tree spawning to composed system */
         trafficSystem.setFrameState(
-                getNpcScrollSpeedPixelsPerSecond(), getScrollOffset(), getSimulatedSpeedKmh());
+                getNpcScrollSpeedPixelsPerSecond(), getScrollOffset(), getSimulatedSpeedKmh(),
+                getPlayerCar().getY(), getPlayerCar().getX());
         trafficSystem.update(deltaTime);
 
         /* Update all hazard spawners */

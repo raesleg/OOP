@@ -56,11 +56,18 @@ public class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
         lifeTimer += deltaTime;
 
         if (inPreview) {
-            previewTimer += deltaTime;
-            if (previewTimer >= PREVIEW_DURATION) {
-                inPreview = false;
-            }
+            // During preview: move at scroll speed so NPC scrolls into view from top
+            // From player's perspective it appears to move down the screen toward them
+            float bodyX = getPhysicsBody().getPosition().x;
+            float bodyY = getPhysicsBody().getPosition().y;
+            getPhysicsBody().setPosition(bodyX, bodyY + (scrollPixelsPerSecond / Constants.PPM) * deltaTime);
             syncSpriteFromBody();
+            
+            // End preview once NPC reaches middle of screen
+            float screenY = getY();
+            if (screenY >= screenHeight * 0.25f && screenY <= screenHeight * 0.75f) {
+                inPreview = false; // Switch to slower active movement once at middle of screen
+            }
             return;
         }
 
@@ -68,7 +75,7 @@ public class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
         float totalSpeed = scrollPixelsPerSecond + approachSpeed;
         float bodyX = getPhysicsBody().getPosition().x;
         float bodyY = getPhysicsBody().getPosition().y;
-        getPhysicsBody().setPosition(bodyX, bodyY - (totalSpeed / Constants.PPM) * deltaTime);
+        getPhysicsBody().setPosition(bodyX, bodyY + (totalSpeed / Constants.PPM) * deltaTime);
 
         syncSpriteFromBody();
 
