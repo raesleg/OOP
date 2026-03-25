@@ -6,17 +6,13 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
-import io.github.raesleg.engine.Constants;
-
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.collision.listeners.Level2TrafficListener;
-import io.github.raesleg.game.entities.IChaseEntity;
-import io.github.raesleg.game.entities.misc.Particle;
 import io.github.raesleg.game.factory.PoliceCarFactory;
 import io.github.raesleg.game.factory.RoadHazardSpawner;
 import io.github.raesleg.game.io.Keyboard;
-import io.github.raesleg.game.movement.CarMovementModel;
 import io.github.raesleg.game.movement.SurfaceEffect;
+import io.github.raesleg.game.state.ChaseDirector;
 import io.github.raesleg.game.zone.RoadHazard;
 
 /**
@@ -45,9 +41,9 @@ public class Level2Scene extends BaseGameScene {
     /* ── Level-specific components ── */
     private TrafficSpawningSystem trafficSystem;
     private PoliceCarFactory policeFactory;
-    private IChaseEntity policeCar;
-    private boolean policeSpawned;
-    private boolean sirenStarted;
+    private PlayerController playerController;
+    private ChaseDirector chaseDirector;
+    private HazardEffectSystem hazardEffects;
 
     /* ── Road hazard spawners (puddles, mud) ── */
     private final List<RoadHazardSpawner> hazardSpawners = new ArrayList<>();
@@ -135,7 +131,15 @@ public class Level2Scene extends BaseGameScene {
                                 GameConstants.L2_CRASH_SPEED_PENALTY)));
         getCollisionHandler().setPickupListener(this::handlePickup);
 
-        policeSpawned = false;
+        /* Player vertical movement controller (SRP extraction) */
+        Keyboard kb = getIOManager().getInputs(Keyboard.class);
+        playerController = new PlayerController(kb, getPlayerCar());
+
+        /* Chase director (SRP extraction — police spawn/AI/siren/distance) */
+        chaseDirector = new ChaseDirector(policeFactory, getRuleManager(), getSound());
+
+        /* Hazard particle effect system (SRP extraction) */
+        hazardEffects = new HazardEffectSystem(getEntityManager(), getPlayerCar());
 
         /* Rain effect system (SRP — rendering extracted from scene) */
         rainEffect = new RainEffectSystem();
@@ -206,70 +210,18 @@ public class Level2Scene extends BaseGameScene {
         for (RoadHazardSpawner spawner : hazardSpawners)
             spawner.update(deltaTime, getScrollOffset());
 
-        updateHazardEffects(); // this one has the sound and visual effects
+        /* Hazard particle effects — delegated to HazardEffectSystem (SRP) */
+        hazardEffects.update();
 
         setRulesBroken(getRuleManager().getRulesBroken());
 
-        /*
-         * Player vertical movement — direct input control within bounds.
-         * UP/DOWN keys move the car on-screen; no reverse (scroll always forward).
-         */
-        Keyboard kb = getIOManager().getInputs(Keyboard.class);
-        float currentY = getPlayerCar().getY();
-        if (kb.isHeld(Constants.UP)) {
-            currentY += GameConstants.L2_PLAYER_VERTICAL_SPEED * deltaTime;
-        }
-        if (kb.isHeld(Constants.DOWN)) {
-            currentY -= GameConstants.L2_PLAYER_VERTICAL_SPEED * deltaTime;
-        }
-        currentY = Math.max(GameConstants.PLAYER_MIN_Y,
-                Math.min(GameConstants.PLAYER_MAX_Y, currentY));
-        getPlayerCar().setY(currentY);
+        /* Player vertical movement — delegated to PlayerController (SRP) */
+        playerController.update(deltaTime);
 
-        /* Sync physics body to match visual position */
-        var playerBody = getPlayerCar().getPhysicsBody();
-        if (playerBody != null) {
-            playerBody.setPosition(playerBody.getPosition().x,
-                    (currentY + getPlayerCar().getH() / 2f) / Constants.PPM);
-        }
-
-        /* Spawn police on first rule break (not immediately) */
-        if (!policeSpawned && getRuleManager().getRulesBroken() >= 1) {
-            policeCar = policeFactory.spawn();
-            policeSpawned = true;
-            Gdx.app.log("Level2Scene", "Police spawned — chase begins!");
-        }
-
-        if (policeCar != null) {
-            policeCar.updateChase(
-                    deltaTime,
-                    getPlayerCar().getX(),
-                    getPlayerCar().getY(),
-                    getRuleManager().getRulesBroken(),
-                    GameConstants.MAX_WANTED_STARS,
-                    getSimulatedSpeedKmh(),
-                    getMaxSpeed());
-
-            /* Police siren — start on first frame, volume scales with distance */
-            if (!sirenStarted) {
-                getSound().loopSound("policesiren");
-                sirenStarted = true;
-            }
-            float distance = getPlayerCar().getY() - policeCar.getScreenY();
-            float sirenVol = 1.0f - Math.min(1f, Math.max(0f,
-                    distance / GameConstants.POLICE_MAX_DISTANCE));
-            sirenVol = Math.max(GameConstants.SIREN_MIN_VOLUME, sirenVol);
-            getSound().setSoundVolume("policesiren", sirenVol);
-
-            /* Dashboard distance meter */
-            float normDist = Math.min(1f, Math.max(0f,
-                    distance / GameConstants.POLICE_MAX_DISTANCE));
-            getDashboard().onPoliceDistanceUpdated(normDist);
-
-            /* Police light glow — intensity grows as police closes in */
-            policeLightSystem.setNormalisedDistance(normDist);
-            policeLightSystem.update(deltaTime);
-        }
+        /* Police chase — delegated to ChaseDirector (SRP) */
+        chaseDirector.update(deltaTime, getPlayerCar(),
+                getSimulatedSpeedKmh(), getMaxSpeed(),
+                getDashboard(), policeLightSystem);
     }
 
     @Override
@@ -278,7 +230,7 @@ public class Level2Scene extends BaseGameScene {
             return false;
         if (getRulesBroken() >= GameConstants.MAX_WANTED_STARS)
             return true;
-        return policeCar != null && policeCar.hasCaughtPlayer();
+        return chaseDirector.hasCaughtPlayer();
     }
 
     @Override
@@ -339,7 +291,9 @@ public class Level2Scene extends BaseGameScene {
         for (RoadHazardSpawner s : hazardSpawners)
             s.clearAll();
         hazardSpawners.clear();
-        policeCar = null;
+        chaseDirector = null;
+        playerController = null;
+        hazardEffects = null;
         policeFactory = null;
         rainEffect = null;
         if (policeLightSystem != null) {
@@ -347,55 +301,5 @@ public class Level2Scene extends BaseGameScene {
             policeLightSystem = null;
         }
         Gdx.app.log("Level2Scene", "Level 2 data disposed");
-    }
-
-    // private methods to spawn hazard effects based on player's current surface (called from updateGame)
-    private void updateHazardEffects() {
-        CarMovementModel model = getPlayerCar().getCarMovementModel();
-        SurfaceEffect effect = model.getSurfaceEffect();
-
-        if (model.consumeEntryEffectSignal()) {
-            spawnPlayerSurfaceEntryEffect(effect);
-        }
-
-        if (model.didEmitTrailEffectThisStep()) {
-            spawnPlayerSurfaceTrailEffect(effect);
-        }
-
-        if (model.consumeExitEffectSignal()) {
-            spawnPlayerSurfaceExitEffect(effect);
-        }
-    }
-    private void spawnPlayerSurfaceEntryEffect(SurfaceEffect effect) {
-        float px = getPlayerCar().getX() + getPlayerCar().getW() * 0.5f;
-        float py = getPlayerCar().getY() + getPlayerCar().getH() * 0.5f;
-
-        if (effect == SurfaceEffect.PUDDLE) {
-            Particle.spawnWaterSplash(getEntityManager(), px, py, 12);
-        } else if (effect == SurfaceEffect.MUD) {
-            Particle.spawnMudSplatter(getEntityManager(), px, py, 8);
-        }
-    }
-    private void spawnPlayerSurfaceTrailEffect(SurfaceEffect effect) {
-        float px = getPlayerCar().getX() + getPlayerCar().getW() * 0.5f;
-        float py = getPlayerCar().getY() + getPlayerCar().getH() * 0.5f;
-
-        if (effect == SurfaceEffect.PUDDLE) {
-            Particle.spawnContinuousSplash(getEntityManager(), px, py);
-        } else if (effect == SurfaceEffect.MUD) {
-            if (Math.random() > 0.5) {
-                Particle.spawnMudSplatter(getEntityManager(), px, py, 2);
-            }
-        }
-    }
-    private void spawnPlayerSurfaceExitEffect(SurfaceEffect effect) {
-        float px = getPlayerCar().getX() + getPlayerCar().getW() * 0.5f;
-        float py = getPlayerCar().getY() + getPlayerCar().getH() * 0.5f;
-
-        if (effect == SurfaceEffect.PUDDLE) {
-            Particle.spawnWaterSplash(getEntityManager(), px, py, 6);
-        } else if (effect == SurfaceEffect.MUD) {
-            Particle.spawnMudSplatter(getEntityManager(), px, py, 4);
-        }
     }
 }
