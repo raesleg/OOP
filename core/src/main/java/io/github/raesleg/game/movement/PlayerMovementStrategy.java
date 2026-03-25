@@ -10,19 +10,16 @@ public class PlayerMovementStrategy implements MovementStrategy {
 
     private final float steeringSensitivity;
     private final float throttleSensitivity;
-    private final float reverseSensitivity;
 
     public PlayerMovementStrategy() {
-        this(1.0f, 1.0f, 0.65f);
+        this(1.0f, 1.0f);
     }
 
     public PlayerMovementStrategy(
             float steeringSensitivity,
-            float throttleSensitivity,
-            float reverseSensitivity) {
+            float throttleSensitivity) {
         this.steeringSensitivity = steeringSensitivity;
         this.throttleSensitivity = throttleSensitivity;
-        this.reverseSensitivity = reverseSensitivity;
     }
 
     @Override
@@ -38,7 +35,7 @@ public class PlayerMovementStrategy implements MovementStrategy {
         if (drive > 0f) {
             drive *= throttleSensitivity;
         } else if (drive < 0f) {
-            drive *= reverseSensitivity;
+            drive *= throttleSensitivity; // Assuming reverse sensitivity is the same as throttle sensitivity
         }
 
         return clamp(drive, -1f, 1f);
