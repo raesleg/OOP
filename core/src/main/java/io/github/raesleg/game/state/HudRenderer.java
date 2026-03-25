@@ -63,12 +63,12 @@ public class HudRenderer {
         String speedText = currentSpeed + "";
         speedFont.setColor(Color.WHITE);
         speedFont.draw(batch, speedText,
-                dx + DASHBOARD_W * 0.62f,
-                dy + DASHBOARD_H * 0.58f);
+                dx + DASHBOARD_W * 0.40f,
+                dy + DASHBOARD_H * 0.70f);
         font.setColor(Color.LIGHT_GRAY);
         font.draw(batch, "KM/H",
-                dx + DASHBOARD_W * 0.60f,
-                dy + DASHBOARD_H * 0.30f);
+                dx + DASHBOARD_W * 0.35f,
+                dy + DASHBOARD_H * 0.45f);
         font.setColor(Color.WHITE);
     }
 
