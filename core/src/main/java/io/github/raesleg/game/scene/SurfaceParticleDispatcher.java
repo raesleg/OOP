@@ -39,12 +39,12 @@ public class SurfaceParticleDispatcher {
     private final Map<SurfaceEffect, SurfaceParticleEffect> effects = new HashMap<>();
 
     public SurfaceParticleDispatcher() {
-        register(SurfaceEffect.PUDDLE, new SurfaceParticleEffect(
+        register(SurfaceEffect.LOW_FRICTION, new SurfaceParticleEffect(
                 (em, x, y) -> Particle.spawnWaterSplash(em, x, y, 12),
                 (em, x, y) -> Particle.spawnContinuousSplash(em, x, y),
                 (em, x, y) -> Particle.spawnWaterSplash(em, x, y, 6)));
 
-        register(SurfaceEffect.MUD, new SurfaceParticleEffect(
+        register(SurfaceEffect.HIGH_FRICTION, new SurfaceParticleEffect(
                 (em, x, y) -> Particle.spawnMudSplatter(em, x, y, 8),
                 (em, x, y) -> {
                     if (Math.random() > 0.5)

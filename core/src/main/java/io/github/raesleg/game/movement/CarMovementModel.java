@@ -109,7 +109,7 @@ public class CarMovementModel implements MovementModel {
                         * currentSurface.getForwardSpeedMultiplier();
 
         float effectiveAcceleration =
-                profile.getAcceleration() * currentSurface.getAccelerationMultiplier();
+                profile.getAcceleration();
 
         forwardSpeed = moveTowards(forwardSpeed, targetForwardSpeed, effectiveAcceleration * dt);
         return forwardSpeed;
@@ -117,22 +117,22 @@ public class CarMovementModel implements MovementModel {
 
     private float calculateGripMultiplier(float dt) {
         if (!recoveringGrip) {
-            return currentSurface.getLateralGripMultiplier();
+            return currentSurface.getLateralMultiplier();
         }
 
         recoveryTimer -= dt;
         if (recoveryTimer <= 0f) {
             recoveringGrip = false;
             recoveryTimer = 0f;
-            return SurfaceEffect.DEFAULT.getLateralGripMultiplier();
+            return SurfaceEffect.DEFAULT.getLateralMultiplier();
         }
 
         if (profile.getSlideRecoveryTime() <= 0f) {
-            return SurfaceEffect.DEFAULT.getLateralGripMultiplier();
+            return SurfaceEffect.DEFAULT.getLateralMultiplier();
         }
 
         float blend = recoveryTimer / profile.getSlideRecoveryTime();
-        float lowGrip = SurfaceEffect.PUDDLE.getLateralGripMultiplier();
+        float lowGrip = SurfaceEffect.LOW_FRICTION.getLateralMultiplier();
         return lowGrip + (1f - lowGrip) * (1f - blend);
     }
 

@@ -45,16 +45,6 @@ public class RoadHazardSpawner implements ILaneOccupancy {
     private static final float HAZARD_W = 100f;
     private static final float HAZARD_H = 40f;
 
-
-    /** Backwards-compatible constructor — spawns puddles. */
-    public RoadHazardSpawner(EntityManager entityManager, PhysicsWorld world,
-            float screenHeight, float spawnInterval,
-            ILaneOccupancy npcOccupancy, List<float[]> exclusionZones) {
-        this(entityManager, world, screenHeight, spawnInterval,
-                npcOccupancy, exclusionZones,
-                SurfaceEffect.PUDDLE, "puddle.png");
-    }
-
     /** Full constructor — specify hazard type via SurfaceEffect + texture. */
     public RoadHazardSpawner(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float spawnInterval,

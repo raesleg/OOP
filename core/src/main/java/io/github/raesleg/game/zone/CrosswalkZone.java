@@ -26,7 +26,7 @@ public class CrosswalkZone extends Shape implements IExpirable {
         this.relativeY = relativeY;
         this.body = body;
         this.state = new CrosswalkZoneState();
-        this.surfaceEffect = SurfaceEffect.CROSSWALK;
+        this.surfaceEffect = SurfaceEffect.SLOW_ZONE;
 
         if (body != null) {
             body.setUserData(this);

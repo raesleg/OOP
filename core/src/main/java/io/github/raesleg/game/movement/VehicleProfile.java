@@ -1,7 +1,5 @@
 package io.github.raesleg.game.movement;
 
-import io.github.raesleg.game.GameConstants;
-
 // Base movement + sensing stats for vehicle types 
 public final class VehicleProfile {
 

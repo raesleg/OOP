@@ -109,13 +109,13 @@ public class Level2Scene extends BaseGameScene {
                 getEntityManager(), getWorld(), GameConstants.L2_SPAWN_SCREEN_HEIGHT,
                 GameConstants.L2_PUDDLE_INTERVAL,
                 trafficSystem.getNpcSpawner(), null,
-                SurfaceEffect.PUDDLE, "puddle.png"));
+                SurfaceEffect.LOW_FRICTION, "puddle.png"));
 
         hazardSpawners.add(new RoadHazardSpawner(
                 getEntityManager(), getWorld(), GameConstants.L2_SPAWN_SCREEN_HEIGHT,
                 GameConstants.L2_MUD_INTERVAL,
                 trafficSystem.getNpcSpawner(), null,
-                SurfaceEffect.MUD, "mud.png"));
+                SurfaceEffect.HIGH_FRICTION, "mud.png"));
 
         trafficSystem.getNpcSpawner().setHazardOccupancy(hazardSpawners.get(1));
 

@@ -51,17 +51,17 @@ public final class HazardEffectSystem {
     }
 
     private void spawnEntryEffect(SurfaceEffect effect) {
-        if (effect == SurfaceEffect.PUDDLE) {
+        if (effect == SurfaceEffect.LOW_FRICTION) {
             Particle.spawnWaterSplash(entityManager, centreX(), centreY(), 12);
-        } else if (effect == SurfaceEffect.MUD) {
+        } else if (effect == SurfaceEffect.HIGH_FRICTION) {
             Particle.spawnMudSplatter(entityManager, centreX(), centreY(), 8);
         }
     }
 
     private void spawnTrailEffect(SurfaceEffect effect) {
-        if (effect == SurfaceEffect.PUDDLE) {
+        if (effect == SurfaceEffect.LOW_FRICTION) {
             Particle.spawnContinuousSplash(entityManager, centreX(), centreY());
-        } else if (effect == SurfaceEffect.MUD) {
+        } else if (effect == SurfaceEffect.HIGH_FRICTION) {
             if (Math.random() > 0.5) {
                 Particle.spawnMudSplatter(entityManager, centreX(), centreY(), 2);
             }
@@ -69,9 +69,9 @@ public final class HazardEffectSystem {
     }
 
     private void spawnExitEffect(SurfaceEffect effect) {
-        if (effect == SurfaceEffect.PUDDLE) {
+        if (effect == SurfaceEffect.LOW_FRICTION) {
             Particle.spawnWaterSplash(entityManager, centreX(), centreY(), 6);
-        } else if (effect == SurfaceEffect.MUD) {
+        } else if (effect == SurfaceEffect.HIGH_FRICTION) {
             Particle.spawnMudSplatter(entityManager, centreX(), centreY(), 4);
         }
     }
