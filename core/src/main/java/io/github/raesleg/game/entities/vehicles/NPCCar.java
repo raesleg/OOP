@@ -1,6 +1,5 @@
 package io.github.raesleg.game.entities.vehicles;
 
-import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.IExpirable;
 import io.github.raesleg.engine.io.ControlSource;
 import io.github.raesleg.engine.movement.MovableEntity;
@@ -12,7 +11,10 @@ import io.github.raesleg.game.entities.IPerceivable;
 import io.github.raesleg.game.entities.PerceptionCategory;
 import io.github.raesleg.game.movement.SensorComponent;
 
-/** NPC vehicle that transitions from preview (scrolling into view) to active (approaching player) */
+/**
+ * NPC vehicle that transitions from preview (scrolling into view) to active
+ * (approaching player)
+ */
 
 public class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
 
@@ -43,51 +45,44 @@ public class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
         this.lifeTimer = 0f;
     }
 
-    // Maximum time NPC can exist on screen before forced removal
-    private static final float MAX_LIFETIME = 10f;
-
-    // Manage NPC lifecycle: preview phase (scroll only) then active phase (scroll + approach); expire if off-screen
-    public void updateLifeCycle(float scrollPixelsPerSecond, float deltaTime, float screenHeight) {
-        if (getPhysicsBody() == null || getPhysicsBody().isDestroyed()) {
-            expired = true;
-            return;
-        }
-
+    /**
+     * Increments the internal life timer. Called by
+     * {@link io.github.raesleg.game.factory.NPCLifecycleManager}.
+     */
+    public void tickLifeTimer(float deltaTime) {
         lifeTimer += deltaTime;
-
-        if (inPreview) {
-            // Preview phase: move at scroll speed so NPC gradually scrolls into view from bottom
-            float bodyX = getPhysicsBody().getPosition().x;
-            float bodyY = getPhysicsBody().getPosition().y;
-            getPhysicsBody().setPosition(bodyX, bodyY + (scrollPixelsPerSecond / Constants.PPM) * deltaTime);
-            syncSpriteFromBody();
-            
-            // Exit preview once NPC reaches middle of screen (become fully visible and active)
-            float screenY = getY();
-            if (screenY >= screenHeight * 0.25f && screenY <= screenHeight * 0.75f) {
-                inPreview = false; // Switch to slower active movement once at middle of screen
-            }
-            return;
-        }
-
-        // Active phase: slide down at combined scroll + approach speed (slower than player)
-        float totalSpeed = scrollPixelsPerSecond + approachSpeed;
-        float bodyX = getPhysicsBody().getPosition().x;
-        float bodyY = getPhysicsBody().getPosition().y;
-        getPhysicsBody().setPosition(bodyX, bodyY + (totalSpeed / Constants.PPM) * deltaTime);
-
-        syncSpriteFromBody();
-
-        // Mark expired if off-screen or max lifetime exceeded
-        if (getY() < -getH() * 2f || lifeTimer > MAX_LIFETIME) {
-            expired = true;
-        }
     }
 
-    // Sync sprite position and rotation to physics body position (center-to-corner conversion)
-    private void syncSpriteFromBody() {
-        setX(getPhysicsBody().getPosition().x * Constants.PPM - getW() / 2f);
-        setY(getPhysicsBody().getPosition().y * Constants.PPM - getH() / 2f);
+    /** Returns the total elapsed lifetime in seconds. */
+    public float getLifeTimer() {
+        return lifeTimer;
+    }
+
+    /** Whether the NPC is still in preview (scrolling into view). */
+    public boolean isInPreview() {
+        return inPreview;
+    }
+
+    /** Transitions the NPC from preview phase to active phase. */
+    public void exitPreview() {
+        inPreview = false;
+    }
+
+    /** Returns the configured approach speed (px/s relative to scroll). */
+    public float getApproachSpeed() {
+        return approachSpeed;
+    }
+
+    /**
+     * Overrides MovableEntity.move() so that the NPCLifecycleManager
+     * retains full authority over this car's velocity. Without this
+     * override the CarMovementModel would overwrite the lifecycle
+     * velocity every frame before the physics step, preventing
+     * the NPC from scrolling into view.
+     */
+    @Override
+    public void move(float dt) {
+        // Velocity is set by NPCLifecycleManager — skip model/strategy step
     }
 
     @Override

@@ -69,9 +69,11 @@ public class Level1Scene extends BaseGameScene {
 
         /*
          * Register crash explosion condition — Level 1 explodes after 3 crashes.
-         * (Removed from BaseGameScene so Level 2 can opt out.)
+         * Delegates evaluation to MatchDirector (SRP).
          */
-        addEndCondition(this::checkCrashExplosion);
+        addEndCondition(() -> getMatchDirector().evaluateCrashExplosion(
+                getPlayerCar().getX() + getPlayerCar().getW() / 2f,
+                getPlayerCar().getY() + getPlayerCar().getH() / 2f));
 
         /* Build crosswalk exclusion zones for spawner */
         List<float[]> crosswalkExclusions = new ArrayList<>();
@@ -137,7 +139,7 @@ public class Level1Scene extends BaseGameScene {
         /* Suppress NPC spawning while a crosswalk encounter is active on screen */
         trafficSystem.setSpawningEnabled(!crosswalkSystem.isCrosswalkActiveOnScreen());
         trafficSystem.setFrameState(
-                getNpcScrollSpeedPixelsPerSecond(), getScrollOffset(), getSimulatedSpeedKmh(), 
+                getNpcScrollSpeedPixelsPerSecond(), getScrollOffset(), getSimulatedSpeedKmh(),
                 getPlayerCar().getX());
         trafficSystem.update(deltaTime);
 

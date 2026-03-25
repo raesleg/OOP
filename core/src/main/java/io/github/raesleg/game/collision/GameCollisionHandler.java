@@ -166,45 +166,24 @@ public class GameCollisionHandler implements ICollisionListener {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // Helper Methods for Entity Type Detection
+    // Deprecated helpers — delegate to CollisionEntityUtils
     // ═══════════════════════════════════════════════════════════
 
-    /**
-     * Helper: Returns user-controlled MovableEntity from pair, or null.
-     * Used by multiple handlers (DRY principle).
-     */
+    /** @deprecated Use {@link CollisionEntityUtils#getPlayerEntity} directly. */
+    @Deprecated
     public static MovableEntity getPlayerEntity(Entity a, Entity b) {
-        if (a instanceof MovableEntity ma && !ma.isAIControlled()) {
-            return ma;
-        }
-        if (b instanceof MovableEntity mb && !mb.isAIControlled()) {
-            return mb;
-        }
-        return null;
+        return CollisionEntityUtils.getPlayerEntity(a, b);
     }
 
-    /**
-     * Helper: Extracts specific entity type from collision pair.
-     */
+    /** @deprecated Use {@link CollisionEntityUtils#extractEntity} directly. */
+    @Deprecated
     public static <T> T extractEntity(Entity a, Entity b, Class<T> type) {
-        if (type.isInstance(a))
-            return type.cast(a);
-        if (type.isInstance(b))
-            return type.cast(b);
-        return null;
+        return CollisionEntityUtils.extractEntity(a, b, type);
     }
 
-    /**
-     * Helper: Clamps velocity to prevent excessive speed.
-     * Shared utility for collision handlers (DRY principle).
-     */
+    /** @deprecated Use {@link CollisionEntityUtils#clampVelocity} directly. */
+    @Deprecated
     public static void clampVelocity(PhysicsBody body, float maxSpeed) {
-        Vector2 vel = body.getVelocity();
-        float currentSpeed = vel.len();
-
-        if (currentSpeed > maxSpeed) {
-            vel.nor().scl(maxSpeed);
-            body.setVelocity(vel.x, vel.y);
-        }
+        CollisionEntityUtils.clampVelocity(body, maxSpeed);
     }
 }

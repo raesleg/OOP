@@ -1,7 +1,6 @@
 package io.github.raesleg.game.scene;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -22,8 +21,6 @@ import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.Scene;
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.collision.GameCollisionHandler;
-import io.github.raesleg.game.entities.misc.ExplosionOverlay;
-import io.github.raesleg.game.entities.misc.Particle;
 import io.github.raesleg.game.entities.misc.Trees;
 import io.github.raesleg.game.factory.BoundaryFactory;
 import io.github.raesleg.game.factory.PlayerFactory;
@@ -32,15 +29,16 @@ import io.github.raesleg.game.event.FuelDepletedEvent;
 import io.github.raesleg.game.event.PickupCollectedEvent;
 import io.github.raesleg.game.event.ScoreChangedEvent;
 import io.github.raesleg.game.io.Keyboard;
+import io.github.raesleg.game.io.PlayerInputBinder;
+import io.github.raesleg.game.io.SystemInputBinder;
 import io.github.raesleg.game.rules.RuleManager;
 import io.github.raesleg.game.state.AudioController;
 import io.github.raesleg.game.state.DashboardUI;
 import io.github.raesleg.game.state.FuelController;
 import io.github.raesleg.game.state.FuelSystem;
+import io.github.raesleg.game.state.MatchDirector;
 import io.github.raesleg.game.state.SpeedScrollController;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -68,17 +66,12 @@ public abstract class BaseGameScene extends Scene {
     private AudioController audioController;
     private EventBus eventBus;
 
+    /* ── Match state director (SRP — all match state extracted) ── */
+    private MatchDirector matchDirector;
+
     /* ── Common state ── */
     private DashboardUI dashboard;
     private boolean isPaused;
-    private float gameTime;
-    private int score;
-    private float scoreAccumulator;
-    private int scoreBonus;
-    private int rulesBroken;
-    private int crashCount;
-    private boolean instantFail;
-    private String instantFailReason;
 
     /*
      * ── Shared rule/command infrastructure (DIP — created here, injected into
@@ -109,14 +102,6 @@ public abstract class BaseGameScene extends Scene {
     /* ── Audio (direct reference for subclass access) ── */
     private SoundDevice sound;
 
-    /* ── Explosion game-over delay ── */
-    private boolean gameOverPending;
-    private float gameOverTimer;
-    private LevelResult pendingResult;
-
-    /* ── Level-end conditions (OCP — evaluated in registration order) ── */
-    private final List<ILevelEndCondition> endConditions = new ArrayList<>();
-
     /* ── World dimensions (metres) ── */
     private final float worldW = VIRTUAL_WIDTH / Constants.PPM;
     private final float worldH = VIRTUAL_HEIGHT / Constants.PPM;
@@ -126,16 +111,6 @@ public abstract class BaseGameScene extends Scene {
     protected BaseGameScene() {
         super();
         this.isPaused = false;
-        this.gameTime = 0f;
-        this.score = 0;
-        this.scoreAccumulator = 0f;
-        this.scoreBonus = 0;
-        this.rulesBroken = 0;
-        this.crashCount = 0;
-        this.instantFail = false;
-        this.instantFailReason = "";
-        this.gameOverPending = false;
-        this.gameOverTimer = 0f;
     }
 
     /** Abstract Hooks */
@@ -178,9 +153,8 @@ public abstract class BaseGameScene extends Scene {
     }
 
     protected List<String> getViolationLog() {
-        return Collections.emptyList();
+        return List.of();
     }
-
 
     // Viewport factory
     @Override
@@ -238,17 +212,8 @@ public abstract class BaseGameScene extends Scene {
 
         playerCar = PlayerFactory.create(world, getEntityManager(), user);
 
-        kb.bindAction(Input.Keys.A, Constants.LEFT);
-        kb.bindAction(Input.Keys.LEFT, Constants.LEFT);
-        kb.bindAction(Input.Keys.D, Constants.RIGHT);
-        kb.bindAction(Input.Keys.RIGHT, Constants.RIGHT);
-        kb.bindAction(Input.Keys.W, Constants.UP);
-        kb.bindAction(Input.Keys.UP, Constants.UP);
-        kb.bindAction(Input.Keys.S, Constants.DOWN);
-        kb.bindAction(Input.Keys.DOWN, Constants.DOWN);
-        kb.bindAction(Input.Keys.SPACE, Constants.ACTION);
-        kb.addBind(Input.Keys.ESCAPE, this::openPause, true);
-        kb.addBind(Input.Keys.M, () -> audioController.toggleMute(), true);
+        PlayerInputBinder.bindMovementKeys(kb);
+        SystemInputBinder.bindSystemKeys(kb, this::openPause, () -> audioController.toggleMute());
 
         /* Wire keyboard to speed controller */
         speedScroll.setKeyboard(kb);
@@ -270,15 +235,26 @@ public abstract class BaseGameScene extends Scene {
         sound.addSound("gameover", "gameover_sound.wav");
         sound.addSound("win", "winning_sound.wav");
 
+        /* MatchDirector — single-responsibility state owner (SRP extraction) */
+        matchDirector = new MatchDirector(getSceneManager(), getEntityManager(), sound);
+
         /* Level-specific setup (Template Method hook) */
         initLevelData();
 
         /*
-         * Register base level-end conditions (OCP).
+         * Configure MatchDirector — must be after initLevelData for subclass overrides
          */
-        addEndCondition(this::checkWinCondition);
-        addEndCondition(this::checkInstantFail);
-        addEndCondition(this::checkSubclassGameOver);
+        matchDirector.configure(getLevelName(), () -> createRetryScene(), () -> getViolationLog());
+
+        /*
+         * Register base level-end conditions (OCP).
+         * Subclass conditions registered in initLevelData() are evaluated first.
+         */
+        addEndCondition(() -> matchDirector.evaluateWin(
+                Math.min(1f, (-speedScroll.getScrollOffset()) / getLevelLength())));
+        addEndCondition(() -> matchDirector.evaluateInstantFail());
+        addEndCondition(() -> matchDirector.evaluateSubclassGameOver(
+                isGameOver(), getGameOverReason()));
     }
 
     @Override
@@ -289,17 +265,13 @@ public abstract class BaseGameScene extends Scene {
         }
 
         /* Explosion delay — keep rendering entities but freeze gameplay */
-        if (gameOverPending) {
+        if (matchDirector.isExplosionPending()) {
             getEntityManager().update(deltaTime);
-            gameOverTimer -= deltaTime;
-            if (gameOverTimer <= 0f) {
-                getSceneManager().set(
-                        new ResultsScene(pendingResult, () -> createRetryScene()));
-            }
+            matchDirector.tickExplosionDelay(deltaTime);
             return;
         }
 
-        gameTime += deltaTime;
+        matchDirector.advanceTime(deltaTime);
 
         getEntityManager().update(deltaTime);
         getMovementManager().update(deltaTime);
@@ -309,20 +281,17 @@ public abstract class BaseGameScene extends Scene {
 
         /* Dashboard updates — score only increases when moving toward goal */
         float simSpeed = speedScroll.getSimulatedSpeed();
-        if (simSpeed > 0.5f) {
-            scoreAccumulator += deltaTime * GameConstants.SCORE_RATE_PER_SECOND;
-        }
-        score = (int) scoreAccumulator + scoreBonus;
+        matchDirector.updateScore(deltaTime, simSpeed > 0.5f);
 
         trees.update(simSpeed, deltaTime);
 
         float scrollOffset = speedScroll.getScrollOffset();
         float progress = Math.min(1f, (-scrollOffset) / getLevelLength());
 
-        dashboard.onScoreUpdated(score);
+        dashboard.onScoreUpdated(matchDirector.getScore());
         dashboard.onSpeedChanged(Math.round(simSpeed));
         dashboard.onProgressUpdated(progress);
-        dashboard.onRuleBroken(rulesBroken);
+        dashboard.onRuleBroken(matchDirector.getRulesBroken());
         dashboard.act(deltaTime);
 
         /* Delegate fuel to extracted system */
@@ -334,7 +303,8 @@ public abstract class BaseGameScene extends Scene {
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
 
         audioController.setPlayerMoving(playerCar.isMoving());
-        audioController.setAccelerating(kb.isHeld(Constants.UP) || kb.isHeld(Constants.LEFT) || kb.isHeld(Constants.RIGHT));
+        audioController
+                .setAccelerating(kb.isHeld(Constants.UP) || kb.isHeld(Constants.LEFT) || kb.isHeld(Constants.RIGHT));
         audioController.setBraking(kb.isHeld(Constants.DOWN));
 
         audioController.update(deltaTime);
@@ -342,8 +312,8 @@ public abstract class BaseGameScene extends Scene {
         /* Level-specific update (Template Method hook) */
         updateGame(deltaTime);
 
-        /* Template Method — check win/lose conditions */
-        checkLevelEnd();
+        /* Delegate end-condition evaluation to MatchDirector */
+        matchDirector.checkLevelEnd();
     }
 
     @Override
@@ -462,28 +432,27 @@ public abstract class BaseGameScene extends Scene {
     }
 
     protected int getScore() {
-        return score;
+        return matchDirector.getScore();
     }
 
     protected int getRulesBroken() {
-        return rulesBroken;
+        return matchDirector.getRulesBroken();
     }
 
     protected void setRulesBroken(int n) {
-        this.rulesBroken = n;
+        matchDirector.setRulesBroken(n);
     }
 
     protected void setInstantFail(boolean flag, String reason) {
-        this.instantFail = flag;
-        this.instantFailReason = reason;
+        matchDirector.setInstantFail(flag, reason);
     }
 
     protected void incrementCrashCount() {
-        this.crashCount++;
+        matchDirector.incrementCrashCount();
     }
 
     protected void addScore(int delta) {
-        this.scoreBonus += delta;
+        matchDirector.addBonus(delta);
         dashboard.showScorePopup(delta);
     }
 
@@ -498,7 +467,7 @@ public abstract class BaseGameScene extends Scene {
     }
 
     protected float getGameTime() {
-        return gameTime;
+        return matchDirector.getGameTime();
     }
 
     protected float getScrollSpeedPixelsPerSecond() {
@@ -522,7 +491,7 @@ public abstract class BaseGameScene extends Scene {
     }
 
     protected int getCrashCount() {
-        return crashCount;
+        return matchDirector.getCrashCount();
     }
 
     /** Left edge of the visible camera area (world coords, updated each frame). */
@@ -553,101 +522,15 @@ public abstract class BaseGameScene extends Scene {
      * custom conditions without modifying this base class.
      */
     protected void addEndCondition(ILevelEndCondition condition) {
-        endConditions.add(condition);
+        matchDirector.addEndCondition(condition);
     }
 
     /**
-     * Template Method — iterates registered end conditions every frame.
-     * Stops at the first condition that fires.
+     * Returns the MatchDirector so subclasses can register evaluators
+     * that require player position or other runtime data.
      */
-    protected final void checkLevelEnd() {
-        if (gameOverPending)
-            return;
-
-        for (ILevelEndCondition condition : endConditions) {
-            if (condition.evaluate())
-                return;
-        }
-    }
-
-    /* ── Built-in end conditions (registered in show()) ── */
-
-    protected boolean checkWinCondition() {
-        float scrollOffset = speedScroll.getScrollOffset();
-        float progress = Math.min(1f, (-scrollOffset) / getLevelLength());
-        if (progress < 1.0f)
-            return false;
-
-        Gdx.app.log(getClass().getSimpleName(), "Level complete! Score: " + score);
-        LevelResult win = new LevelResult(
-                score, gameTime, rulesBroken, getLevelName(), true, "", getViolationLog());
-        getSceneManager().set(new ResultsScene(win, () -> createRetryScene()));
-        return true;
-    }
-
-    /**
-     * Checks whether the crash count has reached the explosion threshold.
-     * 
-     * NOT registered by default — subclasses that want crash-explosion
-     * behaviour must call {@code addEndCondition(this::checkCrashExplosion)}
-     * in their {@link #initLevelData()} method.
-     */
-    protected boolean checkCrashExplosion() {
-        if (crashCount < GameConstants.CRASH_EXPLOSION_THRESHOLD)
-            return false;
-
-        Gdx.app.log(getClass().getSimpleName(), "3rd crash! Triggering explosion...");
-        triggerExplosionGameOver("Crashed into too many vehicles");
-        return true;
-    }
-
-    protected boolean checkInstantFail() {
-        if (!instantFail)
-            return false;
-
-        Gdx.app.log(getClass().getSimpleName(), "Instant fail! Reason: " + instantFailReason);
-        sound.playSound("negative", 1.0f);
-        LevelResult lose = new LevelResult(
-                score, gameTime, rulesBroken, getLevelName(), false, instantFailReason, getViolationLog());
-        getSceneManager().set(new ResultsScene(lose, () -> createRetryScene()));
-        return true;
-    }
-
-    protected boolean checkSubclassGameOver() {
-        if (!isGameOver())
-            return false;
-
-        String reason = getGameOverReason();
-        Gdx.app.log(getClass().getSimpleName(), "Game Over! Reason: " + reason);
-        sound.playSound("negative", 1.0f);
-        LevelResult lose = new LevelResult(
-                score, gameTime, rulesBroken, getLevelName(), false, reason, getViolationLog());
-        getSceneManager().set(new ResultsScene(lose, () -> createRetryScene()));
-        return true;
-    }
-
-    /**
-     * Triggers an explosion at the player's position and schedules a delayed
-     * transition to the results screen. Entity spawning is delegated to
-     * {@link ExplosionSystem} (SRP).
-     */
-    protected void triggerExplosionGameOver(String lossReason) {
-        gameOverPending = true;
-        gameOverTimer = GameConstants.EXPLOSION_DELAY;
-        pendingResult = new LevelResult(
-                score, gameTime, rulesBroken, getLevelName(), false, lossReason, getViolationLog());
-
-        float px = playerCar.getX() + playerCar.getW() / 2f;
-        float py = playerCar.getY() + playerCar.getH() / 2f;
-        Particle.spawnExplosion(getEntityManager(),
-                new com.badlogic.gdx.math.Vector2(px / Constants.PPM, py / Constants.PPM), 50f);
-
-
-        getEntityManager().addEntity(new ExplosionOverlay(
-                "explode.png", px - 100f, py - 100f, 200f, 200f, GameConstants.EXPLOSION_DELAY));
-
-        sound.playSound("explosion_big", 0.5f);
-        stopMoveLoop();
+    protected MatchDirector getMatchDirector() {
+        return matchDirector;
     }
 
     /** Private Helpers */
@@ -655,7 +538,6 @@ public abstract class BaseGameScene extends Scene {
     private void stopMoveLoop() {
         sound.stopSound("drive");
     }
-
 
     private void openPause() {
         getSceneManager().push(new PauseScene());

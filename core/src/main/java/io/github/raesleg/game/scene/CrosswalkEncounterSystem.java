@@ -78,7 +78,7 @@ public final class CrosswalkEncounterSystem implements IGameSystem {
         boolean stopViolationFired;
 
         PedestrianEncounter(
-                Pedestrian pedestrian, 
+                Pedestrian pedestrian,
                 PedestrianMovement movement, PedestrianHitReaction hitReaction,
                 CrosswalkZone zone) {
             this.pedestrian = pedestrian;
@@ -159,7 +159,7 @@ public final class CrosswalkEncounterSystem implements IGameSystem {
                     encounter.zone.setCrossingActive(false);
                     encounter.hitReaction.trigger(hitPedestrian, knockbackDirection, knockbackForce);
                 }
-                
+
                 // Set fail flag so the update loop publishes the event after animation finishes
                 // This ensures that even repeated hits during the animation will trigger a fail
                 if (!encounter.failQueued) {
@@ -180,7 +180,14 @@ public final class CrosswalkEncounterSystem implements IGameSystem {
         instantFailTriggered = false;
         crosswalkActiveOnScreen = false;
 
-        // Update stop signs
+        removeExpiredStopSigns();
+        removeExpiredZones();
+        updateEncounters(deltaTime);
+    }
+
+    // ── Stop-sign lifecycle ──────────────────────────────────────
+
+    private void removeExpiredStopSigns() {
         Iterator<StopSign> signIter = stopSigns.iterator();
         while (signIter.hasNext()) {
             StopSign sign = signIter.next();
@@ -188,8 +195,11 @@ public final class CrosswalkEncounterSystem implements IGameSystem {
             if (sign.isExpired())
                 signIter.remove();
         }
+    }
 
-        // Update crosswalk zones
+    // ── Zone lifecycle ───────────────────────────────────────────
+
+    private void removeExpiredZones() {
         Iterator<CrosswalkZone> zoneIter = crosswalkZones.iterator();
         while (zoneIter.hasNext()) {
             CrosswalkZone zone = zoneIter.next();
@@ -199,107 +209,140 @@ public final class CrosswalkEncounterSystem implements IGameSystem {
             }
             zone.updatePosition(scrollOffset);
         }
+    }
 
-        // Update pedestrian encounters
+    // ── Encounter state machine ──────────────────────────────────
+
+    private void updateEncounters(float deltaTime) {
         Iterator<PedestrianEncounter> encounterIter = encounters.iterator();
         while (encounterIter.hasNext()) {
             PedestrianEncounter enc = encounterIter.next();
-            Pedestrian ped = enc.pedestrian;
-            CrosswalkZone zone = enc.zone;
 
-            if (ped.isExpired() || zone.isExpired()) {
-                if (enc.failQueued && !enc.crashHandled) {
-                    enc.crashHandled = true;
-                    zone.markExpired();
-                    ped.markExpired();
-                    encounterIter.remove();
-                    instantFailTriggered = true;
-                    instantFailReason = "Hit a pedestrian and caused an accident";
-                    eventBus.publish(new InstantFailEvent(instantFailReason));
-                    return;
-                }
-                encounterIter.remove();
-                continue;
-            }
+            if (handleExpiredEncounter(enc, encounterIter))
+                return;
 
-            float screenY = ped.getRelativeY() + scrollOffset;
+            float screenY = enc.pedestrian.getRelativeY() + scrollOffset;
             boolean visible = screenY > -200f && screenY < VIRTUAL_HEIGHT + 400f;
 
-            // Track active-on-screen state for NPC spawn suppression
-            if (enc.movement.isActive() && !enc.movement.isFinished() && !enc.failQueued && visible) {
-                crosswalkActiveOnScreen = true;
-            }
+            trackActiveOnScreen(enc, visible);
+            tryActivateEncounter(enc, visible);
 
-            // Activation check
-            if (visible && !enc.movement.isActive() && !enc.movement.isFinished()
-                    && !enc.hitReaction.isActive() && !enc.failQueued) {
-                enc.movement.activate();
-                zone.setCrossingActive(true);
-
-                if (zone.isPlayerInside() && zone.tryFireViolation()) {
-                    fireCrosswalkViolation();
-                }
-                if (!zone.isPlayerInside() && zone.hasPlayerPassed() && zone.tryFireViolation()) {
-                    fireCrosswalkViolation();
-                }
-            }
-
-            // Hit reaction update
             if (enc.hitReaction.isActive()) {
-                enc.hitReaction.update(ped, deltaTime);
-                zone.setCrossingActive(false);
+                enc.hitReaction.update(enc.pedestrian, deltaTime);
+                enc.zone.setCrossingActive(false);
             }
 
-            // Fail check
-            if (enc.failQueued && !enc.crashHandled
-                    && (enc.hitReaction.isFinished() || !enc.hitReaction.isActive())) {
-                enc.crashHandled = true;
-                enc.failQueued = false;
-                zone.markExpired();
-                ped.markExpired();
-                encounterIter.remove();
-                Gdx.app.log("CrosswalkSystem", "Setting instant fail after pedestrian hit");
-                instantFailTriggered = true;
-                instantFailReason = "Hit a pedestrian and caused an accident";
-                eventBus.publish(new InstantFailEvent(instantFailReason));
+            if (handleFailCheck(enc, encounterIter))
                 return;
-            } else if (!enc.hitReaction.isActive() && !enc.failQueued) {
-                ped.updateScreenPosition(scrollOffset);
-                ped.resetRenderRotation();
-                ped.syncBodyToSprite();
 
-                boolean playerBlocking = zone.isPlayerInside() && enc.movement.isActive();
-
-                if (playerBlocking) {
-                    if (!enc.stopViolationFired && simulatedSpeedKmh < 3f) {
-                        enc.stopViolationFired = true;
-                        commandHistory.executeAndRecord(
-                                new BreakRuleCommand(ruleManager, "CROSSWALK_STOP",
-                                        GameConstants.CROSSWALK_VIOLATION_STARS));
-                        sound.playSound("negative", 1.0f);
-                    }
-                } else {
-                    enc.movement.update(ped, deltaTime);
-                }
-            }
-
-            // Crossing completion check
-            if (!enc.failQueued && !enc.movement.isFinished()
-                    && !enc.hitReaction.isActive()
-                    && enc.movement.hasReachedFinish(ped)) {
-                enc.movement.markFinishedSuccessfully();
-                zone.setCrossingActive(false);
-
-                if (!enc.rewarded) {
-                    enc.rewarded = true;
-                    eventBus.publish(new ScoreChangedEvent(200));
-                    sound.playSound("reward", 1.0f);
-                }
-
-                ped.markExpired();
-                zone.markExpired();
-            }
+            updateMovementOrBlock(enc, deltaTime);
+            checkCrossingCompletion(enc);
         }
+    }
+
+    private boolean handleExpiredEncounter(PedestrianEncounter enc, Iterator<PedestrianEncounter> iter) {
+        Pedestrian ped = enc.pedestrian;
+        CrosswalkZone zone = enc.zone;
+
+        if (!ped.isExpired() && !zone.isExpired())
+            return false;
+
+        if (enc.failQueued && !enc.crashHandled) {
+            enc.crashHandled = true;
+            zone.markExpired();
+            ped.markExpired();
+            iter.remove();
+            publishInstantFail("Hit a pedestrian and caused an accident");
+            return true;
+        }
+        iter.remove();
+        return false;
+    }
+
+    private void trackActiveOnScreen(PedestrianEncounter enc, boolean visible) {
+        if (enc.movement.isActive() && !enc.movement.isFinished() && !enc.failQueued && visible) {
+            crosswalkActiveOnScreen = true;
+        }
+    }
+
+    private void tryActivateEncounter(PedestrianEncounter enc, boolean visible) {
+        if (!visible || enc.movement.isActive() || enc.movement.isFinished()
+                || enc.hitReaction.isActive() || enc.failQueued)
+            return;
+
+        enc.movement.activate();
+        enc.zone.setCrossingActive(true);
+
+        if (enc.zone.isPlayerInside() && enc.zone.tryFireViolation()) {
+            fireCrosswalkViolation();
+        }
+        if (!enc.zone.isPlayerInside() && enc.zone.hasPlayerPassed() && enc.zone.tryFireViolation()) {
+            fireCrosswalkViolation();
+        }
+    }
+
+    private boolean handleFailCheck(PedestrianEncounter enc, Iterator<PedestrianEncounter> iter) {
+        if (!enc.failQueued || enc.crashHandled)
+            return false;
+        if (enc.hitReaction.isActive() && !enc.hitReaction.isFinished())
+            return false;
+
+        enc.crashHandled = true;
+        enc.failQueued = false;
+        enc.zone.markExpired();
+        enc.pedestrian.markExpired();
+        iter.remove();
+        Gdx.app.log("CrosswalkSystem", "Setting instant fail after pedestrian hit");
+        publishInstantFail("Hit a pedestrian and caused an accident");
+        return true;
+    }
+
+    private void updateMovementOrBlock(PedestrianEncounter enc, float deltaTime) {
+        if (enc.hitReaction.isActive() || enc.failQueued)
+            return;
+
+        enc.pedestrian.updateScreenPosition(scrollOffset);
+        enc.pedestrian.resetRenderRotation();
+        enc.pedestrian.syncBodyToSprite();
+
+        boolean playerBlocking = enc.zone.isPlayerInside() && enc.movement.isActive();
+
+        if (playerBlocking) {
+            if (!enc.stopViolationFired && simulatedSpeedKmh < 3f) {
+                enc.stopViolationFired = true;
+                commandHistory.executeAndRecord(
+                        new BreakRuleCommand(ruleManager, "CROSSWALK_STOP",
+                                GameConstants.CROSSWALK_VIOLATION_STARS));
+                sound.playSound("negative", 1.0f);
+            }
+        } else {
+            enc.movement.update(enc.pedestrian, deltaTime);
+        }
+    }
+
+    private void checkCrossingCompletion(PedestrianEncounter enc) {
+        if (enc.failQueued || enc.movement.isFinished()
+                || enc.hitReaction.isActive()
+                || !enc.movement.hasReachedFinish(enc.pedestrian))
+            return;
+
+        enc.movement.markFinishedSuccessfully();
+        enc.zone.setCrossingActive(false);
+
+        if (!enc.rewarded) {
+            enc.rewarded = true;
+            eventBus.publish(new ScoreChangedEvent(200));
+            sound.playSound("reward", 1.0f);
+        }
+
+        enc.pedestrian.markExpired();
+        enc.zone.markExpired();
+    }
+
+    private void publishInstantFail(String reason) {
+        instantFailTriggered = true;
+        instantFailReason = reason;
+        eventBus.publish(new InstantFailEvent(reason));
     }
 
     @Override

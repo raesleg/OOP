@@ -7,7 +7,7 @@ import io.github.raesleg.engine.entity.IFlashable;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.collision.GameCollisionHandler;
+import io.github.raesleg.game.collision.CollisionEntityUtils;
 import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
 import io.github.raesleg.game.entities.misc.Pedestrian;
 
@@ -31,17 +31,18 @@ public class PedestrianCollisionHandler {
 
     // Check if collision involves player and an alive pedestrian
     public boolean canHandle(Entity a, Entity b) {
-        Pedestrian ped = GameCollisionHandler.extractEntity(a, b, Pedestrian.class);
-        MovableEntity player = GameCollisionHandler.getPlayerEntity(a, b);
+        Pedestrian ped = CollisionEntityUtils.extractEntity(a, b, Pedestrian.class);
+        MovableEntity player = CollisionEntityUtils.getPlayerEntity(a, b);
         return ped != null && player != null && !ped.isExpired();
     }
 
     // Trigger damage flash, calculate knockback, and notify game for instant fail
     public void handleBegin(Entity entityA, Entity entityB) {
-        Pedestrian ped = GameCollisionHandler.extractEntity(entityA, entityB, Pedestrian.class);
-        MovableEntity player = GameCollisionHandler.getPlayerEntity(entityA, entityB);
+        Pedestrian ped = CollisionEntityUtils.extractEntity(entityA, entityB, Pedestrian.class);
+        MovableEntity player = CollisionEntityUtils.getPlayerEntity(entityA, entityB);
 
-        if (ped == null || player == null || ped.isExpired()) return;
+        if (ped == null || player == null || ped.isExpired())
+            return;
 
         // Visual damage feedback on player vehicle
         if (player instanceof IFlashable flashable) {
@@ -65,7 +66,7 @@ public class PedestrianCollisionHandler {
 
         // Scale knockback by player speed (faster impact = more knockback)
         float knockbackForce = Math.max(20f, playerVelocity.len() * 15f);
-        
+
         // Audio impact feedback
         if (soundManager != null) {
             soundManager.playSound("explosion", 1.0f);

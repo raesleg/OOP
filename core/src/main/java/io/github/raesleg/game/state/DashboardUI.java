@@ -60,6 +60,9 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     /* ── Score popups (SRP — delegated to ScorePopupManager) ── */
     private final ScorePopupManager popupManager;
 
+    /* ── HUD rendering (SRP — delegated to HudRenderer) ── */
+    private final HudRenderer hudRenderer;
+
     /* ── Fuel bar ── */
     private float currentFuel;
     private final Texture chargeTex;
@@ -104,15 +107,20 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         startIcon = TextureObject.getOrLoadTexture("start_flag.png");
         chargeTex = TextureObject.getOrLoadTexture("charge.png");
 
-        // Score popup manager (SRP extraction)
-        popupManager = new ScorePopupManager();
-
         // 1x1 white pixel for drawing lines/bars
         Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pm.setColor(Color.WHITE);
         pm.fill();
         pixelTex = new Texture(pm);
         pm.dispose();
+
+        // Score popup manager (SRP extraction)
+        popupManager = new ScorePopupManager();
+
+        // HUD renderer (SRP extraction)
+        hudRenderer = new HudRenderer(
+                dashboardTex, starTex, carTex, policeTex, pixelTex,
+                finishIcon, startIcon, chargeTex, font, speedFont);
 
         // Build Scene2D layout (score + progress text on top)
         stage = new Stage(uiViewport);
@@ -237,155 +245,26 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     /* ── Custom drawing ── */
 
     private void drawDashboardSpeed(SpriteBatch batch) {
-        // Dashboard.png at bottom-right
-        float dx = 1280f - DASHBOARD_W - 10f;
-        float dy = 5f;
-        batch.draw(dashboardTex, dx, dy, DASHBOARD_W, DASHBOARD_H);
-
-        // Speed number in the yellow box area (right portion of dashboard)
-        String speedText = currentSpeed + "";
-        speedFont.setColor(Color.WHITE);
-        speedFont.draw(batch, speedText,
-                dx + DASHBOARD_W * 0.62f,
-                dy + DASHBOARD_H * 0.58f);
-        // "KM/H" label below speed
-        font.setColor(Color.LIGHT_GRAY);
-        font.draw(batch, "KM/H",
-                dx + DASHBOARD_W * 0.60f,
-                dy + DASHBOARD_H * 0.30f);
-        font.setColor(Color.WHITE);
+        hudRenderer.drawDashboardSpeed(batch, currentSpeed);
     }
 
     private void drawWantedStars(SpriteBatch batch) {
-        // Position: top-right area
-        float startX = 1280f - 10f - (MAX_WANTED_STARS * (STAR_SIZE + 4f));
-        float y = 720f - 14f - STAR_SIZE;
-
-        // "WANTED:" text
-        font.draw(batch, "WANTED:", startX - 160f, y + STAR_SIZE - 2f);
-
-        for (int i = 0; i < MAX_WANTED_STARS; i++) {
-            float x = startX + i * (STAR_SIZE + 4f);
-            if (i < currentRulesBroken) {
-                // Filled star
-                batch.setColor(1f, 1f, 1f, 1f);
-            } else {
-                // Empty slot — dim star
-                batch.setColor(1f, 1f, 1f, 0.2f);
-            }
-            batch.draw(starTex, x, y, STAR_SIZE, STAR_SIZE);
-        }
-        batch.setColor(1f, 1f, 1f, 1f);
+        hudRenderer.drawWantedStars(batch, currentRulesBroken);
     }
 
     private void drawPoliceDistanceBar(SpriteBatch batch) {
-        // Centered at top, between score and wanted
-        float barX = (1280f - BAR_WIDTH) / 2f;
-        float barY = 720f - 30f;
-        float lineH = 6f;
-
-        // Draw bar track (dark background)
-        batch.setColor(0.3f, 0.3f, 0.3f, 0.6f);
-        batch.draw(pixelTex, barX, barY - lineH / 2f, BAR_WIDTH, lineH);
-
-        // Draw colored fill: green (safe) on the right, red (danger) on the left
-        // policeDistance: 1 = far (safe), 0 = caught (danger)
-        // Fill from left to (1 - policeDistance) to show danger zone
-        float dangerWidth = (1f - policeDistance) * BAR_WIDTH;
-        if (dangerWidth > 0) {
-            batch.setColor(0.9f, 0.2f, 0.2f, 0.7f);
-            batch.draw(pixelTex, barX, barY - lineH / 2f, dangerWidth, lineH);
-        }
-        batch.setColor(1f, 1f, 1f, 1f);
-
-        // Car icon on the right (player — fixed position)
-        float carX = barX + BAR_WIDTH - ICON_SIZE;
-        float carY = barY - ICON_SIZE / 2f;
-        batch.draw(carTex, carX, carY, ICON_SIZE, ICON_SIZE);
-
-        // Police icon position based on distance (left = far, right = close)
-        float policeX = barX + (1f - policeDistance) * (BAR_WIDTH - ICON_SIZE * 2f);
-        batch.draw(policeTex, policeX, carY, ICON_SIZE, ICON_SIZE);
-
-        // Labels
-        font.setColor(Color.LIGHT_GRAY);
-        font.getData().setScale(1.2f);
-        font.draw(batch, "POLICE", barX - 100f, barY + 8f);
-        font.getData().setScale(LABEL_SCALE);
-        font.setColor(Color.WHITE);
+        hudRenderer.drawPoliceDistanceBar(batch, policeDistance);
     }
 
     /**
      * Graphical progress bar — white line with car icon moving right towards GOAL.
      */
     private void drawProgressBar(SpriteBatch batch) {
-        float barX = (1280f - BAR_WIDTH) / 2f;
-        float barY = 720f - 22f;
-        float lineH = 3f;
-
-        // White line
-        batch.setColor(Color.WHITE);
-        batch.draw(pixelTex, barX, barY - lineH / 2f, BAR_WIDTH, lineH);
-
-        // "S" label at start
-        float sflagWidth = 50f;
-        float sflagheight = 30f;
-        float sflagX = barX - 50f;
-        float sflagY = barY - sflagWidth / 2f + 10f;
-
-        batch.draw(startIcon, sflagX, sflagY, sflagWidth, sflagheight);
-
-        // "Finish_flag.png" picture at finish
-        float fflagSize = 28f;
-        float fflagX = barX + BAR_WIDTH + 6f;
-        float fflagY = barY - fflagSize / 2f - 6f;
-
-        batch.draw(finishIcon, fflagX, fflagY, fflagSize, fflagSize);
-
-        // Car icon moving right along the bar
-        float carW = 24f;
-        float carH = 24f;
-        float carX = barX + currentProgress * (BAR_WIDTH - carW);
-        float carY = barY - carH / 2f;
-        batch.setColor(Color.WHITE);
-        batch.draw(carTex, carX, carY, carW, carH);
+        hudRenderer.drawProgressBar(batch, currentProgress);
     }
 
     private void drawFuelBar(SpriteBatch batch) {
-        float barX = 20f;
-        float barY = 30f;
-        float barW = 200f;
-        float barH = 18f;
-        float iconSize = 32f;
-
-        // Charge icon to the left of the bar
-        batch.setColor(1f, 1f, 1f, 1f);
-        batch.draw(chargeTex, barX, barY - 6f, iconSize, iconSize);
-
-        float fillX = barX + iconSize + 6f;
-
-        // Background track
-        batch.setColor(0.2f, 0.2f, 0.2f, 0.7f);
-        batch.draw(pixelTex, fillX, barY, barW, barH);
-
-        // Fill — color shifts green → yellow → red
-        float r, g;
-        if (currentFuel > 0.5f) {
-            r = 1f - (currentFuel - 0.5f) * 2f;
-            g = 1f;
-        } else {
-            r = 1f;
-            g = currentFuel * 2f;
-        }
-        batch.setColor(r, g, 0.15f, 0.9f);
-        batch.draw(pixelTex, fillX, barY, barW * currentFuel, barH);
-
-        // "FUEL" label
-        batch.setColor(1f, 1f, 1f, 1f);
-        font.setColor(Color.WHITE);
-        font.getData().setScale(1.4f);
-        font.draw(batch, "FUEL", fillX, barY + barH + 22f);
-        font.getData().setScale(LABEL_SCALE);
+        hudRenderer.drawFuelBar(batch, currentFuel);
     }
 
     private void refreshAllLabels() {

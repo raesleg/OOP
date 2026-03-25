@@ -22,33 +22,35 @@ import io.github.raesleg.game.movement.SensorComponent;
 import io.github.raesleg.game.movement.VehicleProfile;
 import io.github.raesleg.game.scene.RoadRenderer;
 
-/** Factory responsible for spawning NPC traffic with 
- * lane awareness and collision avoidance (ILaneOccupancy) */
+/**
+ * Factory responsible for spawning NPC traffic with
+ * lane awareness and collision avoidance (ILaneOccupancy)
+ */
 
 public class NPCCarSpawner implements ILaneOccupancy {
 
     // Core Dependencies
     private final EntityManager entityManager;
-    private final PhysicsWorld world; 
-    private final float screenHeight; 
+    private final PhysicsWorld world;
+    private final float screenHeight;
 
     // Spawn timing and positioning
-    private float spawnTimer; 
-    private float spawnInterval; 
+    private float spawnTimer;
+    private float spawnInterval;
     private float spawnYOffset;
 
     // NPC lifecycle tracking
     private final List<NPCCar> activeNPCs;
+    private final NPCLifecycleManager lifecycleManager;
 
     private float playerX = -1f; // Player X coordinate; used to exclude their lane at spawn
 
-    // Level design constraints: Y ranges where NPCs cannot spawn (hazards, crosswalks)
+    // Level design constraints: Y ranges where NPCs cannot spawn (hazards,
+    // crosswalks)
     private final List<float[]> exclusionZones;
-
 
     private ILaneOccupancy hazardOccupancy; // Prevent visual overlap
     private boolean spawningEnabled = true; // Disabled during crosswalks/critical events
-
 
     private static final float APPROACH_SPEED = -25f; // Speed delta after preview (negative = slower)
 
@@ -72,9 +74,10 @@ public class NPCCarSpawner implements ILaneOccupancy {
         this.world = world;
         this.screenHeight = screenHeight;
         this.spawnInterval = spawnInterval;
-        this.spawnYOffset = -150f; // Spawn above screen, will scroll into view
+        this.spawnYOffset = 30f; // Spawn at bottom of visible area for preview
         this.spawnTimer = 0f;
         this.activeNPCs = new ArrayList<>();
+        this.lifecycleManager = new NPCLifecycleManager();
         this.exclusionZones = (exclusionZones != null) ? exclusionZones : new ArrayList<>();
     }
 
@@ -103,21 +106,14 @@ public class NPCCarSpawner implements ILaneOccupancy {
             spawnRandomCar();
         }
 
-        // Update lifecycle for all active NPCs; cleanup expired ones from tracking list
-        activeNPCs.removeIf(npc -> {
-            if (npc.isExpired()) {
-                return true;
-            }
-
-            npc.updateLifeCycle(scrollPixelsPerSecond, deltaTime, screenHeight);
-            return npc.isExpired();
-        });
+        // Delegate NPC lifecycle to NPCLifecycleManager (SRP)
+        lifecycleManager.update(activeNPCs, scrollPixelsPerSecond, deltaTime, screenHeight);
     }
 
     // Small chance of double spawns for traffic density variety
     private static final float DOUBLE_SPAWN_CHANCE = 0.30f;
 
-    // Spawn 1-2 NPCs in available lanes while excluding player's lane and respecting exclusion zones
+    // Spawn 1-2 NPCs in available lanes, always leaving at least 1 lane free
     private void spawnRandomCar() {
         float relativeY = spawnYOffset;
 
@@ -135,24 +131,15 @@ public class NPCCarSpawner implements ILaneOccupancy {
             occupied.addAll(hazardOccupancy.getOccupiedLanesNear(relativeY, 400f));
         }
 
-        // Exclude player's lane to prevent spawn collisions
-        int playerLane = getPlayerLane();
-        if (playerLane >= 0 && playerLane < 3) {
-            occupied.add(playerLane); // Reserve player's lane
-        }
-
-        if (occupied.size() >= 2) {
-            return; // already 2 lanes blocked — leave at least 1 free
-        }
-
-        // Collect free lanes
+        // Collect free lanes — NPCs can spawn in ANY lane including the player's
         List<Integer> freeLanes = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             if (!occupied.contains(i))
                 freeLanes.add(i);
         }
 
-        if (freeLanes.isEmpty()) {
+        // Must have at least 2 free lanes so we can spawn 1 and still leave 1 free
+        if (freeLanes.size() < 2) {
             return;
         }
 
@@ -161,7 +148,7 @@ public class NPCCarSpawner implements ILaneOccupancy {
         int firstLane = freeLanes.remove(firstIdx);
         spawnSingleNPC(firstLane, relativeY);
 
-        // Possibly spawn a second NPC — only if ≥ 1 free lane remains
+        // Possibly spawn a second NPC — only if ≥ 2 free lanes remain (keeps 1 free)
         if (freeLanes.size() >= 2 && Math.random() < DOUBLE_SPAWN_CHANCE) {
             int secondIdx = (int) (Math.random() * freeLanes.size());
             int secondLane = freeLanes.get(secondIdx);
@@ -169,7 +156,8 @@ public class NPCCarSpawner implements ILaneOccupancy {
         }
     }
 
-    // Instantiate a complete NPC with physics body, AI perception, and movement strategy
+    // Instantiate a complete NPC with physics body, AI perception, and movement
+    // strategy
     private void spawnSingleNPC(int laneIndex, float relativeY) {
         float laneX = RoadRenderer.ROAD_LEFT + (laneIndex + 0.5f) * RoadRenderer.ROAD_WIDTH / 3f;
 
@@ -192,8 +180,7 @@ public class NPCCarSpawner implements ILaneOccupancy {
                 220f,
                 60f,
                 70f,
-                120f 
-        );
+                120f);
 
         NPCCar npc = new NPCCar(
                 "car2.png",
@@ -225,7 +212,6 @@ public class NPCCarSpawner implements ILaneOccupancy {
         this.spawnInterval = newInterval;
     }
 
-
     public int getActiveCount() {
         return activeNPCs.size();
     }
@@ -238,7 +224,8 @@ public class NPCCarSpawner implements ILaneOccupancy {
         activeNPCs.clear();
     }
 
-    // Return lanes with NPCs near given Y (for avoiding spawn collisions and hazard overlaps)
+    // Return lanes with NPCs near given Y (for avoiding spawn collisions and hazard
+    // overlaps)
     @Override
     public Set<Integer> getOccupiedLanesNear(float nearY, float range) {
         Set<Integer> lanes = new HashSet<>();
@@ -254,18 +241,18 @@ public class NPCCarSpawner implements ILaneOccupancy {
         return lanes;
     }
 
-
     // Calculate player's current lane (0-2) from X position, or -1 if not available
     private int getPlayerLane() {
-        if (playerX < 0) return -1; // Not available
-        
+        if (playerX < 0)
+            return -1; // Not available
+
         float laneWidth = RoadRenderer.ROAD_WIDTH / 3f;
         float relativeX = playerX - RoadRenderer.ROAD_LEFT;
-        
+
         if (relativeX < 0 || relativeX > RoadRenderer.ROAD_WIDTH) {
             return -1; // Player outside road
         }
-        
+
         int lane = (int) (relativeX / laneWidth);
         return Math.max(0, Math.min(2, lane)); // Clamp to 0-2
     }

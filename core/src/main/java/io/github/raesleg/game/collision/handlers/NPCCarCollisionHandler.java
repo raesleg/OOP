@@ -9,7 +9,7 @@ import io.github.raesleg.engine.entity.Entity;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.collision.GameCollisionHandler;
+import io.github.raesleg.game.collision.CollisionEntityUtils;
 import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
 import io.github.raesleg.game.entities.vehicles.NPCCar;
 
@@ -37,16 +37,17 @@ public class NPCCarCollisionHandler {
 
     // Check if collision involves player and NPC car
     public boolean canHandle(Entity a, Entity b) {
-        return GameCollisionHandler.extractEntity(a, b, NPCCar.class) != null
-                && GameCollisionHandler.getPlayerEntity(a, b) != null;
+        return CollisionEntityUtils.extractEntity(a, b, NPCCar.class) != null
+                && CollisionEntityUtils.getPlayerEntity(a, b) != null;
     }
 
     // Apply knockback physics, sound, and record crash penalty (with cooldown)
     public void handleImpact(Entity entityA, Entity entityB, float force, Vector2 impactPoint) {
-        NPCCar npc = GameCollisionHandler.extractEntity(entityA, entityB, NPCCar.class);
-        MovableEntity player = GameCollisionHandler.getPlayerEntity(entityA, entityB);
+        NPCCar npc = CollisionEntityUtils.extractEntity(entityA, entityB, NPCCar.class);
+        MovableEntity player = CollisionEntityUtils.getPlayerEntity(entityA, entityB);
 
-        if (npc == null || player == null) return;
+        if (npc == null || player == null)
+            return;
 
         // Prevent spam penalties from rapid sequential collisions
         long now = TimeUtils.millis();
@@ -76,7 +77,7 @@ public class NPCCarCollisionHandler {
         playerBody.applyImpulseAtCenter(knockbackImpulse);
 
         // Prevent player from flying off screen due to excessive velocity
-        GameCollisionHandler.clampVelocity(playerBody, 30f);
+        CollisionEntityUtils.clampVelocity(playerBody, 30f);
 
         // Play crash audio feedback
         if (soundManager != null) {

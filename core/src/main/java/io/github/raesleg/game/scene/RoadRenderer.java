@@ -3,6 +3,8 @@ package io.github.raesleg.game.scene;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
+import io.github.raesleg.game.GameConstants;
+
 /**
  * RoadRenderer — Draws the lane-dodger road background using ShapeRenderer.
  * <p>
@@ -15,10 +17,10 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
  */
 public class RoadRenderer {
 
-    /* ── Road geometry (pixels, 1280×720 virtual coords) ── */
-    public static final float ROAD_LEFT = 340f;
-    public static final float ROAD_RIGHT = 940f;
-    public static final float ROAD_WIDTH = ROAD_RIGHT - ROAD_LEFT; // 600
+    /* ── Road geometry — delegated to GameConstants ── */
+    public static final float ROAD_LEFT = GameConstants.ROAD_LEFT;
+    public static final float ROAD_RIGHT = GameConstants.ROAD_RIGHT;
+    public static final float ROAD_WIDTH = GameConstants.ROAD_WIDTH;
     static final int LANE_COUNT = 3;
     static final float LANE_WIDTH = ROAD_WIDTH / LANE_COUNT; // 200
 

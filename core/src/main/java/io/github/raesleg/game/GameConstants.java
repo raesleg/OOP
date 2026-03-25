@@ -18,6 +18,16 @@ public final class GameConstants {
 
     /*
      * ════════════════════════════════════════════════════════════
+     * Road geometry (pixels, 1280×720 virtual coords)
+     * ════════════════════════════════════════════════════════════
+     */
+
+    public static final float ROAD_LEFT = 340f;
+    public static final float ROAD_RIGHT = 940f;
+    public static final float ROAD_WIDTH = ROAD_RIGHT - ROAD_LEFT; // 600
+
+    /*
+     * ════════════════════════════════════════════════════════════
      * Scoring
      * ════════════════════════════════════════════════════════════
      */
