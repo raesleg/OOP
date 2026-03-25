@@ -139,7 +139,7 @@ public class Level1Scene extends BaseGameScene {
         /* Suppress NPC spawning while a crosswalk encounter is active on screen */
         trafficSystem.setSpawningEnabled(!crosswalkSystem.isCrosswalkActiveOnScreen());
         trafficSystem.setFrameState(
-                getNpcScrollSpeedPixelsPerSecond(), getScrollOffset(), getSimulatedSpeedKmh(),
+                getNpcScrollSpeedPixelsPerSecond(), getScrollOffset(), getSimulatedSpeedKmh(), 
                 getPlayerCar().getY(), getPlayerCar().getX());
         trafficSystem.update(deltaTime);
 

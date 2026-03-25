@@ -1,5 +1,6 @@
 package io.github.raesleg.game.entities.vehicles;
 
+import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.IExpirable;
 import io.github.raesleg.engine.io.ControlSource;
 import io.github.raesleg.engine.movement.MovableEntity;
@@ -11,19 +12,17 @@ import io.github.raesleg.game.entities.IPerceivable;
 import io.github.raesleg.game.entities.PerceptionCategory;
 import io.github.raesleg.game.movement.SensorComponent;
 
-/**
- * NPC vehicle that transitions from preview (scrolling into view) to active
- * (approaching player)
- */
-
 public class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
 
-    private final int laneIndex; // Which of 3 lanes (0-2) NPC occupies
-    private final SensorComponent sensor; // AI perception system for collision avoidance
-    private final float approachSpeed; // Relative velocity (px/s) after preview phase
-    private boolean expired; // Marked for removal when off-screen or lifetime exceeded
-    private boolean inPreview; // True: scrolling into view only; False: approaching player
-    private float lifeTimer; // Total lifetime elapsed
+    private static final float PREVIEW_DURATION = 0.8f;
+
+    private final int laneIndex;
+    private final SensorComponent sensor;
+    private final float approachSpeed;
+    private boolean expired;
+    private boolean inPreview;
+    private float previewTimer;
+    private float lifeTimer;
 
     public NPCCar(String filename,
             float x, float y,
@@ -42,78 +41,77 @@ public class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
         this.approachSpeed = approachSpeed;
         this.expired = false;
         this.inPreview = true;
+        this.previewTimer = 0f;
         this.lifeTimer = 0f;
     }
 
-    /**
-     * Increments the internal life timer. Called by
-     * {@link io.github.raesleg.game.factory.NPCLifecycleManager}.
-     */
-    public void tickLifeTimer(float deltaTime) {
+    private static final float MAX_LIFETIME = 10f;
+
+    public void updateLifeCycle(float scrollPixelsPerSecond, float deltaTime, float screenHeight) {
+        if (getPhysicsBody() == null || getPhysicsBody().isDestroyed()) {
+            expired = true;
+            return;
+        }
+
         lifeTimer += deltaTime;
+
+        if (inPreview) {
+            // During preview: move at scroll speed so NPC scrolls into view from top
+            // From player's perspective it appears to move down the screen toward them
+            float bodyX = getPhysicsBody().getPosition().x;
+            float bodyY = getPhysicsBody().getPosition().y;
+            getPhysicsBody().setPosition(bodyX, bodyY + (scrollPixelsPerSecond / Constants.PPM) * deltaTime);
+            syncSpriteFromBody();
+            
+            // End preview once NPC reaches middle of screen
+            float screenY = getY();
+            if (screenY >= screenHeight * 0.25f && screenY <= screenHeight * 0.75f) {
+                inPreview = false; // Switch to slower active movement once at middle of screen
+            }
+            return;
+        }
+
+        // After preview: slide down at scroll + approach speed
+        float totalSpeed = scrollPixelsPerSecond + approachSpeed;
+        float bodyX = getPhysicsBody().getPosition().x;
+        float bodyY = getPhysicsBody().getPosition().y;
+        getPhysicsBody().setPosition(bodyX, bodyY + (totalSpeed / Constants.PPM) * deltaTime);
+
+        syncSpriteFromBody();
+
+        if (getY() < -getH() * 2f || lifeTimer > MAX_LIFETIME) {
+            expired = true;
+        }
     }
 
-    /** Returns the total elapsed lifetime in seconds. */
-    public float getLifeTimer() {
-        return lifeTimer;
+    private void syncSpriteFromBody() {
+        setX(getPhysicsBody().getPosition().x * Constants.PPM - getW() / 2f);
+        setY(getPhysicsBody().getPosition().y * Constants.PPM - getH() / 2f);
     }
 
-    /** Whether the NPC is still in preview (scrolling into view). */
-    public boolean isInPreview() {
-        return inPreview;
-    }
-
-    /** Transitions the NPC from preview phase to active phase. */
-    public void exitPreview() {
-        inPreview = false;
-    }
-
-    /** Returns the configured approach speed (px/s relative to scroll). */
-    public float getApproachSpeed() {
-        return approachSpeed;
-    }
-
-    /**
-     * Overrides MovableEntity.move() so that the NPCLifecycleManager
-     * retains full authority over this car's velocity. Without this
-     * override the CarMovementModel would overwrite the lifecycle
-     * velocity every frame before the physics step, preventing
-     * the NPC from scrolling into view.
-     */
     @Override
-    public void move(float dt) {
-        // Velocity is set by NPCLifecycleManager — skip model/strategy step
-    }
-
-    @Override
-    // Check if NPC has left the level or exceeded max lifetime
     public boolean isExpired() {
         return expired;
     }
 
     @Override
-    // All NPCs are perceived as vehicles by the AI/collision system
     public PerceptionCategory getPerceptionCategory() {
         return PerceptionCategory.VEHICLE;
     }
 
-    // Manual expiration trigger (e.g. on level end)
     public void markExpired() {
         expired = true;
     }
 
-    // Which road lane NPC currently occupies for spawn/collision logic
     public int getLaneIndex() {
         return laneIndex;
     }
 
-    // AI perception system for detecting obstacles, pedestrians, other vehicles
     public SensorComponent getSensor() {
         return sensor;
     }
 
     @Override
-    // Release physics body resources when NPC is destroyed
     public void dispose() {
         if (getPhysicsBody() != null) {
             getPhysicsBody().destroy();

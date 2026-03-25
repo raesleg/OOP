@@ -54,15 +54,6 @@ public class Level2Scene extends BaseGameScene {
     /* ── Police light glow (SRP extraction) ── */
     private PoliceLightSystem policeLightSystem;
 
-    /* ── Surface particle dispatch (SRP — replaces if/else chains) ── */
-    private SurfaceParticleDispatcher surfaceParticleDispatcher;
-
-    /* ── Player vertical movement (SRP extraction) ── */
-    private PlayerController playerController;
-
-    /* ── Police chase orchestration (SRP extraction) ── */
-    private ChaseDirector chaseDirector;
-
     @Override
     protected float getMaxScrollPixelsPerSecond() {
         return GameConstants.L2_MAX_SCROLL;
@@ -129,7 +120,7 @@ public class Level2Scene extends BaseGameScene {
         trafficSystem.getNpcSpawner().setHazardOccupancy(hazardSpawners.get(1));
 
         /* Police factory (SRP — creation extracted from scene) */
-        PoliceCarFactory policeFactory = new PoliceCarFactory(getWorld(), getEntityManager());
+        policeFactory = new PoliceCarFactory(getWorld(), getEntityManager());
 
         /* Wire collision listeners — extracted standalone class (SRP + DIP) */
         getCollisionHandler().setTrafficViolationListener(
@@ -155,16 +146,6 @@ public class Level2Scene extends BaseGameScene {
 
         /* Police light glow system (SRP) */
         policeLightSystem = new PoliceLightSystem();
-
-        /* Surface particle dispatcher (SRP — replaces if/else chains) */
-        surfaceParticleDispatcher = new SurfaceParticleDispatcher();
-
-        /* Player vertical movement controller (SRP extraction) */
-        Keyboard kb = getIOManager().getInputs(Keyboard.class);
-        playerController = new PlayerController(kb);
-
-        /* Chase director — police spawn, siren, dashboard distance (SRP extraction) */
-        chaseDirector = new ChaseDirector(policeFactory, getSound(), getDashboard(), policeLightSystem);
 
         /* Level-specific sounds (paths from GameConstants) */
         try {
@@ -222,7 +203,7 @@ public class Level2Scene extends BaseGameScene {
         /* Delegate NPC/pickup/tree spawning to composed system */
         trafficSystem.setFrameState(
                 getNpcScrollSpeedPixelsPerSecond(), getScrollOffset(), getSimulatedSpeedKmh(),
-                getPlayerCar().getX());
+                getPlayerCar().getY(), getPlayerCar().getX());
         trafficSystem.update(deltaTime);
 
         /* Update all hazard spawners */
