@@ -71,13 +71,6 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     private boolean policeDistanceMode;
     private float policeDistance; // 0.0 = caught, 1.0 = far away
 
-    /* ── Layout constants ── */
-    private static final float DASHBOARD_W = 280f;
-    private static final float DASHBOARD_H = 140f;
-    private static final float STAR_SIZE = 28f;
-    private static final float ICON_SIZE = 28f;
-    private static final float BAR_WIDTH = 300f;
-
     public DashboardUI(Viewport uiViewport) {
         font = new BitmapFont();
         font.getData().setScale(LABEL_SCALE);

@@ -15,7 +15,6 @@ import io.github.raesleg.engine.physics.PhysicsWorld;
 
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.entities.vehicles.NPCCar;
-import io.github.raesleg.game.entities.vehicles.PlayerCar;
 import io.github.raesleg.game.movement.NpcDrivingStrategy;
 import io.github.raesleg.game.movement.AIPerceptionService;
 import io.github.raesleg.game.movement.CarMovementModel;
@@ -51,9 +50,6 @@ public class NPCCarSpawner implements ILaneOccupancy {
 
     /** When false, no new NPC cars will spawn (e.g. active crosswalk on screen). */
     private boolean spawningEnabled = true;
-
-    /** Pixels of NPC visible at top of screen during preview peek. */
-    private static final float PREVIEW_PEEK = 35f;
 
     /** Extra downward speed (px/s) — 10mph slower than player max speed. */
     private static final float APPROACH_SPEED = -25f; // Negative = slower, player catches and overtakes

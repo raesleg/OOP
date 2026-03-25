@@ -14,8 +14,6 @@ import io.github.raesleg.game.movement.SensorComponent;
 
 public class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
 
-    private static final float PREVIEW_DURATION = 0.8f;
-
     private final int laneIndex;
     private final SensorComponent sensor;
     private final float approachSpeed;
