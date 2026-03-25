@@ -21,9 +21,9 @@ import io.github.raesleg.game.scene.ResultsScene;
  * and win/loss evaluation for a gameplay session.
  * <p>
  * Extracted from {@link io.github.raesleg.game.scene.BaseGameScene} so
- * that the scene acts as a "dumb terminal" (render + input routing)
- * while this class owns timers, counters, score, end-condition
- * evaluation, and scene transitions.
+ * that the scene acts as a rendering/input terminal while this class
+ * owns timers, counters, score, end-condition evaluation, and scene
+ * transitions.
  * <p>
  * <b>SRP:</b> Owns match state and lifecycle — nothing else.
  * <b>OCP:</b> End conditions are registered via
@@ -45,14 +45,17 @@ public final class MatchDirector {
 
     /* ── Match state ── */
     private float gameTime;
+    private float scoreAccumulator;
+    private int scoreBonus;
     private int rulesBroken;
     private int crashCount;
     private boolean instantFail;
     private String instantFailReason;
 
-    /* ── Composed sub-systems ── */
-    private final ScoreSystem scoreSystem;
-    private final GameOverDelayController gameOverDelay;
+    /* ── Explosion game-over delay ── */
+    private boolean gameOverPending;
+    private float gameOverTimer;
+    private LevelResult pendingResult;
 
     /* ── End conditions (OCP) ── */
     private final List<ILevelEndCondition> endConditions = new ArrayList<>();
@@ -63,13 +66,15 @@ public final class MatchDirector {
         this.sceneManager = sceneManager;
         this.entityManager = entityManager;
         this.sound = sound;
-        this.scoreSystem = new ScoreSystem();
-        this.gameOverDelay = new GameOverDelayController();
         this.gameTime = 0f;
+        this.scoreAccumulator = 0f;
+        this.scoreBonus = 0;
         this.rulesBroken = 0;
         this.crashCount = 0;
         this.instantFail = false;
         this.instantFailReason = "";
+        this.gameOverPending = false;
+        this.gameOverTimer = 0f;
     }
 
     /**
@@ -98,7 +103,9 @@ public final class MatchDirector {
     }
 
     public void updateScore(float deltaTime, boolean isMoving) {
-        scoreSystem.update(deltaTime, isMoving);
+        if (isMoving) {
+            scoreAccumulator += deltaTime * GameConstants.SCORE_RATE_PER_SECOND;
+        }
     }
 
     /*
@@ -108,19 +115,20 @@ public final class MatchDirector {
      */
 
     public boolean isExplosionPending() {
-        return gameOverDelay.isPending();
+        return gameOverPending;
     }
 
     /**
-     * Ticks the explosion delay timer. When the delay expires the
-     * director transitions to the results screen automatically.
-     *
-     * @return {@code true} if the delay expired this frame
+     * Ticks the explosion delay timer. Returns {@code true} when the
+     * timer expires and transitions to the results screen.
      */
     public boolean tickExplosionDelay(float deltaTime) {
-        if (!gameOverDelay.update(deltaTime))
+        if (!gameOverPending)
             return false;
-        sceneManager.set(new ResultsScene(gameOverDelay.getPendingResult(), retryFactory));
+        gameOverTimer -= deltaTime;
+        if (gameOverTimer > 0f)
+            return false;
+        sceneManager.set(new ResultsScene(pendingResult, retryFactory));
         return true;
     }
 
@@ -136,10 +144,10 @@ public final class MatchDirector {
 
     /**
      * Iterates registered end conditions every frame.
-     * Stops at the first condition that fires.
+     * Stops at the first that fires.
      */
     public void checkLevelEnd() {
-        if (gameOverDelay.isPending())
+        if (gameOverPending)
             return;
         for (ILevelEndCondition c : endConditions) {
             if (c.evaluate())
@@ -149,28 +157,18 @@ public final class MatchDirector {
 
     /*
      * ════════════════════════════════════════════
-     * Built-in evaluators (registered as conditions by the scene)
+     * Built-in evaluators
      * ════════════════════════════════════════════
      */
 
-    /**
-     * Evaluates whether the player has reached the end of the level.
-     *
-     * @param progress 0.0–1.0 fraction of level completed
-     * @return {@code true} if the level is complete (transition initiated)
-     */
     public boolean evaluateWin(float progress) {
         if (progress < 1.0f)
             return false;
-        Gdx.app.log("MatchDirector", "Level complete! Score: " + scoreSystem.getScore());
+        Gdx.app.log("MatchDirector", "Level complete! Score: " + getScore());
         transitionToResults(true, "");
         return true;
     }
 
-    /**
-     * Evaluates whether crash count has reached the explosion threshold.
-     * Triggers an explosion game-over if the threshold is met.
-     */
     public boolean evaluateCrashExplosion(float playerCenterX, float playerCenterY) {
         if (crashCount < GameConstants.CRASH_EXPLOSION_THRESHOLD)
             return false;
@@ -188,13 +186,6 @@ public final class MatchDirector {
         return true;
     }
 
-    /**
-     * Evaluates a subclass-defined game-over condition.
-     *
-     * @param isGameOver whether the subclass considers the game over
-     * @param reason     human-readable reason string
-     * @return {@code true} if game over (transition initiated)
-     */
     public boolean evaluateSubclassGameOver(boolean isGameOver, String reason) {
         if (!isGameOver)
             return false;
@@ -206,19 +197,16 @@ public final class MatchDirector {
 
     /*
      * ════════════════════════════════════════════
-     * Explosion game-over (delegates to ExplosionSystem)
+     * Explosion game-over
      * ════════════════════════════════════════════
      */
 
-    /**
-     * Triggers an explosion at the given position and schedules a
-     * delayed transition to the results screen.
-     */
     public void triggerExplosionGameOver(String reason,
             float playerCenterX,
             float playerCenterY) {
-        LevelResult result = buildResult(false, reason);
-        gameOverDelay.trigger(GameConstants.EXPLOSION_DELAY, result);
+        gameOverPending = true;
+        gameOverTimer = GameConstants.EXPLOSION_DELAY;
+        pendingResult = buildResult(false, reason);
         ExplosionSystem.trigger(entityManager, sound, playerCenterX, playerCenterY);
         sound.stopSound("drive");
     }
@@ -230,11 +218,11 @@ public final class MatchDirector {
      */
 
     public int getScore() {
-        return scoreSystem.getScore();
+        return (int) scoreAccumulator + scoreBonus;
     }
 
     public void addBonus(int delta) {
-        scoreSystem.addBonus(delta);
+        this.scoreBonus += delta;
     }
 
     public float getGameTime() {
@@ -273,8 +261,7 @@ public final class MatchDirector {
      */
 
     private void transitionToResults(boolean won, String reason) {
-        LevelResult result = buildResult(won, reason);
-        sceneManager.set(new ResultsScene(result, retryFactory));
+        sceneManager.set(new ResultsScene(buildResult(won, reason), retryFactory));
     }
 
     private LevelResult buildResult(boolean won, String reason) {
@@ -282,7 +269,7 @@ public final class MatchDirector {
                 ? violationLogSupplier.get()
                 : List.of();
         return new LevelResult(
-                scoreSystem.getScore(), gameTime, rulesBroken,
+                getScore(), gameTime, rulesBroken,
                 levelName, won, reason, violations);
     }
 }

@@ -29,7 +29,6 @@ import io.github.raesleg.game.event.FuelDepletedEvent;
 import io.github.raesleg.game.event.PickupCollectedEvent;
 import io.github.raesleg.game.event.ScoreChangedEvent;
 import io.github.raesleg.game.io.Keyboard;
-import io.github.raesleg.game.io.PlayerInputBinder;
 import io.github.raesleg.game.io.SystemInputBinder;
 import io.github.raesleg.game.rules.RuleManager;
 import io.github.raesleg.game.state.AudioController;
@@ -113,7 +112,11 @@ public abstract class BaseGameScene extends Scene {
         this.isPaused = false;
     }
 
-    /** Abstract Hooks */
+    /*
+     * ══════════════════════════════════════════════════════════════
+     * Abstract hooks — subclasses MUST implement
+     * ══════════════════════════════════════════════════════════════
+     */
 
     protected abstract float getLevelLength();
 
@@ -196,7 +199,6 @@ public abstract class BaseGameScene extends Scene {
         eventBus.subscribe(FuelDepletedEvent.class, e -> setInstantFail(true, "Ran out of fuel!"));
         eventBus.subscribe(ScoreChangedEvent.class, e -> addScore(e.getDelta()));
         eventBus.subscribe(PickupCollectedEvent.class, e -> handlePickup());
-
         /* Managers (Scene Sovereignty) */
         setEntityManager(new EntityManager());
         setMovementManager(new MovementManager(world, getEntityManager()));
@@ -212,7 +214,7 @@ public abstract class BaseGameScene extends Scene {
 
         playerCar = PlayerFactory.create(world, getEntityManager(), user);
 
-        PlayerInputBinder.bindMovementKeys(kb);
+        SystemInputBinder.bindMovementKeys(kb);
         SystemInputBinder.bindSystemKeys(kb, this::openPause, () -> audioController.toggleMute());
 
         /* Wire keyboard to speed controller */
@@ -235,8 +237,9 @@ public abstract class BaseGameScene extends Scene {
         sound.addSound("gameover", "gameover_sound.wav");
         sound.addSound("win", "winning_sound.wav");
 
-        /* MatchDirector — single-responsibility state owner (SRP extraction) */
+        /* MatchDirector — owns match state and end-condition evaluation (SRP) */
         matchDirector = new MatchDirector(getSceneManager(), getEntityManager(), sound);
+        matchDirector.configure(getLevelName(), () -> createRetryScene(), this::getViolationLog);
 
         /* Level-specific setup (Template Method hook) */
         initLevelData();
@@ -248,12 +251,15 @@ public abstract class BaseGameScene extends Scene {
 
         /*
          * Register base level-end conditions (OCP).
-         * Subclass conditions registered in initLevelData() are evaluated first.
+         * NOTE: evaluateCrashExplosion is NOT registered here — subclasses
+         * that want crash-explosion behaviour must register it explicitly
+         * in initLevelData() via addEndCondition(...).
+         * This allows Level 2 to opt out of explosions on crash.
          */
-        addEndCondition(() -> matchDirector.evaluateWin(
+        matchDirector.addEndCondition(() -> matchDirector.evaluateWin(
                 Math.min(1f, (-speedScroll.getScrollOffset()) / getLevelLength())));
-        addEndCondition(() -> matchDirector.evaluateInstantFail());
-        addEndCondition(() -> matchDirector.evaluateSubclassGameOver(
+        matchDirector.addEndCondition(() -> matchDirector.evaluateInstantFail());
+        matchDirector.addEndCondition(() -> matchDirector.evaluateSubclassGameOver(
                 isGameOver(), getGameOverReason()));
     }
 
@@ -264,7 +270,7 @@ public abstract class BaseGameScene extends Scene {
             return;
         }
 
-        /* Explosion delay — keep rendering entities but freeze gameplay */
+        /* Explosion delay — delegated to MatchDirector (SRP) */
         if (matchDirector.isExplosionPending()) {
             getEntityManager().update(deltaTime);
             matchDirector.tickExplosionDelay(deltaTime);
@@ -312,7 +318,7 @@ public abstract class BaseGameScene extends Scene {
         /* Level-specific update (Template Method hook) */
         updateGame(deltaTime);
 
-        /* Delegate end-condition evaluation to MatchDirector */
+        /* Template Method — check win/lose conditions (delegated to MatchDirector) */
         matchDirector.checkLevelEnd();
     }
 
@@ -518,19 +524,27 @@ public abstract class BaseGameScene extends Scene {
 
     /**
      * Registers a level-end condition (OCP extension point).
-     * Subclasses may call this in {@link #initLevelData()} to add
-     * custom conditions without modifying this base class.
+     * Delegates to {@link MatchDirector} which owns the condition list.
      */
     protected void addEndCondition(ILevelEndCondition condition) {
         matchDirector.addEndCondition(condition);
     }
 
-    /**
-     * Returns the MatchDirector so subclasses can register evaluators
-     * that require player position or other runtime data.
-     */
+    /** Returns the MatchDirector that owns match state and evaluators. */
     protected MatchDirector getMatchDirector() {
         return matchDirector;
+    }
+
+    /**
+     * Triggers an explosion at the player's position and schedules a delayed
+     * transition to the results screen. Delegated to {@link MatchDirector}
+     * and {@link ExplosionSystem} (SRP).
+     */
+    protected void triggerExplosionGameOver(String lossReason) {
+        float px = playerCar.getX() + playerCar.getW() / 2f;
+        float py = playerCar.getY() + playerCar.getH() / 2f;
+        matchDirector.triggerExplosionGameOver(lossReason, px, py);
+        stopMoveLoop();
     }
 
     /** Private Helpers */

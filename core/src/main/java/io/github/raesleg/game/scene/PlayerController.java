@@ -6,26 +6,31 @@ import io.github.raesleg.game.entities.vehicles.PlayerCar;
 import io.github.raesleg.game.io.Keyboard;
 
 /**
- * PlayerController — Handles vertical player movement input,
- * Y-coordinate clamping, and physics body synchronisation.
+ * PlayerController — SRP extraction for Level 2 vertical player movement.
  * <p>
- * Extracted from Level2Scene to satisfy SRP: the scene no longer
- * owns input-to-position logic.
+ * Owns the per-frame UP/DOWN key → Y position update and physics body
+ * synchronisation that was previously inlined inside
+ * {@link Level2Scene#updateGame(float)}.
+ * <p>
+ * <b>SRP:</b> Sole responsibility is translating input into bounded
+ * vertical position changes for the player car.
  */
 public final class PlayerController {
 
     private final Keyboard keyboard;
+    private final PlayerCar playerCar;
 
-    public PlayerController(Keyboard keyboard) {
+    public PlayerController(Keyboard keyboard, PlayerCar playerCar) {
         this.keyboard = keyboard;
+        this.playerCar = playerCar;
     }
 
     /**
-     * Polls UP/DOWN keys, moves the player car vertically within bounds,
-     * and syncs the physics body to match the new visual position.
+     * Reads UP/DOWN input, clamps Y within road bounds, and syncs the
+     * physics body to the new visual position.
      */
-    public void update(float deltaTime, PlayerCar player) {
-        float currentY = player.getY();
+    public void update(float deltaTime) {
+        float currentY = playerCar.getY();
 
         if (keyboard.isHeld(Constants.UP)) {
             currentY += GameConstants.L2_PLAYER_VERTICAL_SPEED * deltaTime;
@@ -36,12 +41,13 @@ public final class PlayerController {
 
         currentY = Math.max(GameConstants.PLAYER_MIN_Y,
                 Math.min(GameConstants.PLAYER_MAX_Y, currentY));
-        player.setY(currentY);
+        playerCar.setY(currentY);
 
-        var playerBody = player.getPhysicsBody();
-        if (playerBody != null) {
-            playerBody.setPosition(playerBody.getPosition().x,
-                    (currentY + player.getH() / 2f) / Constants.PPM);
+        /* Sync physics body to match visual position */
+        var body = playerCar.getPhysicsBody();
+        if (body != null) {
+            body.setPosition(body.getPosition().x,
+                    (currentY + playerCar.getH() / 2f) / Constants.PPM);
         }
     }
 }

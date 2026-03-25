@@ -2,14 +2,14 @@ package io.github.raesleg.game.io;
 
 import com.badlogic.gdx.Input;
 
+import io.github.raesleg.engine.Constants;
+
 /**
- * SystemInputBinder — Binds system-level key shortcuts (pause, mute)
- * to the keyboard without hard-coding them inside scene classes.
+ * SystemInputBinder — Binds system-level and movement key shortcuts
+ * without hard-coding them inside scene classes.
  * <p>
- * Follows the same pattern as {@link PlayerInputBinder} (OCP):
- * new system bindings can be added here without modifying any scene.
- * <p>
- * <b>SRP:</b> Sole responsibility is mapping system keys to actions.
+ * <b>OCP:</b> New bindings can be added here without modifying any scene.
+ * <b>SRP:</b> Sole responsibility is mapping keys to actions.
  */
 public final class SystemInputBinder {
 
@@ -17,11 +17,22 @@ public final class SystemInputBinder {
     }
 
     /**
-     * Registers system-wide key bindings on the given keyboard.
-     *
-     * @param kb           the keyboard to bind keys on
-     * @param onPause      action invoked when ESCAPE is pressed
-     * @param onToggleMute action invoked when M is pressed
+     * Registers movement key bindings (WASD + arrows + space → engine constants).
+     */
+    public static void bindMovementKeys(Keyboard kb) {
+        kb.bindAction(Input.Keys.A, Constants.LEFT);
+        kb.bindAction(Input.Keys.LEFT, Constants.LEFT);
+        kb.bindAction(Input.Keys.D, Constants.RIGHT);
+        kb.bindAction(Input.Keys.RIGHT, Constants.RIGHT);
+        kb.bindAction(Input.Keys.W, Constants.UP);
+        kb.bindAction(Input.Keys.UP, Constants.UP);
+        kb.bindAction(Input.Keys.S, Constants.DOWN);
+        kb.bindAction(Input.Keys.DOWN, Constants.DOWN);
+        kb.bindAction(Input.Keys.SPACE, Constants.ACTION);
+    }
+
+    /**
+     * Registers system-wide key bindings (pause, mute).
      */
     public static void bindSystemKeys(Keyboard kb, Runnable onPause, Runnable onToggleMute) {
         kb.addBind(Input.Keys.ESCAPE, onPause, true);

@@ -11,8 +11,8 @@ import io.github.raesleg.game.collision.listeners.Level2TrafficListener;
 import io.github.raesleg.game.factory.PoliceCarFactory;
 import io.github.raesleg.game.factory.RoadHazardSpawner;
 import io.github.raesleg.game.io.Keyboard;
-import io.github.raesleg.game.movement.CarMovementModel;
 import io.github.raesleg.game.movement.SurfaceEffect;
+import io.github.raesleg.game.state.ChaseDirector;
 import io.github.raesleg.game.zone.RoadHazard;
 
 /**
@@ -40,6 +40,10 @@ public class Level2Scene extends BaseGameScene {
 
     /* ── Level-specific components ── */
     private TrafficSpawningSystem trafficSystem;
+    private PoliceCarFactory policeFactory;
+    private PlayerController playerController;
+    private ChaseDirector chaseDirector;
+    private HazardEffectSystem hazardEffects;
 
     /* ── Road hazard spawners (puddles, mud) ── */
     private final List<RoadHazardSpawner> hazardSpawners = new ArrayList<>();
@@ -136,6 +140,16 @@ public class Level2Scene extends BaseGameScene {
                                 GameConstants.L2_CRASH_SPEED_PENALTY)));
         getCollisionHandler().setPickupListener(this::handlePickup);
 
+        /* Player vertical movement controller (SRP extraction) */
+        Keyboard kb = getIOManager().getInputs(Keyboard.class);
+        playerController = new PlayerController(kb, getPlayerCar());
+
+        /* Chase director (SRP extraction — police spawn/AI/siren/distance) */
+        chaseDirector = new ChaseDirector(policeFactory, getRuleManager(), getSound());
+
+        /* Hazard particle effect system (SRP extraction) */
+        hazardEffects = new HazardEffectSystem(getEntityManager(), getPlayerCar());
+
         /* Rain effect system (SRP — rendering extracted from scene) */
         rainEffect = new RainEffectSystem();
 
@@ -215,16 +229,18 @@ public class Level2Scene extends BaseGameScene {
         for (RoadHazardSpawner spawner : hazardSpawners)
             spawner.update(deltaTime, getScrollOffset());
 
-        updateHazardEffects();
+        /* Hazard particle effects — delegated to HazardEffectSystem (SRP) */
+        hazardEffects.update();
 
         setRulesBroken(getRuleManager().getRulesBroken());
 
         /* Player vertical movement — delegated to PlayerController (SRP) */
-        playerController.update(deltaTime, getPlayerCar());
+        playerController.update(deltaTime);
 
         /* Police chase — delegated to ChaseDirector (SRP) */
         chaseDirector.update(deltaTime, getPlayerCar(),
-                getRuleManager(), getSimulatedSpeedKmh(), getMaxSpeed());
+                getSimulatedSpeedKmh(), getMaxSpeed(),
+                getDashboard(), policeLightSystem);
     }
 
     @Override
@@ -233,8 +249,7 @@ public class Level2Scene extends BaseGameScene {
             return false;
         if (getRulesBroken() >= GameConstants.MAX_WANTED_STARS)
             return true;
-        var police = chaseDirector.getPoliceCar();
-        return police != null && police.hasCaughtPlayer();
+        return chaseDirector.hasCaughtPlayer();
     }
 
     @Override
@@ -297,42 +312,13 @@ public class Level2Scene extends BaseGameScene {
         hazardSpawners.clear();
         chaseDirector = null;
         playerController = null;
+        hazardEffects = null;
+        policeFactory = null;
         rainEffect = null;
         if (policeLightSystem != null) {
             policeLightSystem.dispose();
             policeLightSystem = null;
         }
         Gdx.app.log("Level2Scene", "Level 2 data disposed");
-    }
-
-    // private methods to spawn hazard effects based on player's current surface
-    // (called from updateGame)
-    private void updateHazardEffects() {
-        CarMovementModel model = getPlayerCar().getCarMovementModel();
-        SurfaceEffect effect = model.getSurfaceEffect();
-
-        if (model.consumeEntryEffectSignal()) {
-            spawnPlayerSurfaceEntryEffect(effect);
-        }
-
-        if (model.didEmitTrailEffectThisStep()) {
-            spawnPlayerSurfaceTrailEffect(effect);
-        }
-
-        if (model.consumeExitEffectSignal()) {
-            spawnPlayerSurfaceExitEffect(effect);
-        }
-    }
-
-    private void spawnPlayerSurfaceEntryEffect(SurfaceEffect effect) {
-        surfaceParticleDispatcher.dispatchEntry(effect, getEntityManager(), getPlayerCar());
-    }
-
-    private void spawnPlayerSurfaceTrailEffect(SurfaceEffect effect) {
-        surfaceParticleDispatcher.dispatchTrail(effect, getEntityManager(), getPlayerCar());
-    }
-
-    private void spawnPlayerSurfaceExitEffect(SurfaceEffect effect) {
-        surfaceParticleDispatcher.dispatchExit(effect, getEntityManager(), getPlayerCar());
     }
 }
