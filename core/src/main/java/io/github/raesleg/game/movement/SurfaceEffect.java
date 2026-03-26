@@ -84,15 +84,4 @@ public final class SurfaceEffect {
                 1f,
                 0f
         );
-
-        // Heavier speed restriction than slow zone
-        public static final SurfaceEffect VERY_SLOW_ZONE = new SurfaceEffect(
-                0.45f,
-                1.0f,
-                1.50f,
-                false,
-                0f,
-                1f,
-                0f
-        );
 }

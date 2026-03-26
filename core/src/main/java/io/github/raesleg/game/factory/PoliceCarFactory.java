@@ -40,18 +40,20 @@ public final class PoliceCarFactory {
      * @return the spawned chase entity
      */
     public IChaseEntity spawn() {
-        float centreX = (RoadRenderer.ROAD_LEFT + RoadRenderer.ROAD_WIDTH / 2f) / Constants.PPM;
-        float startY = GameConstants.POLICE_START_Y;
+        float centreXPixels = RoadRenderer.ROAD_LEFT + RoadRenderer.ROAD_WIDTH / 2f;
+        float centreXMetres = centreXPixels / Constants.PPM;
+        float startYPixels = GameConstants.POLICE_START_Y;
+        float startYMetres = startYPixels / Constants.PPM;
 
         PhysicsBody policeBody = world.createBody(
                 BodyType.KINEMATIC,
-                centreX,
-                startY / Constants.PPM,
+                centreXMetres,
+                startYMetres,
                 (GameConstants.POLICE_WIDTH / Constants.PPM) / 2f,
                 (GameConstants.POLICE_HEIGHT / Constants.PPM) / 2f,
                 0f, 0f, true, null);
 
-        PoliceCar car = new PoliceCar(policeBody);
+        PoliceCar car = new PoliceCar(policeBody, centreXPixels, startYPixels);
         entityManager.addEntity(car);
         return car;
     }

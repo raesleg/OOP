@@ -77,7 +77,7 @@ public final class GameConstants {
 
     public static final float POLICE_WIDTH = 80f;
     public static final float POLICE_HEIGHT = 140f;
-    public static final float POLICE_START_Y = 20f;
+    public static final float POLICE_START_Y = -500f;
 
     /*
      * ════════════════════════════════════════════════════════════

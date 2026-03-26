@@ -24,27 +24,7 @@ import io.github.raesleg.engine.scene.Scene;
 import io.github.raesleg.game.io.Keyboard;
 import io.github.raesleg.engine.io.SoundDevice;
 
-/**
- * ResultsScene — Win/Lose screen displayed after a level ends
- * (State Pattern — scene transition via SceneManager).
- * <p>
- * Receives a {@link LevelResult} value object and a retry factory
- * ({@code Supplier<Scene>}) via constructor injection. Displays the
- * level outcome and provides two actions:
- * <ul>
- * <li><b>Retry</b> — calls {@code SceneManager.set(retryFactory.get())}
- * to restart the failed level.</li>
- * <li><b>Main Menu</b> — calls {@code SceneManager.set(new StartScene())}
- * to return to the title screen.</li>
- * </ul>
- * <p>
- * <b>DIP:</b> Depends on {@code Supplier<Scene>} (abstraction) for retry,
- * not on any concrete level class.
- * <b>SRP:</b> Sole responsibility is displaying results and handling
- * the two navigation actions.
- * <b>Engine/Game boundary:</b> Extends engine {@link Scene}, lives in
- * game layer.
- */
+// ResultsScene — Win/Lose screen displayed after a level ends
 public class ResultsScene extends Scene {
 
     private final LevelResult result;
@@ -59,13 +39,6 @@ public class ResultsScene extends Scene {
 
     private SoundDevice sound;
 
-    /**
-     * Creates a results scene.
-     *
-     * @param result       immutable snapshot of the level outcome
-     * @param retryFactory supplier that creates a fresh instance of the
-     *                     level to retry (Factory Method via DIP)
-     */
     public ResultsScene(LevelResult result, Supplier<Scene> retryFactory) {
         super();
         this.result = result;
@@ -188,14 +161,14 @@ public class ResultsScene extends Scene {
         });
 
         /* Main Menu button */
-        TextButton menuBtn = new TextButton("Main Menu", btnStyle);
+        TextButton menuBtn = new TextButton("Level Select", btnStyle);
         menuBtn.pad(15f, 40f, 15f, 40f);
         menuBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 sound.stopSound("gameover");
                 sound.playSound("select", 1.0f);
-                getSceneManager().set(new StartScene());
+                getSceneManager().set(new LevelSelectScene());
             }
         });
 
@@ -209,7 +182,7 @@ public class ResultsScene extends Scene {
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         if (kb != null) {
             kb.addBind(Input.Keys.R, () -> getSceneManager().set(retryFactory.get()), true);
-            kb.addBind(Input.Keys.ESCAPE, () -> getSceneManager().set(new StartScene()), true);
+            kb.addBind(Input.Keys.ESCAPE, () -> getSceneManager().set(new LevelSelectScene()), true);
         }
 
         Gdx.app.log("ResultsScene", "Showing " + heading
