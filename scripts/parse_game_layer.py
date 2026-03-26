@@ -1,5 +1,4 @@
 import re
-import os
 from pathlib import Path
 
 root = Path(r"d:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP")
@@ -20,7 +19,7 @@ def clean_type(t):
     return t.strip().replace('\n',' ').replace('  ',' ')
 
 for f in java_files:
-    rel = f.relative_to(search_dir.parent.parent.parent.parent) if False else f
+    rel = f
     pkg = None
     with f.open('r', encoding='utf-8') as fh:
         src = fh.read()
