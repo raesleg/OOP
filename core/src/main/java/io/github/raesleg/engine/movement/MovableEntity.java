@@ -87,9 +87,6 @@ public class MovableEntity extends TextureObject implements IMovable {
         }
 
         movementModel.step(body, x, y, dt);
-        if (movementStrategy != null) {
-            movementStrategy.afterStep(this, dt);
-        }
     }
 
     @Override

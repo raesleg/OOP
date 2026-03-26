@@ -9,7 +9,7 @@ import io.github.raesleg.game.factory.PickupableSpawner;
 import java.util.List;
 
 /**
- * TrafficSpawningSystem — Coordinates NPC car, pickup, and tree spawning.
+ * TrafficSpawningSystem — Coordinates NPC car, pickup spawning.
  * Extracted from Level1Scene/Level2Scene to satisfy SRP: spawn lifecycle
  * management is one responsibility, independent of crosswalk encounters,
  * scoring, or audio.
@@ -28,7 +28,7 @@ public final class TrafficSpawningSystem implements IGameSystem {
 
     public TrafficSpawningSystem(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float npcSpawnInterval,
-            float pickupSpawnInterval, float treeSpawnInterval,
+            float pickupSpawnInterval,
             List<float[]> crosswalkExclusions) {
         this.npcSpawner = new NPCCarSpawner(entityManager, world, screenHeight,
                 npcSpawnInterval, crosswalkExclusions);
@@ -39,9 +39,9 @@ public final class TrafficSpawningSystem implements IGameSystem {
     // Alternative constructor without crosswalk exclusions (Level 2)
     public TrafficSpawningSystem(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float npcSpawnInterval,
-            float pickupSpawnInterval, float treeSpawnInterval) {
+            float pickupSpawnInterval) {
         this(entityManager, world, screenHeight, npcSpawnInterval,
-                pickupSpawnInterval, treeSpawnInterval, List.of());
+                pickupSpawnInterval, List.of());
     }
 
     // Called by the scene each frame before update()

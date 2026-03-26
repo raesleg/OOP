@@ -84,10 +84,10 @@ public class Level1Scene extends BaseGameScene {
             });
         }
 
-        /* Traffic spawning system (NPC cars, pickups, trees) */
+        /* Traffic spawning system (NPC cars, pickups) */
         trafficSystem = new TrafficSpawningSystem(
                 getEntityManager(), getWorld(), GameConstants.SPAWN_SCREEN_HEIGHT,
-                GameConstants.L1_NPC_SPAWN_SEC, 6.0f, 2.5f, crosswalkExclusions);
+                GameConstants.L1_NPC_SPAWN_SEC, 6.0f, crosswalkExclusions);
 
         /* Crosswalk encounter system (zones, pedestrians, stop signs) */
         crosswalkSystem = new CrosswalkEncounterSystem(

@@ -93,11 +93,11 @@ public class Level2Scene extends BaseGameScene {
     @Override
     protected void initLevelData() {
         /*
-         * Traffic spawning system (NPC cars, pickups, trees) — no crosswalk exclusions
+         * Traffic spawning system (NPC cars, pickups) — no crosswalk exclusions
          */
         trafficSystem = new TrafficSpawningSystem(
                 getEntityManager(), getWorld(), GameConstants.L2_SPAWN_SCREEN_HEIGHT,
-                GameConstants.L2_NPC_SPAWN_SEC, GameConstants.L2_PICKUP_SPAWN_SEC, 2.5f);
+                GameConstants.L2_NPC_SPAWN_SEC, GameConstants.L2_PICKUP_SPAWN_SEC);
 
         /* Road hazards (puddles, mud) — NPC spawner provides lane occupancy */
         hazardSpawners.add(new RoadHazardSpawner(

@@ -16,6 +16,7 @@ import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.event.EventBus;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovementManager;
+import io.github.raesleg.engine.movement.MovementStrategy;
 import io.github.raesleg.engine.movement.UserControlled;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.Scene;
@@ -144,7 +145,7 @@ public abstract class BaseGameScene extends Scene {
     protected abstract float getMaxScrollPixelsPerSecond();
 
     /** Player movement strategy — subclasses may override for level-specific behavior. */
-    protected io.github.raesleg.engine.movement.MovementStrategy getPlayerMovementStrategy() {
+    protected MovementStrategy getPlayerMovementStrategy() {
         return new PlayerMovementStrategy();
     }
 
