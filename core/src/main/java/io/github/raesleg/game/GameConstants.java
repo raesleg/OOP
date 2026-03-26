@@ -107,6 +107,13 @@ public final class GameConstants {
     public static final float L2_MAX_SCROLL = 1050f;
     public static final float L2_NPC_SPAWN_SEC = 1.4f;
 
+    /** Difficulty escalation: initial spawn interval in Level 2 (seconds). */
+    public static final float L2_NPC_SPAWN_MAX_INTERVAL = 1.4f;
+    /** Difficulty escalation: minimum spawn interval at max difficulty (seconds). */
+    public static final float L2_NPC_SPAWN_MIN_INTERVAL = 0.6f;
+    /** Difficulty escalation: time to reach maximum difficulty (seconds). */
+    public static final float L2_DIFFICULTY_ESCALATION_TIME = 60f;
+
     /** Puddle hazard spawn interval (seconds). */
     public static final float L2_PUDDLE_INTERVAL = 3.5f;
     /** Mud hazard spawn interval (seconds). */

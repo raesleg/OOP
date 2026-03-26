@@ -16,25 +16,22 @@ import io.github.raesleg.game.state.ChaseDirector;
 import io.github.raesleg.game.zone.RoadHazard;
 
 /**
- * Level2Scene — Highway Chase (Temple Run style).
- * <p>
+ * Level2Scene — Highway Chase
+ * 
  * The police car is on the player's tail from the very start.
  * The player must weave through heavy NPC traffic while maintaining
  * high speed to outrun the police. Crashing into NPC cars increases
  * police aggression (they close in faster).
- * <p>
- * <b>No crosswalks or pedestrians</b> — pure expressway survival.
- * <p>
- * <b>SRP Composition:</b> Delegates traffic spawning to
+ * 
+ * SRP Composition: Delegates traffic spawning to
  * {@link TrafficSpawningSystem}, rain rendering to
  * {@link RainEffectSystem}, police creation to
  * {@link PoliceCarFactory}, and violation reactions to
  * {@link Level2TrafficListener}.
- * <p>
- * <b>DIP:</b> RuleManager and CommandHistory are injected from
+ * 
+ * DIP: RuleManager and CommandHistory are injected from
  * {@link BaseGameScene}. Police car is created via factory.
- * Scene depends on {@link IChaseEntity} abstraction, not concrete
- * {@code PoliceCar}.
+ * Scene depends on {@link IChaseEntity} abstraction
  */
 public class Level2Scene extends BaseGameScene {
 
@@ -200,10 +197,16 @@ public class Level2Scene extends BaseGameScene {
 
     @Override
     protected void updateGame(float deltaTime) {
+        /* Difficulty escalation: increase NPC spawn frequency as time passes */
+        float elapsedTime = getGameTime();
+        float escalationProgress = Math.min(1.0f, elapsedTime / GameConstants.L2_DIFFICULTY_ESCALATION_TIME);
+        float currentSpawnInterval = GameConstants.L2_NPC_SPAWN_MAX_INTERVAL
+                - (GameConstants.L2_NPC_SPAWN_MAX_INTERVAL - GameConstants.L2_NPC_SPAWN_MIN_INTERVAL) * escalationProgress;
+        trafficSystem.setNpcSpawnInterval(currentSpawnInterval);
+
         /* Delegate NPC/pickup/tree spawning to composed system */
         trafficSystem.setFrameState(
-                getNpcScrollSpeedPixelsPerSecond(), getScrollOffset(), getSimulatedSpeedKmh(),
-                getPlayerCar().getY(), getPlayerCar().getX());
+                getNpcScrollSpeedPixelsPerSecond(), getScrollOffset(), getSimulatedSpeedKmh(), getPlayerCar().getX());
         trafficSystem.update(deltaTime);
 
         /* Update all hazard spawners */
@@ -254,6 +257,25 @@ public class Level2Scene extends BaseGameScene {
     protected BaseGameScene createRetryScene() {
         return new Level2Scene();
     }
+
+    @Override
+    protected boolean hasProgressBasedWin() {
+        return false; // Level 2 is ENDLESS — no distance-based completion
+    }
+
+    /**
+     * Difficulty escalation: NPC spawn frequency increases linearly from
+     * {@link GameConstants#L2_NPC_SPAWN_MAX_INTERVAL} to
+     * {@link GameConstants#L2_NPC_SPAWN_MIN_INTERVAL} over
+     * {@link GameConstants#L2_DIFFICULTY_ESCALATION_TIME} seconds.
+     * 
+     * Configuration (tunable in GameConstants):
+     * 
+     * L2_NPC_SPAWN_MAX_INTERVAL: Initial spawn interval (1.4s)
+     * L2_NPC_SPAWN_MIN_INTERVAL: Max difficulty spawn interval (0.6s)
+     * L2_DIFFICULTY_ESCALATION_TIME: Time to reach max difficulty (60s)
+     * 
+     */
 
     /*
      * ══════════════════════════════════════════════════════════════
