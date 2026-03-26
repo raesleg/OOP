@@ -72,7 +72,7 @@ public class NPCCarSpawner implements ILaneOccupancy {
         this.world = world;
         this.screenHeight = screenHeight;
         this.spawnInterval = spawnInterval;
-        this.spawnYOffset = -150f; // Spawn above screen, will scroll into view
+        this.spawnYOffset = -150f; // Spawn below screen, will scroll into view
         this.spawnTimer = 0f;
         this.activeNPCs = new ArrayList<>();
         this.exclusionZones = (exclusionZones != null) ? exclusionZones : new ArrayList<>();
