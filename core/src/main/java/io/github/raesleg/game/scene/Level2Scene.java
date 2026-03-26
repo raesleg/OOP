@@ -10,7 +10,6 @@ import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.collision.listeners.Level2TrafficListener;
 import io.github.raesleg.game.factory.PoliceCarFactory;
 import io.github.raesleg.game.factory.RoadHazardSpawner;
-import io.github.raesleg.game.io.Keyboard;
 import io.github.raesleg.game.movement.SurfaceEffect;
 import io.github.raesleg.game.state.ChaseDirector;
 import io.github.raesleg.game.zone.RoadHazard;
@@ -38,7 +37,6 @@ public class Level2Scene extends BaseGameScene {
     /* ── Level-specific components ── */
     private TrafficSpawningSystem trafficSystem;
     private PoliceCarFactory policeFactory;
-    private PlayerController playerController;
     private ChaseDirector chaseDirector;
     private HazardEffectSystem hazardEffects;
 
@@ -128,10 +126,6 @@ public class Level2Scene extends BaseGameScene {
                                 GameConstants.L2_CRASH_SPEED_PENALTY)));
         getCollisionHandler().setPickupListener(this::handlePickup);
 
-        /* Player vertical movement controller (SRP extraction) */
-        Keyboard kb = getIOManager().getInputs(Keyboard.class);
-        playerController = new PlayerController(kb, getPlayerCar());
-
         /* Chase director (SRP extraction — police spawn/AI/siren/distance) */
         chaseDirector = new ChaseDirector(policeFactory, getRuleManager(), getSound());
 
@@ -217,9 +211,6 @@ public class Level2Scene extends BaseGameScene {
         hazardEffects.update();
 
         setRulesBroken(getRuleManager().getRulesBroken());
-
-        /* Player vertical movement — delegated to PlayerController (SRP) */
-        playerController.update(deltaTime);
 
         /* Police chase — delegated to ChaseDirector (SRP) */
         chaseDirector.update(deltaTime, getPlayerCar(),
@@ -314,7 +305,6 @@ public class Level2Scene extends BaseGameScene {
             s.clearAll();
         hazardSpawners.clear();
         chaseDirector = null;
-        playerController = null;
         hazardEffects = null;
         policeFactory = null;
         rainEffect = null;

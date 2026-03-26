@@ -5,7 +5,6 @@ import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.system.IGameSystem;
 import io.github.raesleg.game.factory.NPCCarSpawner;
 import io.github.raesleg.game.factory.PickupableSpawner;
-import io.github.raesleg.game.factory.TreeSpawner;
 
 import java.util.List;
 
@@ -20,7 +19,6 @@ public final class TrafficSpawningSystem implements IGameSystem {
 
     private final NPCCarSpawner npcSpawner;
     private final PickupableSpawner pickupSpawner;
-    private final TreeSpawner treeSpawner;
 
     // Frame-scoped values supplied by the owning scene
     private float npcScrollSpeed;
@@ -36,7 +34,6 @@ public final class TrafficSpawningSystem implements IGameSystem {
                 npcSpawnInterval, crosswalkExclusions);
         this.pickupSpawner = new PickupableSpawner(entityManager, world, screenHeight,
                 pickupSpawnInterval, npcSpawner, crosswalkExclusions);
-        this.treeSpawner = new TreeSpawner(entityManager, screenHeight, treeSpawnInterval);
     }
 
     // Alternative constructor without crosswalk exclusions (Level 2)
@@ -70,14 +67,12 @@ public final class TrafficSpawningSystem implements IGameSystem {
         npcSpawner.setPlayerX(playerX);  // Pass player X for lane exclusion
         npcSpawner.update(deltaTime, npcScrollSpeed);
         pickupSpawner.update(deltaTime, scrollOffset);
-        treeSpawner.update(deltaTime, scrollOffset);
     }
 
     @Override
     public void dispose() {
         npcSpawner.clearAll();
         pickupSpawner.clearAll();
-        treeSpawner.clearAll();
     }
 
     public NPCCarSpawner getNpcSpawner() {
