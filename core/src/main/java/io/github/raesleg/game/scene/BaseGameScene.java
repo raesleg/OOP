@@ -159,6 +159,15 @@ public abstract class BaseGameScene extends Scene {
         return List.of();
     }
 
+    /**
+     * Checks whether level has a progress-based win condition.
+     * Level 1 completes when player reaches the goal distance.
+     * Level 2 is ENDLESS — only ends on police catch or too many penalties.
+     */
+    protected boolean hasProgressBasedWin() {
+        return true; // Default: level ends when player reaches goal
+    }
+
     // Viewport factory
     @Override
     protected Viewport createViewport(OrthographicCamera cam) {
@@ -256,8 +265,11 @@ public abstract class BaseGameScene extends Scene {
          * in initLevelData() via addEndCondition(...).
          * This allows Level 2 to opt out of explosions on crash.
          */
-        matchDirector.addEndCondition(() -> matchDirector.evaluateWin(
-                Math.min(1f, (-speedScroll.getScrollOffset()) / getLevelLength())));
+        // Only register progress-based win if the level is NOT endless
+        if (hasProgressBasedWin()) {
+            matchDirector.addEndCondition(() -> matchDirector.evaluateWin(
+                    Math.min(1f, (-speedScroll.getScrollOffset()) / getLevelLength())));
+        }
         matchDirector.addEndCondition(() -> matchDirector.evaluateInstantFail());
         matchDirector.addEndCondition(() -> matchDirector.evaluateSubclassGameOver(
                 isGameOver(), getGameOverReason()));
