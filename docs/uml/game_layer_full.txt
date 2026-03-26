@@ -447,7 +447,7 @@ class PickupableSpawner {
 // Package: io.github.raesleg.game.factory
 final class PlayerFactory {
 - PlayerFactory()
-+ create(world:PhysicsWorld, entityManager:EntityManager, controls:ControlSource): PlayerCar
++ create(world:PhysicsWorld, entityManager:EntityManager, controls:ControlSource, movementStrategy:MovementStrategy): PlayerCar
 }
 
 // Package: io.github.raesleg.game.factory
@@ -481,22 +481,6 @@ class RoadHazardSpawner implements ILaneOccupancy {
 + RoadHazardSpawner(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, spawnInterval:float, npcOccupancy:ILaneOccupancy, exclusionZones:List<float[]>, surfaceEffect:SurfaceEffect, texturePath:String)
 }
 
-// Package: io.github.raesleg.game.factory
-class TreeSpawner {
-- entityManager:EntityManager
-- screenHeight:float
-- spawnTimer:float
-- spawnInterval:float
-- activeTrees:List<Tree>
-- TREE_W:float
-- TREE_H:float
-- MIN_Y_SPACING:float
-- TEXTURES:String[]
-+ update(deltaTime:float, scrollOffset:float): void
-- spawnTree(scrollOffset:float): void
-+ clearAll(): void
-+ TreeSpawner(entityManager:EntityManager, screenHeight:float, spawnInterval:float)
-}
 // Package: io.github.raesleg.game
 final class GameConstants {
 + ROAD_LEFT:float
@@ -530,6 +514,9 @@ final class GameConstants {
 + L2_BRAKE_RATE:float
 + L2_MAX_SCROLL:float
 + L2_NPC_SPAWN_SEC:float
++ L2_NPC_SPAWN_MAX_INTERVAL:float
++ L2_NPC_SPAWN_MIN_INTERVAL:float
++ L2_DIFFICULTY_ESCALATION_TIME:float
 + L2_PUDDLE_INTERVAL:float
 + L2_MUD_INTERVAL:float
 + L2_PICKUP_SPAWN_SEC:float
@@ -856,10 +843,12 @@ abstract class BaseGameScene extends Scene {
 + createRetryScene(): BaseGameScene
 + getGameOverReason(): String
 + getMaxScrollPixelsPerSecond(): float
++ getPlayerMovementStrategy(): MovementStrategy
 + renderLevelEffects(sr:ShapeRenderer, batch:SpriteBatch): void
 + getCameraZoom(): float
 + disposeLevelData(): void
 + getViolationLog(): List<String>
++ hasProgressBasedWin(): boolean
 + createViewport(cam:OrthographicCamera): Viewport
 + show(): void
 + update(deltaTime:float): void
@@ -1012,7 +1001,6 @@ class Level1Scene extends BaseGameScene {
 class Level2Scene extends BaseGameScene {
 - trafficSystem:TrafficSpawningSystem
 - policeFactory:PoliceCarFactory
-- playerController:PlayerController
 - chaseDirector:ChaseDirector
 - hazardEffects:HazardEffectSystem
 - hazardSpawners:List<RoadHazardSpawner>
@@ -1034,6 +1022,7 @@ class Level2Scene extends BaseGameScene {
 + createRetryScene(): BaseGameScene
 + renderLevelEffects(sr:ShapeRenderer, batch:SpriteBatch): void
 + disposeLevelData(): void
++ hasProgressBasedWin(): boolean
 }
 // Package: io.github.raesleg.game.scene
 final class LevelResult {
@@ -1217,20 +1206,19 @@ interface SurfaceParticleDispatcher.ParticleSpawner {
 final class TrafficSpawningSystem implements IGameSystem {
 - npcSpawner:NPCCarSpawner
 - pickupSpawner:PickupableSpawner
-- treeSpawner:TreeSpawner
 - npcScrollSpeed:float
 - scrollOffset:float
-- playerY:float
 - playerX:float
 - spawningEnabled:boolean
-+ setFrameState(npcScrollSpeed:float, scrollOffset:float, simulatedSpeed:float, playerY:float, playerX:float): void
++ setFrameState(npcScrollSpeed:float, scrollOffset:float, simulatedSpeed:float, playerX:float): void
 + setSpawningEnabled(enabled:boolean): void
++ setNpcSpawnInterval(interval:float): void
 + update(deltaTime:float): void
 + dispose(): void
 + getNpcSpawner(): NPCCarSpawner
 + getPickupSpawner(): PickupableSpawner
-+ TrafficSpawningSystem(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, npcSpawnInterval:float, pickupSpawnInterval:float, treeSpawnInterval:float, crosswalkExclusions:List<float[]>)
-+ TrafficSpawningSystem(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, npcSpawnInterval:float, pickupSpawnInterval:float, treeSpawnInterval:float)
++ TrafficSpawningSystem(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, npcSpawnInterval:float, pickupSpawnInterval:float, crosswalkExclusions:List<float[]>)
++ TrafficSpawningSystem(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, npcSpawnInterval:float, pickupSpawnInterval:float)
 }
 // Package: io.github.raesleg.game.state
 final class AudioController implements IGameSystem {

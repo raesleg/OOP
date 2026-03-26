@@ -101,7 +101,6 @@ Pickupable ..|> IExpirable : implements
 StopSign --|> TextureObject : extends
 StopSign ..|> IExpirable : implements
 StopSign ..|> IPerceivable : implements
-Tree --|> TextureObject : extends
 Trees ..> EntityManager : method param
 NPCCar --|> MovableEntity : extends
 NPCCar ..|> IExpirable : implements
@@ -121,6 +120,7 @@ NPCCarSpawner --> ILaneOccupancy : field
 NPCCarSpawner ..> ILaneOccupancy : method param
 PlayerFactory ..> ControlSource : method param
 PlayerFactory ..> EntityManager : method param
+PlayerFactory ..> MovementStrategy : method param
 PlayerFactory ..> PhysicsWorld : method param
 RoadHazardSpawner ..|> ILaneOccupancy : implements
 Keyboard ..|> InputDevice : implements
@@ -184,7 +184,6 @@ Level1Scene ..> ShapeRenderer : method param
 Level2Scene --|> BaseGameScene : extends
 Level2Scene --> ChaseDirector : field
 Level2Scene --> HazardEffectSystem : field
-Level2Scene --> PlayerController : field
 Level2Scene --> PoliceCarFactory : field
 Level2Scene --> PoliceLightSystem : field
 Level2Scene --> RainEffectSystem : field
@@ -213,11 +212,6 @@ StartScene --> BitmapFont : field
 StartScene --> SoundDevice : field
 StartScene --> Stage : field
 StartScene ..> InputEvent : method param
-SurfaceParticleDispatcher ..> Entity : method param
-SurfaceParticleDispatcher ..> EntityManager : method param
-SurfaceParticleDispatcher ..> ParticleSpawner : method param
-SurfaceParticleDispatcher ..> SurfaceEffect : method param
-SurfaceParticleDispatcher ..> SurfaceParticleEffect : method param
 TrafficSpawningSystem ..|> IGameSystem : implements
 AudioController ..|> IGameSystem : implements
 AudioController --> Music : field
