@@ -10,22 +10,8 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.collision.listeners.Level1TrafficListener;
 
-/**
- * Level1Scene — Sunny Road with crosswalks, pedestrians, and stop signs.
- * <p>
- * <b>SRP Composition:</b> Delegates crosswalk encounter management to
- * {@link CrosswalkEncounterSystem}, NPC/pickup/tree spawning to
- * {@link TrafficSpawningSystem}, crosswalk rendering to
- * {@link CrosswalkRenderer}, and violation reactions to
- * {@link Level1TrafficListener}.
- * <p>
- * This scene is a <b>pure orchestrator / composition root</b>:
- * it wires dependencies and cascades lifecycle calls — it contains
- * no game logic, no rendering code, and no input handling.
- * <p>
- * <b>DIP:</b> RuleManager and CommandHistory are injected from
- * {@link BaseGameScene} (not created here).
- */
+// Level 1: Sunny Road with crosswalks, pedestrians, and stop signs
+// Focuses on basic driving and introduces crosswalk mechanics
 public class Level1Scene extends BaseGameScene {
 
     /* ── Composed systems (SRP) ── */
@@ -126,6 +112,16 @@ public class Level1Scene extends BaseGameScene {
         } catch (Exception e) {
             Gdx.app.log("Level1Scene", "Sound load fail: " + e.getMessage());
         }
+
+        /* Level 1 specific rules (dependency injection for popup) */
+        List<String> level1Rules = new ArrayList<>();
+        level1Rules.add("Slow down near crossings");
+        level1Rules.add("Stop if pedestrians are present, and wait for them to cross");
+        level1Rules.add("Do not hit pedestrians");
+        level1Rules.add("Do not crash into other vehicles");
+        level1Rules.add("Keep an eye on fuel levels");
+
+        getSceneManager().push(new RulesPopupScene("Level 1", level1Rules));
 
         Gdx.app.log("Level1Scene", "=== INIT LEVEL DATA COMPLETE ===");
     }

@@ -42,11 +42,13 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
      * Creates a police car that will chase from below the screen.
      *
      * @param body kinematic PhysicsBody for collision detection
+     * @param initialX initial X position in pixels
+     * @param initialY initial Y position in pixels
      */
-    public PoliceCar(PhysicsBody body) {
-        super("policecar_noflash.png", 0, 0, 80f, 140f);
+    public PoliceCar(PhysicsBody body, float initialX, float initialY) {
+        super("policecar_noflash.png", initialX, initialY, 80f, 140f);
         this.body = body;
-        this.screenY = GameConstants.POLICE_START_Y;
+        this.screenY = initialY;
         this.caught = false;
         this.flashTimer = 0f;
         this.flashIndex = 0;
@@ -70,9 +72,12 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
 
         // Sync physics body for collision detection
         if (body != null) {
-            body.setPosition(
-                    (newX + getW() / 2f) / Constants.PPM,
-                    (screenY + getH() / 2f) / Constants.PPM);
+            float bodyX = (getX() + getW() / 2f) / Constants.PPM;
+            float bodyY = (screenY + getH() / 2f) / Constants.PPM;
+            body.setPosition(bodyX, bodyY);
+            // body.setPosition(
+            //         (newX + getW() / 2f) / Constants.PPM,
+            //         (screenY + getH() / 2f) / Constants.PPM);
         }
 
         caught = movement.hasCaught(screenY, getH(), playerY);

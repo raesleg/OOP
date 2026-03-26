@@ -40,8 +40,8 @@ public class PoliceMovement {
         return screenY;
     }
 
-    public boolean hasCaught(float policeBottom, float policeHeight, float playerY) {
-        return policeBottom + policeHeight >= playerY;
+    public boolean hasCaught(float policeBottom, float policeHeight, float playerY) {        
+        return policeBottom + policeHeight >= playerY;       
     }
 
     private float clamp(float value, float min, float max) {

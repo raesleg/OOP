@@ -14,24 +14,8 @@ import io.github.raesleg.game.movement.SurfaceEffect;
 import io.github.raesleg.game.state.ChaseDirector;
 import io.github.raesleg.game.zone.RoadHazard;
 
-/**
- * Level2Scene — Highway Chase
- * 
- * The police car is on the player's tail from the very start.
- * The player must weave through heavy NPC traffic while maintaining
- * high speed to outrun the police. Crashing into NPC cars increases
- * police aggression (they close in faster).
- * 
- * SRP Composition: Delegates traffic spawning to
- * {@link TrafficSpawningSystem}, rain rendering to
- * {@link RainEffectSystem}, police creation to
- * {@link PoliceCarFactory}, and violation reactions to
- * {@link Level2TrafficListener}.
- * 
- * DIP: RuleManager and CommandHistory are injected from
- * {@link BaseGameScene}. Police car is created via factory.
- * Scene depends on {@link IChaseEntity} abstraction
- */
+// Level2Scene is an ednless chase with escalating difficulty — no distance-based win condition, but multiple lose conditions (too many violations or caught by police)
+// Aggression escalation: as time passes, police get more aggressive (close in faster) and NPC traffic gets denser (spawn interval decreases) — creates natural difficulty curve without artificial "phases"
 public class Level2Scene extends BaseGameScene {
 
     /* ── Level-specific components ── */
@@ -161,17 +145,17 @@ public class Level2Scene extends BaseGameScene {
             Gdx.app.log("Level2Scene", "Sound: " + e.getMessage());
         }
 
-        // try {
-        // getSound().addSound("puddle", "puddlesound.wav");
-        // } catch (Exception e) {
-        // Gdx.app.log("Level2Scene", "Could not load puddle sound: " + e.getMessage());
-        // }
+        try {
+            getSound().addSound("puddle", "puddlesound.wav");
+        } catch (Exception e) {
+        Gdx.app.log("Level2Scene", "Could not load puddle sound: " + e.getMessage());
+        }
 
-        // try {
-        // getSound().addSound("mud", "mudsound.wav");
-        // } catch (Exception e) {
-        // Gdx.app.log("Level2Scene", "Could not load rain sound: " + e.getMessage());
-        // }
+        try {
+            getSound().addSound("mud", "mudsound.wav");
+        } catch (Exception e) {
+        Gdx.app.log("Level2Scene", "Could not load mud sound: " + e.getMessage());
+        }
 
         /* Dashboard — enable police distance mode */
         getDashboard().setPoliceDistanceMode(true);
@@ -179,6 +163,16 @@ public class Level2Scene extends BaseGameScene {
         /* Start rain ambience */
         getSound().loopSound("rain");
         getSound().setSoundVolume("rain", 1.0f);
+
+        /* Level 2 specific rules (dependency injection for popup) */
+        List<String> level2Rules = new ArrayList<>();
+        level2Rules.add("Avoid hitting other vehicles");
+        level2Rules.add("Crashes increase police aggression");
+        level2Rules.add("Watch for puddles and mud that reduce traction");
+        level2Rules.add("Don't get caught by the police");
+        level2Rules.add("Keep your wanted level down and maintain distance");
+
+        getSceneManager().push(new RulesPopupScene("Level 2", level2Rules));
 
         Gdx.app.log("Level2Scene", "Level 2 initialised — highway chase");
     }
@@ -253,26 +247,6 @@ public class Level2Scene extends BaseGameScene {
     protected boolean hasProgressBasedWin() {
         return false; // Level 2 is ENDLESS — no distance-based completion
     }
-
-    /**
-     * Difficulty escalation: NPC spawn frequency increases linearly from
-     * {@link GameConstants#L2_NPC_SPAWN_MAX_INTERVAL} to
-     * {@link GameConstants#L2_NPC_SPAWN_MIN_INTERVAL} over
-     * {@link GameConstants#L2_DIFFICULTY_ESCALATION_TIME} seconds.
-     * 
-     * Configuration (tunable in GameConstants):
-     * 
-     * L2_NPC_SPAWN_MAX_INTERVAL: Initial spawn interval (1.4s)
-     * L2_NPC_SPAWN_MIN_INTERVAL: Max difficulty spawn interval (0.6s)
-     * L2_DIFFICULTY_ESCALATION_TIME: Time to reach max difficulty (60s)
-     * 
-     */
-
-    /*
-     * ══════════════════════════════════════════════════════════════
-     * Level2-specific rendering — delegated to systems
-     * ══════════════════════════════════════════════════════════════
-     */
 
     @Override
     protected void renderLevelEffects(ShapeRenderer sr, SpriteBatch batch) {
