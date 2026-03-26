@@ -1,0 +1,1548 @@
+// Package: io.github.raesleg.game.collision
+final class CollisionEntityUtils {
+- CollisionEntityUtils()
++ getPlayerEntity(a:Entity, b:Entity): MovableEntity
++ extractEntity(a:Entity, b:Entity, type:Class<T>): T
++ clampVelocity(body:PhysicsBody, maxSpeed:float): void
+}
+
+// Package: io.github.raesleg.game.collision
+class GameCollisionHandler implements ICollisionListener {
+- zoneHandler:ZoneCollisionHandler
+- boundaryHandler:BoundaryCollisionHandler
+- crosswalkHandler:CrosswalkCollisionHandler
+- pedestrianHandler:PedestrianCollisionHandler
+- pickupHandler:PickupCollisionHandler
+- npcCarHandler:NPCCarCollisionHandler
+- npcPedestrianHandler:NPCPedestrianCollisionHandler
++ setTrafficViolationListener(listener:TrafficViolationListener): void
++ setPickupListener(listener:PickupListener): void
++ onCollisionBegin(entityA:Entity, entityB:Entity): void
++ onCollisionEnd(entityA:Entity, entityB:Entity): void
++ onImpact(entityA:Entity, entityB:Entity, impactForce:float, impactPoint:Vector2): void
++ GameCollisionHandler(entityManager:EntityManager, soundManager:SoundDevice)
++ GameCollisionHandler(entityManager:EntityManager, soundManager:SoundDevice, explosionForceThreshold:float)
+}
+
+// Package: io.github.raesleg.game.collision.handlers
+class BoundaryCollisionHandler {
+- soundManager:SoundDevice
+- BOUNDARY_BOUNCE_FORCE:float
++ canHandle(a:Entity, b:Entity): boolean
++ handleBegin(entityA:Entity, entityB:Entity): void
++ BoundaryCollisionHandler(soundManager:SoundDevice)
+}
+
+// Package: io.github.raesleg.game.collision.handlers
+class CrosswalkCollisionHandler {
+- violationListener:TrafficViolationListener
++ setViolationListener(listener:TrafficViolationListener): void
++ canHandle(a:Entity, b:Entity): boolean
++ handleBegin(entityA:Entity, entityB:Entity): void
++ handleEnd(entityA:Entity, entityB:Entity): void
+}
+
+// Package: io.github.raesleg.game.collision.handlers
+class NPCCarCollisionHandler {
+- soundManager:SoundDevice
+- violationListener:TrafficViolationListener
+- lastCrashTimeMs:long
+- CRASH_KNOCKBACK_MULTIPLIER:float
+- CRASH_COOLDOWN_MS:long
++ setViolationListener(listener:TrafficViolationListener): void
++ canHandle(a:Entity, b:Entity): boolean
++ handleImpact(entityA:Entity, entityB:Entity, force:float, impactPoint:Vector2): void
++ NPCCarCollisionHandler(soundManager:SoundDevice)
+}
+
+// Package: io.github.raesleg.game.collision.handlers
+class NPCPedestrianCollisionHandler {
+- soundManager:SoundDevice
++ canHandle(a:Entity, b:Entity): boolean
++ handleBegin(entityA:Entity, entityB:Entity): void
++ NPCPedestrianCollisionHandler(soundManager:SoundDevice)
+}
+
+// Package: io.github.raesleg.game.collision.handlers
+class PedestrianCollisionHandler {
+- soundManager:SoundDevice
+- violationListener:TrafficViolationListener
++ setViolationListener(listener:TrafficViolationListener): void
++ canHandle(a:Entity, b:Entity): boolean
++ handleBegin(entityA:Entity, entityB:Entity): void
++ PedestrianCollisionHandler(soundManager:SoundDevice)
+}
+
+// Package: io.github.raesleg.game.collision.handlers
+class PickupCollisionHandler {
+- pickupListener:PickupListener
++ setPickupListener(listener:PickupListener): void
++ canHandle(a:Entity, b:Entity): boolean
++ handleBegin(entityA:Entity, entityB:Entity): void
+}
+
+// Package: io.github.raesleg.game.collision.handlers
+class ZoneCollisionHandler {
+- record ZoneCollision(movable:MovableEntity, tuning:Object)
++ canHandle(a:Entity, b:Entity): boolean
++ handleBegin(entityA:Entity, entityB:Entity): void
++ handleEnd(entityA:Entity, entityB:Entity): void
+- extractZoneCollision(a:Entity, b:Entity): ZoneCollision
+}
+
+// Package: io.github.raesleg.game.collision.listeners
+final class Level1TrafficListener implements TrafficViolationListener {
+- ruleManager:RuleManager
+- commandHistory:CommandHistory
+- sound:SoundDevice
+- crosswalkSystem:CrosswalkEncounterSystem
+- scoreCallback:ScoreCallback
+- crashCallback:CrashCallback
++ onCrosswalkViolation(): void
++ onTrafficCrash(): void
++ onPedestrianHit(pedestrian:Pedestrian, knockbackDirection:Vector2, knockbackForce:float): void
++ Level1TrafficListener(ruleManager:RuleManager, commandHistory:CommandHistory, sound:SoundDevice, crosswalkSystem:CrosswalkEncounterSystem, scoreCallback:ScoreCallback, crashCallback:CrashCallback)
+}
+
+// Package: io.github.raesleg.game.collision.listeners (inner interface of Level1TrafficListener)
+interface Level1TrafficListener.ScoreCallback {
++ addScore(delta:int): void
+}
+
+// Package: io.github.raesleg.game.collision.listeners (inner interface of Level1TrafficListener)
+interface Level1TrafficListener.CrashCallback {
++ incrementCrashCount(): void
+}
+
+// Package: io.github.raesleg.game.collision.listeners
+final class Level2TrafficListener implements TrafficViolationListener {
+- ruleManager:RuleManager
+- commandHistory:CommandHistory
+- scoreCallback:ScoreCallback
+- crashCallback:CrashCallback
+- speedPenaltyCallback:SpeedPenaltyCallback
++ onTrafficCrash(): void
++ Level2TrafficListener(ruleManager:RuleManager, commandHistory:CommandHistory, scoreCallback:ScoreCallback, crashCallback:CrashCallback, speedPenaltyCallback:SpeedPenaltyCallback)
+}
+
+// Package: io.github.raesleg.game.collision.listeners (inner interface of Level2TrafficListener)
+interface Level2TrafficListener.ScoreCallback {
++ addScore(delta:int): void
+}
+
+// Package: io.github.raesleg.game.collision.listeners (inner interface of Level2TrafficListener)
+interface Level2TrafficListener.CrashCallback {
++ incrementCrashCount(): void
+}
+
+// Package: io.github.raesleg.game.collision.listeners (inner interface of Level2TrafficListener)
+interface Level2TrafficListener.SpeedPenaltyCallback {
++ applyPenalty(): void
+}
+
+// Package: io.github.raesleg.game.collision.listeners
+interface PickupListener {
++ onPickup(): void
+}
+
+// Package: io.github.raesleg.game.collision.listeners
+interface TrafficViolationListener {
++ onCrosswalkViolation(): void
++ onPedestrianHit(pedestrian:Pedestrian, knockbackDirection:Vector2, knockbackForce:float): void
++ onTrafficCrash(): void
+}
+
+// Package: io.github.raesleg.game.collision
+class PedestrianHitReaction {
+- active:boolean
+- finished:boolean
+- remainingTime:float
+- rotation:float
+- HIT_DURATION:float
+- SPIN_SPEED:float
++ trigger(pedestrian:Pedestrian, knockbackDirection:Vector2, force:float): void
++ update(pedestrian:Pedestrian, deltaTime:float): void
++ isActive(): boolean
++ isFinished(): boolean
++ PedestrianHitReaction()
+}
+// Package: io.github.raesleg.game.entities
+interface IChaseEntity {
++ updateChase(deltaTime:float, playerX:float, playerY:float, starCount:int, maxStars:int, playerSpeed:float, maxSpeed:float): void
++ hasCaughtPlayer(): boolean
++ getScreenY(): float
+}
+
+// Package: io.github.raesleg.game.entities
+interface IPerceivable {
++ getPerceptionCategory(): PerceptionCategory
+}
+
+// Package: io.github.raesleg.game.entities
+enum PerceptionCategory {
+PEDESTRIAN, VEHICLE, OBSTACLE
+}
+
+// Package: io.github.raesleg.game.entities.misc
+class ExplosionOverlay extends TextureObject implements IExpirable {
+- lifetime:float
+- maxLifetime:float
++ update(deltaTime:float): void
++ isExpired(): boolean
++ draw(batch:SpriteBatch): void
++ ExplosionOverlay(filename:String, x:float, y:float, w:float, h:float, lifetime:float)
+}
+
+// Package: io.github.raesleg.game.entities.misc
+class Particle extends TextureObject implements IExpirable {
+- lifetime:float
+- maxLifetime:float
+- velocity:Vector2
+- alpha:float
++ update(deltaTime:float): void
++ draw(batch:SpriteBatch): void
++ isDead(): boolean
++ isExpired(): boolean
++ spawnExplosion(entityManager:EntityManager, impactPoint:Vector2, impactForce:float): void
++ spawnWaterSplash(entityManager:EntityManager, x:float, y:float, particleCount:int): void
++ spawnMudSplatter(entityManager:EntityManager, x:float, y:float, particleCount:int): void
++ spawnContinuousSplash(entityManager:EntityManager, x:float, y:float): void
++ Particle(filename:String, x:float, y:float, width:float, height:float, velocity:Vector2, lifetime:float)
+}
+
+// Package: io.github.raesleg.game.entities.misc
+class Pedestrian extends TextureObject implements IExpirable, IPerceivable {
+- body:PhysicsBody
+- relativeY:float
+- expired:boolean
+- renderRotation:float
++ updateScreenPosition(scrollOffset:float): void
++ syncBodyToSprite(): void
++ syncSpriteFromBody(): void
++ getPhysicsBody(): PhysicsBody
++ getRelativeY(): float
++ setRenderRotation(renderRotation:float): void
++ getRenderRotation(): float
++ resetRenderRotation(): void
++ markExpired(): void
++ isExpired(): boolean
++ getPerceptionCategory(): PerceptionCategory
++ draw(batch:SpriteBatch): void
++ dispose(): void
++ Pedestrian(startX:float, relativeY:float, width:float, height:float, body:PhysicsBody)
+}
+
+// Package: io.github.raesleg.game.entities.misc
+class Pickupable extends TextureObject implements IExpirable {
+- body:PhysicsBody
+- relativeY:float
+- expired:boolean
++ updatePosition(scrollOffset:float): void
++ draw(batch:SpriteBatch): void
++ isExpired(): boolean
++ markExpired(): void
++ getRelativeY(): float
++ dispose(): void
++ Pickupable(body:PhysicsBody, centreXPx:float, relativeY:float, wPx:float, hPx:float)
+}
+
+// Package: io.github.raesleg.game.entities.misc
+class StopSign extends TextureObject implements IExpirable, IPerceivable {
+- relativeY:float
+- expired:boolean
++ updatePosition(scrollOffset:float): void
++ isExpired(): boolean
++ getPerceptionCategory(): PerceptionCategory
++ markExpired(): void
++ draw(batch:SpriteBatch): void
++ StopSign(pixelX:float, relativeY:float)
+}
+
+// Package: io.github.raesleg.game.entities.misc
+class Tree extends TextureObject implements IExpirable, IPerceivable {
+- relativeY:float
+- expired:boolean
++ updatePosition(scrollOffset:float): void
++ isExpired(): boolean
++ getPerceptionCategory(): PerceptionCategory
++ markExpired(): void
++ draw(batch:SpriteBatch): void
++ Tree(filename:String, x:float, relativeY:float, w:float, h:float)
+}
+
+// Package: io.github.raesleg.game.entities.misc
+class Trees {
+- SPAWN_PADDING:float
+- trees:Array<Tree>
+- count:int
+- spawnTrees(entityManager:EntityManager): void
++ update(speed:float, deltaTime:float): void
++ Trees(count:int, entityManager:EntityManager)
+}
+
+// Package: io.github.raesleg.game.entities.misc (inner class of Trees)
+class Trees.Tree extends TextureObject {
++ Tree(x:float, y:float, w:float, h:float)
++ update(deltaTime:float): void
+}
+
+// Package: io.github.raesleg.game.entities.vehicles
+class NPCCar extends MovableEntity implements IExpirable, IPerceivable {
+- laneIndex:int
+- sensor:SensorComponent
+- approachSpeed:float
+- expired:boolean
+- inPreview:boolean
+- previewTimer:float
+- lifeTimer:float
+- MAX_LIFETIME:float
++ updateLifeCycle(scrollPixelsPerSecond:float, deltaTime:float, screenHeight:float): void
+- syncSpriteFromBody(): void
++ isExpired(): boolean
++ getPerceptionCategory(): PerceptionCategory
++ markExpired(): void
++ getLaneIndex(): int
++ getSensor(): SensorComponent
++ dispose(): void
++ NPCCar(filename:String, x:float, y:float, w:float, h:float, laneIndex:int, approachSpeed:float, controls:ControlSource, strategy:MovementStrategy, movementModel:MovementModel, body:PhysicsBody, sensor:SensorComponent)
+}
+
+// Package: io.github.raesleg.game.entities.vehicles
+class PlayerCar extends MovableEntity implements IFlashable {
+- FLASH_DURATION:float
+- FLASH_FREQUENCY:float
+- flashTimer:float
+- isFlashing:boolean
++ triggerDamageFlash(): void
++ isFlashing(): boolean
++ update(deltaTime:float): void
++ draw(batch:SpriteBatch): void
++ getCarMovementModel(): CarMovementModel
++ PlayerCar(filename:String, x:float, y:float, w:float, h:float, controls:ControlSource, strategy:MovementStrategy, movementModel:MovementModel, body:PhysicsBody)
+}
+
+// Package: io.github.raesleg.game.entities.vehicles
+class PoliceCar extends TextureObject implements IChaseEntity {
+- FLASH_FRAMES:String[]
+- flashTimer:float
+- flashIndex:int
+- body:PhysicsBody
+- movement:PoliceMovement
+- screenY:float
+- caught:boolean
++ updateChase(deltaTime:float, playerX:float, playerY:float, starCount:int, maxStars:int, playerSpeed:float, maxSpeed:float): void
++ hasCaughtPlayer(): boolean
++ getScreenY(): float
++ draw(batch:SpriteBatch): void
++ dispose(): void
++ PoliceCar(body:PhysicsBody)
+}
+// Package: io.github.raesleg.game.event
+final class FuelDepletedEvent implements GameEvent {
+- INSTANCE:FuelDepletedEvent
++ instance(): FuelDepletedEvent
+- FuelDepletedEvent()
+}
+
+// Package: io.github.raesleg.game.event
+final class InstantFailEvent implements GameEvent {
+- reason:String
++ getReason(): String
++ InstantFailEvent(reason:String)
+}
+
+// Package: io.github.raesleg.game.event
+final class PickupCollectedEvent implements GameEvent {
+- INSTANCE:PickupCollectedEvent
++ instance(): PickupCollectedEvent
+- PickupCollectedEvent()
+}
+
+// Package: io.github.raesleg.game.event
+final class ScoreChangedEvent implements GameEvent {
+- delta:int
++ getDelta(): int
++ ScoreChangedEvent(delta:int)
+}
+
+// Package: io.github.raesleg.game.factory
+final class BoundaryFactory {
+- BoundaryFactory()
++ createBoundaries(world:PhysicsWorld, worldW:float, worldH:float): void
+}
+
+// Package: io.github.raesleg.game.factory
+final class CrosswalkFactory {
+- CrosswalkFactory()
++ createZone(world:PhysicsWorld, worldY:float, roadCentreX:float): CrosswalkZone
++ createEncounter(world:PhysicsWorld, index:int, worldY:float): EncounterComponents
+}
+
+// Package: io.github.raesleg.game.factory
+final class CrosswalkFactory.EncounterComponents {
+- pedestrian:Pedestrian
+- movement:PedestrianMovement
+- hitReaction:PedestrianHitReaction
++EncounterComponents(pedestrian:Pedestrian, movement:PedestrianMovement, hitReaction:PedestrianHitReaction)
++getPedestrian():Pedestrian
++getMovement():PedestrianMovement
++getHitReaction():PedestrianHitReaction
++createEncounter(world:PhysicsWorld, index:int, worldY:float):EncounterComponents 
+
+// Package: io.github.raesleg.game.factory
+interface ILaneOccupancy {
++ getOccupiedLanesNear(nearY:float, range:float): Set<Integer>
+}
+
+// Package: io.github.raesleg.game.factory
+class NPCCarSpawner implements ILaneOccupancy {
+- entityManager:EntityManager
+- world:PhysicsWorld
+- screenHeight:float
+- spawnTimer:float
+- spawnInterval:float
+- spawnYOffset:float
+- activeNPCs:List<NPCCar>
+- playerY:float
+- playerX:float
+- exclusionZones:List<float[]>
+- hazardOccupancy:ILaneOccupancy
+- spawningEnabled:boolean
+- APPROACH_SPEED:float
+- DOUBLE_SPAWN_CHANCE:float
++ setHazardOccupancy(hazardOccupancy:ILaneOccupancy): void
++ setSpawningEnabled(enabled:boolean): void
++ setPlayerY(playerY:float): void
++ setPlayerX(playerX:float): void
++ update(deltaTime:float, scrollPixelsPerSecond:float): void
+- spawnRandomCar(): void
+- spawnSingleNPC(laneIndex:int, relativeY:float): void
++ setSpawnInterval(newInterval:float): void
++ getActiveCount(): int
++ clearAll(): void
++ getOccupiedLanesNear(nearY:float, range:float): Set<Integer>
+- getPlayerLane(): int
++ NPCCarSpawner(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, spawnInterval:float)
++ NPCCarSpawner(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, spawnInterval:float, exclusionZones:List<float[]>)
+}
+
+// Package: io.github.raesleg.game.factory
+class PickupableSpawner {
+- entityManager:EntityManager
+- world:PhysicsWorld
+- screenHeight:float
+- npcCarSpawner:NPCCarSpawner
+- crosswalkExclusions:List<float[]>
+- spawnTimer:float
+- spawnInterval:float
+- activePickups:List<Pickupable>
+- PICKUP_SIZE:float
++ update(deltaTime:float, scrollOffset:float): void
+- spawnPickup(scrollOffset:float): void
++ clearAll(): void
++ PickupableSpawner(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, spawnInterval:float, npcCarSpawner:NPCCarSpawner)
++ PickupableSpawner(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, spawnInterval:float, npcCarSpawner:NPCCarSpawner, crosswalkExclusions:List<float[]>)
+}
+
+// Package: io.github.raesleg.game.factory
+final class PlayerFactory {
+- PlayerFactory()
++ create(world:PhysicsWorld, entityManager:EntityManager, controls:ControlSource): PlayerCar
+}
+
+// Package: io.github.raesleg.game.factory
+final class PoliceCarFactory {
+- world:PhysicsWorld
+- entityManager:EntityManager
++ spawn(): IChaseEntity
++ PoliceCarFactory(world:PhysicsWorld, entityManager:EntityManager)
+}
+
+// Package: io.github.raesleg.game.factory
+class RoadHazardSpawner implements ILaneOccupancy {
+- entityManager:EntityManager
+- world:PhysicsWorld
+- screenHeight:float
+- npcOccupancy:ILaneOccupancy
+- exclusionZones:List<float[]>
+- surfaceEffect:SurfaceEffect
+- texturePath:String
+- spawnTimer:float
+- spawnInterval:float
+- activeHazards:List<RoadHazard>
+- hazardLanes:List<int[]>
+- HAZARD_W:float
+- HAZARD_H:float
++ update(deltaTime:float, scrollOffset:float): void
+- spawnRandomHazard(scrollOffset:float): void
++ getOccupiedLanesNear(nearY:float, range:float): Set<Integer>
++ getActiveHazards(): List<RoadHazard>
++ clearAll(): void
++ RoadHazardSpawner(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, spawnInterval:float, npcOccupancy:ILaneOccupancy, exclusionZones:List<float[]>, surfaceEffect:SurfaceEffect, texturePath:String)
+}
+
+// Package: io.github.raesleg.game.factory
+class TreeSpawner {
+- entityManager:EntityManager
+- screenHeight:float
+- spawnTimer:float
+- spawnInterval:float
+- activeTrees:List<Tree>
+- TREE_W:float
+- TREE_H:float
+- MIN_Y_SPACING:float
+- TEXTURES:String[]
++ update(deltaTime:float, scrollOffset:float): void
+- spawnTree(scrollOffset:float): void
++ clearAll(): void
++ TreeSpawner(entityManager:EntityManager, screenHeight:float, spawnInterval:float)
+}
+// Package: io.github.raesleg.game
+final class GameConstants {
++ ROAD_LEFT:float
++ ROAD_RIGHT:float
++ ROAD_WIDTH:float
++ SCORE_PICKUP:int
++ SCORE_CROSSWALK_SAFE:int
++ SCORE_PENALTY:int
++ SCORE_RATE_PER_SECOND:float
++ MAX_WANTED_STARS:int
++ CRASH_EXPLOSION_THRESHOLD:int
++ PLAYER_CAR_WIDTH:float
++ PLAYER_CAR_HEIGHT:float
++ PLAYER_CAR_START_Y:float
++ NPC_WIDTH:float
++ NPC_HEIGHT:float
++ POLICE_WIDTH:float
++ POLICE_HEIGHT:float
++ POLICE_START_Y:float
++ L1_LEVEL_LENGTH:float
++ L1_MAX_SPEED:float
++ L1_ACCELERATION:float
++ L1_BRAKE_RATE:float
++ L1_MAX_SCROLL:float
++ L1_NPC_SPAWN_SEC:float
++ L1_CROSSWALK_HEIGHT:float
++ L1_CROSSING_POSITIONS:List<Float>
++ L2_LEVEL_LENGTH:float
++ L2_MAX_SPEED:float
++ L2_ACCELERATION:float
++ L2_BRAKE_RATE:float
++ L2_MAX_SCROLL:float
++ L2_NPC_SPAWN_SEC:float
++ L2_PUDDLE_INTERVAL:float
++ L2_MUD_INTERVAL:float
++ L2_PICKUP_SPAWN_SEC:float
++ FUEL_DRAIN_RATE:float
++ FUEL_RECHARGE_AMOUNT:float
++ RAIN_DROP_COUNT:int
++ POLICE_MAX_DISTANCE:float
++ SIREN_MIN_VOLUME:float
++ CROSSWALK_VIOLATION_STARS:int
++ TRAFFIC_CRASH_STARS:int
++ SFX_BOUNDARY_HIT:String
++ SFX_CRASH:String
++ SFX_PEDESTRIAN_HIT:String
++ SFX_SCREAM:String
++ SFX_POLICE_SIREN:String
++ SFX_RAIN:String
++ SFX_DRIVE:String
++ SFX_EXPLOSION:String
++ SFX_EXPLOSION_BIG:String
++ SFX_REWARD:String
++ SFX_NEGATIVE:String
++ SFX_GAMEOVER:String
++ SFX_WIN:String
++ SFX_MENU:String
++ SFX_SELECTED:String
++ SFX_HIT_SOUND:String
++ BGM_DEFAULT:String
++ NPC_PEDESTRIAN_STOP_DIST:float
++ NPC_VEHICLE_SLOW_DIST:float
++ NPC_OBSTACLE_SLOW_DIST:float
++ NPC_SLOW_SPEED:float
++ NPC_OBSTACLE_SPEED:float
++ NPC_DEFAULT_SPEED:float
++ EXPLOSION_DELAY:float
++ CAMERA_LOOK_AHEAD:float
++ CAMERA_ZOOM:float
++ L2_CAMERA_ZOOM:float
++ PLAYER_MIN_Y:float
++ PLAYER_MAX_Y:float
++ POLICE_STAR_MAX_DISTANCE:float
++ POLICE_LERP_SPEED:float
++ POLICE_LANE_TRACK_SPEED:float
++ POLICE_SPEED_FACTOR:float
++ POLICE_FLASH_INTERVAL:float
++ CROSSWALK_ZONE_HEIGHT:float
++ CROSSING_SPEED:float
++ PASSIVE_DECEL:float
++ L2_CRASH_SPEED_PENALTY:float
++ BOUNDARY_WALL_THICKNESS:float
++ PEDESTRIAN_WIDTH:float
++ PEDESTRIAN_HEIGHT:float
++ PEDESTRIAN_HITBOX_SCALE:float
++ L2_PLAYER_VERTICAL_SPEED:float
++ SPAWN_SCREEN_HEIGHT:float
++ L2_SPAWN_SCREEN_HEIGHT:float
++ REVERSE_MAX_SPEED:float
++ REVERSE_ACCEL:float
++ EFFECT_INTERVAL:float
+- GameConstants()
+}
+
+// Package: io.github.raesleg.game.io
+class Keyboard implements InputDevice, ActionInput {
+- contexts:Stack<Context>
++ pushContext(): void
++ popContext(): void
++ resetToBase(): void
+- active(): Context
++ addBind(input:int, action:Runnable, isJustPressed:boolean): void
++ removeBind(input:int): void
++ handleInput(): void
++ bindAction(key:int, actionName:String): void
++ isHeld(action:String): boolean
++ justPressed(action:String): boolean
++ Keyboard()
+}
+
+// Package: io.github.raesleg.game.io (inner class of Keyboard)
+final class Keyboard.Bind {
+- action:Runnable
+- justPressed:boolean
++ shouldFire(key:int): boolean
++ Bind(action:Runnable, justPressed:boolean)
+}
+
+// Package: io.github.raesleg.game.io (inner class of Keyboard)
+final class Keyboard.Context {
+- commandBinds:IntMap<Bind>
+- actionBinds:ObjectMap<String, IntArray>
+}
+
+
+
+// Package: io.github.raesleg.game.io
+final class SystemInputBinder {
+- SystemInputBinder()
++ bindMovementKeys(kb:Keyboard): void
++ bindSystemKeys(kb:Keyboard, onPause:Runnable, onToggleMute:Runnable): void
+}
+
+// Package: io.github.raesleg.game.movement
+class AIPerceptionService {
+- entityManager:EntityManager
++ scan(self:Entity, sensor:SensorComponent): PerceptionSnapshot
+- isRelevantTarget(self:Entity, candidate:Entity, selfCenterX:float, selfFrontY:float, sensor:SensorComponent): boolean
++ AIPerceptionService(entityManager:EntityManager)
+}
+
+// Package: io.github.raesleg.game.movement
+class CarMovementModel implements MovementModel {
+- profile:VehicleProfile
+- currentSurface:SurfaceEffect
+- forwardSpeed:float
+- recoveringGrip:boolean
+- recoveryTimer:float
+- drifting:boolean
+- driftLateralSpeed:float
+- insideHazard:boolean
+- trailEffectTimer:float
+- trailEffectThisStep:boolean
+- entryEffectPending:boolean
+- exitEffectPending:boolean
++ step(body:PhysicsBody, x:float, y:float, dt:float): void
+- calculateSidewaysSpeed(velocity:Vector2, steerInput:float, dt:float): float
+- calculateSlipperySidewaysSpeed(velocity:Vector2, steerInput:float): float
+- createSlipKick(currentSidewaysSpeed:float): float
+- calculateForwardSpeed(throttleInput:float, dt:float): float
+- calculateGripMultiplier(dt:float): float
+- updateHazardTrailTimer(dt:float): void
++ onEnterZone(body:PhysicsBody, zoneTuning:Object): void
++ onExitZone(body:PhysicsBody): void
++ consumeEntryEffectSignal(): boolean
++ consumeExitEffectSignal(): boolean
++ didEmitTrailEffectThisStep(): boolean
++ isInsideHazard(): boolean
++ getSurfaceEffect(): SurfaceEffect
+- moveTowards(current:float, target:float, amount:float): float
++ CarMovementModel(profile:VehicleProfile)
+}
+
+// Package: io.github.raesleg.game.movement
+class NpcDrivingStrategy implements MovementStrategy {
+- perceptionService:AIPerceptionService
+- sensor:SensorComponent
++ getX(entity:MovableEntity, dt:float): float
++ getY(entity:MovableEntity, dt:float): float
+- shouldStopForPedestrian(snapshot:PerceptionSnapshot): boolean
+- shouldFollowVehicleSlowly(snapshot:PerceptionSnapshot): boolean
+- shouldSlowForObstacle(snapshot:PerceptionSnapshot): boolean
++ NpcDrivingStrategy(perceptionService:AIPerceptionService, sensor:SensorComponent)
+}
+
+// Package: io.github.raesleg.game.movement
+class PedestrianMovement {
+- walkingSpeed:float
+- direction:float
+- crossedFromLeft:float
+- crossedFromRight:float
+- state:CrossingState
++ enum CrossingState { WAITING, CROSSING, SUCCESS, FAILED }
++ activate(): void
++ deactivate(): void
++ update(pedestrian:Pedestrian, deltaTime:float): void
++ hasReachedFinish(pedestrian:Pedestrian): boolean
++ markFinishedSuccessfully(): void
++ markFinishedUnsuccessfully(): void
++ isActive(): boolean
++ isFinished(): boolean
++ hasCrossedSuccessfully(): boolean
++ getState(): CrossingState
++ getDirection(): float
++ PedestrianMovement(walkingSpeed:float, spriteWidth:float, direction:float)
+}
+
+// Package: io.github.raesleg.game.movement
+record PerceptionSnapshot {
++ PerceptionSnapshot(pedestrianAhead:boolean, vehicleAhead:boolean, obstacleAhead:boolean, nearestDistance:float, nearestEntity:Entity, nearestPedestrianDistance:float, nearestVehicleDistance:float, nearestObstacleDistance:float)
++ clear(defaultDistance:float): PerceptionSnapshot
+}
+
+// Package: io.github.raesleg.game.movement
+class PlayerMovementStrategy implements MovementStrategy {
+- steeringSensitivity:float
+- throttleSensitivity:float
++ getX(entity:MovableEntity, dt:float): float
++ getY(entity:MovableEntity, dt:float): float
+- clamp(value:float, min:float, max:float): float
++ PlayerMovementStrategy()
++ PlayerMovementStrategy(steeringSensitivity:float, throttleSensitivity:float)
+}
+
+// Package: io.github.raesleg.game.movement
+class PoliceMovement {
+- screenY:float
++ advance(dt:float, playerY:float, starCount:int, maxStars:int, playerSpeed:float, maxSpeed:float): float
++ computeTargetY(playerY:float, starCount:int, maxStars:int, playerSpeed:float, maxSpeed:float): float
++ lerpX(currentX:float, targetX:float, dt:float): float
++ getScreenY(): float
++ hasCaught(policeBottom:float, policeHeight:float, playerY:float): boolean
+- clamp(value:float, min:float, max:float): float
++ PoliceMovement(startY:float)
+}
+
+// Package: io.github.raesleg.game.movement
+class SensorComponent {
+- forwardRange:float
+- sideRange:float
+- stopDistance:float
+- followDistance:float
++ getForwardRange(): float
++ getSideRange(): float
++ getStopDistance(): float
++ getFollowDistance(): float
++ SensorComponent(forwardRange:float, sideRange:float, stopDistance:float, followDistance:float)
+}
+
+// Package: io.github.raesleg.game.movement
+final class SurfaceEffect {
+- speedMultiplier:float
+- lateralMultiplier:float
+- dampingMultiplier:float
+- isSlippery:boolean
+- momentumRetention:float
+- steerInfluence:float
+- stickyness:float
++ DEFAULT:SurfaceEffect
++ LOW_FRICTION:SurfaceEffect
++ HIGH_FRICTION:SurfaceEffect
++ SLOW_ZONE:SurfaceEffect
++ VERY_SLOW_ZONE:SurfaceEffect
++ getForwardSpeedMultiplier(): float
++ getLateralMultiplier(): float
++ getDampingMultiplier(): float
++ isSlippery(): boolean
++ getMomentumRetention(): float
++ getSteerInfluence(): float
++ getStickyness(): float
+- SurfaceEffect(speedMultiplier:float, lateralMultiplier:float, dampingMultiplier:float, isSlippery:boolean, momentumRetention:float, steerInfluence:float, stickyness:float)
+}
+
+// Package: io.github.raesleg.game.movement
+final class VehicleProfile {
+- maxLateralSpeed:float
+- steeringResponse:float
+- maxForwardSpeed:float
+- acceleration:float
+- linearDamping:float
+- slideRecoveryTime:float
++ getMaxLateralSpeed(): float
++ getSteeringResponse(): float
++ getMaxForwardSpeed(): float
++ getAcceleration(): float
++ getLinearDamping(): float
++ getSlideRecoveryTime(): float
++ playerArcade(): VehicleProfile
++ npcTraffic(): VehicleProfile
++ VehicleProfile(maxLateralSpeed:float, steeringResponse:float, maxForwardSpeed:float, acceleration:float, linearDamping:float, slideRecoveryTime:float)
+}
+// Package: io.github.raesleg.game.rules
+class BreakRuleCommand implements ICommand {
+- ruleManager:RuleManager
+- violationType:String
+- weight:int
++ execute(): void
++ undo(): void
++ BreakRuleCommand(ruleManager:RuleManager, violationType:String)
++ BreakRuleCommand(ruleManager:RuleManager, violationType:String, weight:int)
+}
+
+// Package: io.github.raesleg.game.rules
+class PedestrianHitCommand implements ICommand {
+- ruleManager:RuleManager
++ execute(): void
++ undo(): void
++ PedestrianHitCommand(ruleManager:RuleManager)
+}
+
+// Package: io.github.raesleg.game.rules
+class RuleManager {
+- rulesBroken:int
+- violationLog:List<String>
++ recordViolation(): void
++ recordViolation(type:String): void
++ undoLastViolation(): void
++ getRulesBroken(): int
++ getViolationLog(): List<String>
++ getPoliceAggression(): float
++ reset(): void
+}
+
+// Package: io.github.raesleg.game.scene
+abstract class BaseGameScene extends Scene {
+- speedScroll:SpeedScrollController
+- fuelController:FuelController
+- audioController:AudioController
+- eventBus:EventBus
+- matchDirector:MatchDirector
+- dashboard:DashboardUI
+- isPaused:boolean
+- ruleManager:RuleManager
+- commandHistory:CommandHistory
+- world:PhysicsWorld
+- collisionHandler:GameCollisionHandler
+- playerCar:PlayerCar
+- trees:Trees
+- shapeRenderer:ShapeRenderer
+- roadRenderer:RoadRenderer
+- visMinX:float
+- visMinY:float
+- visMaxX:float
+- visMaxY:float
+- sound:SoundDevice
+- worldW:float
+- worldH:float
++ getLevelLength(): float
++ getMaxSpeed(): float
++ getAcceleration(): float
++ getBrakeRate(): float
++ getBgmPath(): String
++ initLevelData(): void
++ updateGame(deltaTime:float): void
++ isGameOver(): boolean
++ getLevelName(): String
++ createRetryScene(): BaseGameScene
++ getGameOverReason(): String
++ getMaxScrollPixelsPerSecond(): float
++ renderLevelEffects(sr:ShapeRenderer, batch:SpriteBatch): void
++ getCameraZoom(): float
++ disposeLevelData(): void
++ getViolationLog(): List<String>
++ createViewport(cam:OrthographicCamera): Viewport
++ show(): void
++ update(deltaTime:float): void
++ render(batch:SpriteBatch): void
++ pause(): void
++ resume(): void
++ dispose(): void
++ getWorld(): PhysicsWorld
++ getCollisionHandler(): GameCollisionHandler
++ getPlayerCar(): PlayerCar
++ getDashboard(): DashboardUI
++ getSound(): SoundDevice
++ getEventBus(): EventBus
++ getRuleManager(): RuleManager
++ getCommandHistory(): CommandHistory
++ getRoadRenderer(): RoadRenderer
++ getShapeRenderer(): ShapeRenderer
++ getScrollOffset(): float
++ getScore(): int
++ getRulesBroken(): int
++ setRulesBroken(n:int): void
++ setInstantFail(flag:boolean, reason:String): void
++ incrementCrashCount(): void
++ addScore(delta:int): void
++ handlePickup(): void
++ getFuelSystem(): FuelSystem
++ getGameTime(): float
++ getScrollSpeedPixelsPerSecond(): float
++ getNpcScrollSpeedPixelsPerSecond(): float
++ getSimulatedSpeedKmh(): float
++ getSpeedScrollController(): SpeedScrollController
++ getCrashCount(): int
++ getVisMinX(): float
++ getVisMinY(): float
++ getVisMaxX(): float
++ getVisMaxY(): float
++ addEndCondition(condition:ILevelEndCondition): void
++ getMatchDirector(): MatchDirector
++ triggerExplosionGameOver(lossReason:String): void
+- stopMoveLoop(): void
+- openPause(): void
++ BaseGameScene()
+}
+
+// Package: io.github.raesleg.game.scene
+final class CrosswalkEncounterSystem implements IGameSystem {
+- VIRTUAL_HEIGHT:float
+- entityManager:EntityManager
+- world:PhysicsWorld
+- sound:SoundDevice
+- eventBus:EventBus
+- ruleManager:RuleManager
+- commandHistory:CommandHistory
+- crosswalkZones:List<CrosswalkZone>
+- stopSigns:List<StopSign>
+- encounters:List<PedestrianEncounter>
+- scrollOffset:float
+- simulatedSpeedKmh:float
+- instantFailTriggered:boolean
+- instantFailReason:String
+- crosswalkActiveOnScreen:boolean
++ initCrosswalks(crossingPositions:List<Float>): void
++ setFrameState(scrollOffset:float, simulatedSpeedKmh:float): void
++ isCrosswalkActiveOnScreen(): boolean
++ isInstantFailTriggered(): boolean
++ getInstantFailReason(): String
++ triggerPedestrianHit(hitPedestrian:Pedestrian, knockbackDirection:Vector2, knockbackForce:float): void
++ getCrosswalkZones(): List<CrosswalkZone>
++ update(deltaTime:float): void
+- removeExpiredStopSigns(): void
+- removeExpiredZones(): void
+- updateEncounters(deltaTime:float): void
+- handleExpiredEncounter(enc:PedestrianEncounter, iter:Iterator<PedestrianEncounter>): boolean
+- trackActiveOnScreen(enc:PedestrianEncounter, visible:boolean): void
+- tryActivateEncounter(enc:PedestrianEncounter, visible:boolean): void
+- handleFailCheck(enc:PedestrianEncounter, iter:Iterator<PedestrianEncounter>): boolean
+- updateMovementOrBlock(enc:PedestrianEncounter, deltaTime:float): void
+- checkCrossingCompletion(enc:PedestrianEncounter): void
+- publishInstantFail(reason:String): void
++ dispose(): void
+- fireCrosswalkViolation(): void
++ CrosswalkEncounterSystem(entityManager:EntityManager, world:PhysicsWorld, sound:SoundDevice, eventBus:EventBus, ruleManager:RuleManager, commandHistory:CommandHistory)
+}
+
+// Package: io.github.raesleg.game.scene (inner class of CrosswalkEncounterSystem)
+final class CrosswalkEncounterSystem.PedestrianEncounter {
+- pedestrian:Pedestrian
+- movement:PedestrianMovement
+- hitReaction:PedestrianHitReaction
+- zone:CrosswalkZone
+- rewarded:boolean
+- crashHandled:boolean
+- failQueued:boolean
+- stopViolationFired:boolean
++ PedestrianEncounter(pedestrian:Pedestrian, movement:PedestrianMovement, hitReaction:PedestrianHitReaction, zone:CrosswalkZone)
+}
+
+// Package: io.github.raesleg.game.scene
+final class CrosswalkRenderer {
++ render(sr:ShapeRenderer, zones:List<CrosswalkZone>): void
+}
+
+// Package: io.github.raesleg.game.scene
+final class ExplosionSystem {
+- ExplosionSystem()
++ trigger(entityManager:EntityManager, sound:SoundDevice, centreX:float, centreY:float): void
+}
+
+// Package: io.github.raesleg.game.scene
+final class HazardEffectSystem {
+- entityManager:EntityManager
+- playerCar:PlayerCar
++ update(): void
+- centreX(): float
+- centreY(): float
+- spawnEntryEffect(effect:SurfaceEffect): void
+- spawnTrailEffect(effect:SurfaceEffect): void
+- spawnExitEffect(effect:SurfaceEffect): void
++ HazardEffectSystem(entityManager:EntityManager, playerCar:PlayerCar)
+}
+
+// Package: io.github.raesleg.game.scene
+interface ILevelEndCondition {
++ evaluate(): boolean
+}
+
+// Package: io.github.raesleg.game.scene
+class Level1Scene extends BaseGameScene {
+- trafficSystem:TrafficSpawningSystem
+- crosswalkSystem:CrosswalkEncounterSystem
+- crosswalkRenderer:CrosswalkRenderer
++ getMaxScrollPixelsPerSecond(): float
++ getLevelLength(): float
++ getMaxSpeed(): float
++ getAcceleration(): float
++ getBrakeRate(): float
++ getBgmPath(): String
++ initLevelData(): void
++ updateGame(deltaTime:float): void
++ renderLevelEffects(sr:ShapeRenderer, batch:SpriteBatch): void
++ isGameOver(): boolean
++ getGameOverReason(): String
++ getLevelName(): String
++ getViolationLog(): List<String>
++ createRetryScene(): BaseGameScene
++ disposeLevelData(): void
+}
+
+// Package: io.github.raesleg.game.scene
+class Level2Scene extends BaseGameScene {
+- trafficSystem:TrafficSpawningSystem
+- policeFactory:PoliceCarFactory
+- playerController:PlayerController
+- chaseDirector:ChaseDirector
+- hazardEffects:HazardEffectSystem
+- hazardSpawners:List<RoadHazardSpawner>
+- rainEffect:RainEffectSystem
+- policeLightSystem:PoliceLightSystem
++ getMaxScrollPixelsPerSecond(): float
++ getCameraZoom(): float
++ getLevelLength(): float
++ getMaxSpeed(): float
++ getAcceleration(): float
++ getBrakeRate(): float
++ getBgmPath(): String
++ initLevelData(): void
++ updateGame(deltaTime:float): void
++ isGameOver(): boolean
++ getGameOverReason(): String
++ getLevelName(): String
++ getViolationLog(): List<String>
++ createRetryScene(): BaseGameScene
++ renderLevelEffects(sr:ShapeRenderer, batch:SpriteBatch): void
++ disposeLevelData(): void
+}
+// Package: io.github.raesleg.game.scene
+final class LevelResult {
+- score:int
+- time:float
+- rulesBroken:int
+- levelName:String
+- completed:boolean
+- lossReason:String
+- violations:List<String>
++ getScore(): int
++ getTime(): float
++ getRulesBroken(): int
++ getLevelName(): String
++ isCompleted(): boolean
++ getLossReason(): String
++ getViolations(): List<String>
++ LevelResult(score:int, time:float, rulesBroken:int, levelName:String, completed:boolean, lossReason:String)
++ LevelResult(score:int, time:float, rulesBroken:int, levelName:String, completed:boolean, lossReason:String, violations:List<String>)
+}
+
+// Package: io.github.raesleg.game.scene
+class LevelSelectScene extends Scene {
+- stage:Stage
+- titleFont:BitmapFont
+- buttonFont:BitmapFont
+- subFont:BitmapFont
+- pixelTexture:Texture
+- sound:SoundDevice
++ show(): void
++ update(deltaTime:float): void
++ render(batch:SpriteBatch): void
++ resize(width:int, height:int): void
++ dispose(): void
+- selectLevel1(): void
+- selectLevel2(): void
+- goBack(): void
++ LevelSelectScene()
+}
+
+// Package: io.github.raesleg.game.scene
+class PauseScene extends Scene {
+- stage:Stage
+- titleFont:BitmapFont
+- optionFont:BitmapFont
+- instrFont:BitmapFont
+- pixelTexture:Texture
+- sound:SoundDevice
+- menuOptions:String[]
+- optionLabels:Label[]
+- selectedOption:int
++ show(): void
+- refreshLabels(): void
++ update(deltaTime:float): void
++ render(batch:SpriteBatch): void
++ resize(width:int, height:int): void
++ dispose(): void
+- resumeGame(): void
+- moveUp(): void
+- moveDown(): void
+- confirm(): void
+- volumeUp(): void
+- volumeDown(): void
+- toggleMute(): void
++ PauseScene()
+}
+
+// Package: io.github.raesleg.game.scene
+final class PlayerController {
+- keyboard:Keyboard
+- playerCar:PlayerCar
++ update(deltaTime:float): void
++ PlayerController(keyboard:Keyboard, playerCar:PlayerCar)
+}
+
+// Package: io.github.raesleg.game.scene
+final class PoliceLightSystem implements IGameSystem {
+- BASE_FLASH_FREQ:float
+- MAX_FLASH_FREQ:float
+- GLOW_HEIGHT:float
+- timer:float
+- normalisedDistance:float
++ setNormalisedDistance(d:float): void
++ update(deltaTime:float): void
++ render(sr:ShapeRenderer, visMinX:float, visMinY:float, visMaxX:float): void
++ dispose(): void
+}
+
+// Package: io.github.raesleg.game.scene
+final class RainEffectSystem {
+- dropCount:int
+- dropX:float[]
+- dropY:float[]
+- dropLen:float[]
+- dropSpd:float[]
+- dropsReady:boolean
+- rainTime:float
++ render(sr:ShapeRenderer, batch:SpriteBatch, visMinX:float, visMinY:float, visMaxX:float, visMaxY:float): void
+- initDropsIfNeeded(visMinX:float, visMinY:float, visMaxX:float, visMaxY:float): void
+- advanceDrops(dt:float, visMinX:float, visMinY:float, visW:float, visH:float): void
+- drawAtmosphere(sr:ShapeRenderer, visMinX:float, visMinY:float, visW:float, visH:float): void
+- drawWetLensBlur(sr:ShapeRenderer, visMinX:float, visMinY:float, visW:float, visH:float): void
+- drawVignette(sr:ShapeRenderer, visMinX:float, visMinY:float, visW:float, visH:float): void
+- drawRainStreaks(sr:ShapeRenderer, visMinX:float, visMinY:float): void
++ RainEffectSystem()
+}
+
+// Package: io.github.raesleg.game.scene
+class ResultsScene extends Scene {
+- result:LevelResult
+- retryFactory:Supplier<Scene>
+- stage:Stage
+- titleFont:BitmapFont
+- bodyFont:BitmapFont
+- buttonFont:BitmapFont
+- smallFont:BitmapFont
+- pixelTexture:Texture
+- sound:SoundDevice
++ show(): void
++ update(deltaTime:float): void
++ render(batch:SpriteBatch): void
++ resize(width:int, height:int): void
++ dispose(): void
++ ResultsScene(result:LevelResult, retryFactory:Supplier<Scene>)
+}
+
+// Package: io.github.raesleg.game.scene
+class RoadRenderer {
++ ROAD_LEFT:float
++ ROAD_RIGHT:float
++ ROAD_WIDTH:float
+~ LANE_COUNT:int
+~ LANE_WIDTH:float
+- DASH_LENGTH:float
+- DASH_GAP:float
+- DASH_WIDTH:float
+- GRASS_COLOR:Color
+- ROAD_COLOR:Color
+- SHOULDER_COLOR:Color
+- EDGE_COLOR:Color
+- DASH_COLOR:Color
++ draw(sr:ShapeRenderer, scrollOffset:float, visMinX:float, visMinY:float, visMaxX:float, visMaxY:float): void
+}
+
+// Package: io.github.raesleg.game.scene
+class StartScene extends Scene {
+- stage:Stage
+- titleFont:BitmapFont
+- buttonFont:BitmapFont
+- pixelTexture:Texture
+- sound:SoundDevice
++ show(): void
++ update(deltaTime:float): void
++ render(batch:SpriteBatch): void
++ resize(width:int, height:int): void
++ dispose(): void
+- confirm(): void
++ StartScene()
+}
+
+// Package: io.github.raesleg.game.scene
+class SurfaceParticleDispatcher {
+- effects:Map<SurfaceEffect, SurfaceParticleEffect>
++ record SurfaceParticleEffect(onEntry:ParticleSpawner, onTrail:ParticleSpawner, onExit:ParticleSpawner)
++ register(surface:SurfaceEffect, effect:SurfaceParticleEffect): void
++ dispatchEntry(surface:SurfaceEffect, em:EntityManager, x:float, y:float): void
++ dispatchTrail(surface:SurfaceEffect, em:EntityManager, x:float, y:float): void
++ dispatchExit(surface:SurfaceEffect, em:EntityManager, x:float, y:float): void
++ dispatchEntry(surface:SurfaceEffect, em:EntityManager, entity:Entity): void
++ dispatchTrail(surface:SurfaceEffect, em:EntityManager, entity:Entity): void
++ dispatchExit(surface:SurfaceEffect, em:EntityManager, entity:Entity): void
++ SurfaceParticleDispatcher()
+}
+
+// Package: io.github.raesleg.game.scene (inner interface of SurfaceParticleDispatcher)
+interface SurfaceParticleDispatcher.ParticleSpawner {
++ spawn(em:EntityManager, x:float, y:float): void
+}
+
+// Package: io.github.raesleg.game.scene
+final class TrafficSpawningSystem implements IGameSystem {
+- npcSpawner:NPCCarSpawner
+- pickupSpawner:PickupableSpawner
+- treeSpawner:TreeSpawner
+- npcScrollSpeed:float
+- scrollOffset:float
+- playerY:float
+- playerX:float
+- spawningEnabled:boolean
++ setFrameState(npcScrollSpeed:float, scrollOffset:float, simulatedSpeed:float, playerY:float, playerX:float): void
++ setSpawningEnabled(enabled:boolean): void
++ update(deltaTime:float): void
++ dispose(): void
++ getNpcSpawner(): NPCCarSpawner
++ getPickupSpawner(): PickupableSpawner
++ TrafficSpawningSystem(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, npcSpawnInterval:float, pickupSpawnInterval:float, treeSpawnInterval:float, crosswalkExclusions:List<float[]>)
++ TrafficSpawningSystem(entityManager:EntityManager, world:PhysicsWorld, screenHeight:float, npcSpawnInterval:float, pickupSpawnInterval:float, treeSpawnInterval:float)
+}
+// Package: io.github.raesleg.game.state
+final class AudioController implements IGameSystem {
+- sound:SoundDevice
+- bgm:Music
+- BGM_BASE_VOLUME:float
+- playerMoving:boolean
+- accelerating:boolean
+- braking:boolean
++ startBgm(bgmPath:String): void
++ setPlayerMoving(moving:boolean): void
++ setAccelerating(accelerating:boolean): void
++ setBraking(braking:boolean): void
++ update(deltaTime:float): void
++ dispose(): void
++ onPause(): void
++ onResume(): void
++ toggleMute(): void
++ dimBgm(): void
++ getBgm(): Music
+- stopMoveLoop(): void
+- updateMoveLoop(): void
+- syncBgmVolume(): void
++ AudioController(sound:SoundDevice)
+}
+
+// Package: io.github.raesleg.game.state
+final class ChaseDirector {
+- policeFactory:PoliceCarFactory
+- ruleManager:RuleManager
+- sound:SoundDevice
+- policeCar:IChaseEntity
+- policeSpawned:boolean
+- sirenStarted:boolean
++ update(deltaTime:float, player:PlayerCar, simSpeed:float, maxSpeed:float, dashboard:DashboardUI, lights:PoliceLightSystem): float
++ hasCaughtPlayer(): boolean
++ isPoliceSpawned(): boolean
++ ChaseDirector(policeFactory:PoliceCarFactory, ruleManager:RuleManager, sound:SoundDevice)
+}
+
+// Package: io.github.raesleg.game.state
+class CrosswalkZoneState {
+- expired:boolean
+- playerInside:boolean
+- violationFired:boolean
+- crossingActive:boolean
+- playerPassed:boolean
++ isExpired(): boolean
++ markExpired(): void
++ setPlayerInside(inside:boolean): void
++ isPlayerInside(): boolean
++ tryFireViolation(): boolean
++ setCrossingActive(crossingActive:boolean): void
++ isPedestrianCrossing(): boolean
++ hasPlayerPassed(): boolean
++ CrosswalkZoneState()
+}
+
+// Package: io.github.raesleg.game.state
+class DashboardUI implements IDashboardObserver, Disposable {
+- MAX_WANTED_STARS:int
+- LABEL_SCALE:float
+- SCORE_LERP_SPEED:float
+- stage:Stage
+- font:BitmapFont
+- speedFont:BitmapFont
+- scoreLabel:Label
+- progressLabel:Label
+- finishIcon:Texture
+- startIcon:Texture
+- dashboardTex:Texture
+- starTex:Texture
+- carTex:Texture
+- policeTex:Texture
+- pixelTex:Texture
+- currentScore:int
+- currentProgress:float
+- currentRulesBroken:int
+- currentSpeed:int
+- displayScore:float
+- targetScore:int
+- popupManager:ScorePopupManager
+- hudRenderer:HudRenderer
+- currentFuel:float
+- chargeTex:Texture
+- policeDistanceMode:boolean
+- policeDistance:float
++ setPoliceDistanceMode(enabled:boolean): void
++ onPoliceDistanceUpdated(normalizedDistance:float): void
++ onScoreUpdated(score:int): void
++ onProgressUpdated(percentage:float): void
++ onRuleBroken(totalBroken:int): void
++ onSpeedChanged(speed:int): void
++ onFuelUpdated(percentage:float): void
++ act(deltaTime:float): void
++ draw(): void
++ showScorePopup(delta:int): void
++ resize(width:int, height:int): void
++ dispose(): void
+- drawDashboardSpeed(batch:SpriteBatch): void
+- drawWantedStars(batch:SpriteBatch): void
+- drawPoliceDistanceBar(batch:SpriteBatch): void
+- drawProgressBar(batch:SpriteBatch): void
+- drawFuelBar(batch:SpriteBatch): void
+- refreshAllLabels(): void
++ DashboardUI(uiViewport:Viewport)
+}
+
+// Package: io.github.raesleg.game.state
+final class FuelController implements IGameSystem {
+- fuelSystem:FuelSystem
+- eventBus:EventBus
+- depletedFired:boolean
+- currentSpeed:float
++ setCurrentSpeed(speed:float): void
++ update(deltaTime:float): void
++ dispose(): void
++ getFuel(): float
++ isEmpty(): boolean
++ getFuelSystem(): FuelSystem
++ FuelController(drainRate:float, rechargeAmount:float, eventBus:EventBus)
+}
+
+// Package: io.github.raesleg.game.state
+class FuelSystem {
+- fuel:float
+- drainRate:float
+- rechargeAmount:float
++ update(deltaTime:float, isMoving:boolean): void
++ recharge(): void
++ getFuel(): float
++ isEmpty(): boolean
++ FuelSystem(drainRate:float, rechargeAmount:float)
+}
+
+
+
+// Package: io.github.raesleg.game.state
+class HudRenderer {
+- DASHBOARD_W:float
+- DASHBOARD_H:float
+- STAR_SIZE:float
+- ICON_SIZE:float
+- BAR_WIDTH:float
+- MAX_WANTED_STARS:int
+- LABEL_SCALE:float
+- dashboardTex:Texture
+- starTex:Texture
+- carTex:Texture
+- policeTex:Texture
+- pixelTex:Texture
+- finishIcon:Texture
+- startIcon:Texture
+- chargeTex:Texture
+- font:BitmapFont
+- speedFont:BitmapFont
++ drawDashboardSpeed(batch:SpriteBatch, currentSpeed:int): void
++ drawWantedStars(batch:SpriteBatch, currentRulesBroken:int): void
++ drawPoliceDistanceBar(batch:SpriteBatch, policeDistance:float): void
++ drawProgressBar(batch:SpriteBatch, currentProgress:float): void
++ drawFuelBar(batch:SpriteBatch, currentFuel:float): void
++ HudRenderer(dashboardTex:Texture, starTex:Texture, carTex:Texture, policeTex:Texture, pixelTex:Texture, finishIcon:Texture, startIcon:Texture, chargeTex:Texture, font:BitmapFont, speedFont:BitmapFont)
+}
+
+// Package: io.github.raesleg.game.state
+interface IDashboardObserver {
++ onScoreUpdated(score:int): void
++ onProgressUpdated(percentage:float): void
++ onRuleBroken(totalBroken:int): void
++ onSpeedChanged(speed:int): void
++ onFuelUpdated(percentage:float): void
+}
+
+// Package: io.github.raesleg.game.state
+final class MatchDirector {
+- sceneManager:SceneManager
+- entityManager:EntityManager
+- sound:SoundDevice
+- levelName:String
+- retryFactory:Supplier<Scene>
+- violationLogSupplier:Supplier<List<String>>
+- gameTime:float
+- scoreAccumulator:float
+- scoreBonus:int
+- rulesBroken:int
+- crashCount:int
+- instantFail:boolean
+- instantFailReason:String
+- gameOverPending:boolean
+- gameOverTimer:float
+- pendingResult:LevelResult
+- endConditions:List<ILevelEndCondition>
++ configure(levelName:String, retryFactory:Supplier<Scene>, violationLogSupplier:Supplier<List<String>>): void
++ advanceTime(deltaTime:float): void
++ updateScore(deltaTime:float, isMoving:boolean): void
++ isExplosionPending(): boolean
++ tickExplosionDelay(deltaTime:float): boolean
++ addEndCondition(condition:ILevelEndCondition): void
++ checkLevelEnd(): void
++ evaluateWin(progress:float): boolean
++ evaluateCrashExplosion(playerCenterX:float, playerCenterY:float): boolean
++ evaluateInstantFail(): boolean
++ evaluateSubclassGameOver(isGameOver:boolean, reason:String): boolean
++ triggerExplosionGameOver(reason:String, playerCenterX:float, playerCenterY:float): void
++ getScore(): int
++ addBonus(delta:int): void
++ getGameTime(): float
++ getRulesBroken(): int
++ setRulesBroken(n:int): void
++ getCrashCount(): int
++ incrementCrashCount(): void
++ isInstantFail(): boolean
++ setInstantFail(flag:boolean, reason:String): void
+- transitionToResults(won:boolean, reason:String): void
+- buildResult(won:boolean, reason:String): LevelResult
++ MatchDirector(sceneManager:SceneManager, entityManager:EntityManager, sound:SoundDevice)
+}
+
+// Package: io.github.raesleg.game.state
+class ScorePopupManager implements Disposable {
+- MAX_LIFETIME:float
+- RISE_SPEED:float
+- popups:List<ScorePopup>
+- popupFont:BitmapFont
++ show(delta:int): void
++ update(deltaTime:float): void
++ render(batch:SpriteBatch): void
++ dispose(): void
++ ScorePopupManager()
+}
+
+// Package: io.github.raesleg.game.state (inner class of ScorePopupManager)
+class ScorePopupManager.ScorePopup {
+- x:float
+- y:float
+- text:String
+- color:Color
+- alpha:float
+- lifetime:float
+}
+
+// Package: io.github.raesleg.game.state
+final class SpeedScrollController implements IGameSystem {
+- maxSpeed:float
+- acceleration:float
+- brakeRate:float
+- maxScrollPixelsPerSecond:float
+- simulatedSpeed:float
+- scrollOffset:float
+- keyboard:Keyboard
++ setKeyboard(keyboard:Keyboard): void
++ update(deltaTime:float): void
++ dispose(): void
++ getSimulatedSpeed(): float
++ getScrollOffset(): float
++ getMaxSpeed(): float
++ getScrollSpeedPixelsPerSecond(): float
++ getNpcScrollSpeedPixelsPerSecond(): float
++ applySpeedPenalty(factor:float): void
++ SpeedScrollController(maxSpeed:float, acceleration:float, brakeRate:float, maxScrollPixelsPerSecond:float)
+}
+
+// Package: io.github.raesleg.game.zone
+class CrosswalkZone extends Shape implements IExpirable {
+- body:PhysicsBody
+- relativeY:float
+- state:CrosswalkZoneState
+- surfaceEffect:SurfaceEffect
++ updatePosition(scrollOffset:float): void
+- syncPhysicsBody(screenY:float): void
+- updateExpiry(screenY:float): void
++ setPlayerInside(inside:boolean): void
++ tryFireViolation(): boolean
++ isPlayerInside(): boolean
++ setCrossingActive(crossingActive:boolean): void
++ isPedestrianCrossing(): boolean
++ hasPlayerPassed(): boolean
++ isExpired(): boolean
++ markExpired(): void
++ draw(sr:ShapeRenderer): void
++ dispose(): void
++ getPhysicsBody(): PhysicsBody
++ getRelativeY(): float
++ getState(): CrosswalkZoneState
++ getSurfaceEffect(): SurfaceEffect
++ CrosswalkZone(centreXPx:float, relativeY:float, widthPx:float, heightPx:float, body:PhysicsBody)
+}
+
+// Package: io.github.raesleg.game.zone
+class MotionZone extends Shape {
+- tuning:SurfaceEffect
+- body:PhysicsBody
++ getTuning(): SurfaceEffect
+# getBody(): PhysicsBody
++ draw(sr:ShapeRenderer): void
++ dispose(): void
++ MotionZone(world:PhysicsWorld, x:float, y:float, w:float, h:float, tuning:SurfaceEffect, color:Color)
+# MotionZone(xPx:float, yPx:float, wPx:float, hPx:float, tuning:SurfaceEffect, color:Color, body:PhysicsBody)
+}
+
+// Package: io.github.raesleg.game.zone
+class RoadHazard extends MotionZone implements IExpirable {
+- relativeY:float
+- texture:Texture
+- expired:boolean
+- createDynamicSensorBody(world:PhysicsWorld, centreXPx:float, relativeY:float, wPx:float, hPx:float): PhysicsBody
++ updatePosition(scrollOffset:float): void
++ isExpired(): boolean
++ markExpired(): void
++ drawHazard(batch:SpriteBatch): void
++ draw(batch:SpriteBatch): void
++ draw(sr:ShapeRenderer): void
++ dispose(): void
++ RoadHazard(world:PhysicsWorld, centreXPx:float, relativeY:float, wPx:float, hPx:float, effect:SurfaceEffect, texturePath:String)
+}

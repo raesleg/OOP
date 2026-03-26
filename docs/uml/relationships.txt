@@ -1,0 +1,248 @@
+Legend:
+- inheritance: --|>
+- implementation: ..|>
+- composition: o--
+- aggregation: --o
+- association: -->
+- dependency: ..>
+
+Relationships (inferred):
+CollisionManager ..|> ContactListener : implements
+CollisionManager ..> Contact : method param
+CollisionManager ..> ContactImpulse : method param
+CollisionManager ..> ICollisionListener : method param
+CollisionManager ..> Manifold : method param
+CollisionManager ..> Object : method param
+EntityManager ..> Entity : method param
+Shape --|> Entity : extends
+Shape --> Color : field
+Shape ..> Color : method param
+Shape ..> ShapeRenderer : method param
+TextureObject --|> Entity : extends
+GameMaster --|> ApplicationAdapter : extends
+GameMaster --> IOManager : field
+GameMaster --> InputDevice : field
+GameMaster --> SceneManager : field
+GameMaster --> SoundDevice : field
+CommandHistory ..> ICommand : method param
+IOManager --> SoundDevice : field
+IOManager ..> InputDevice : method param
+AIControlled ..|> ControlSource : implements
+MovableEntity --|> TextureObject : extends
+MovableEntity ..|> IMovable : implements
+MovableEntity --> ControlSource : field
+MovableEntity --> MovementModel : field
+MovableEntity --> MovementStrategy : field
+MovableEntity --> PhysicsBody : field
+MovableEntity ..> MovementStrategy : method param
+MovementManager --> EntityManager : field
+MovementManager --> PhysicsWorld : field
+UserControlled ..|> ControlSource : implements
+UserControlled --> ActionInput : field
+PhysicsBody --> Body : field
+PhysicsBody ..> Object : method param
+PhysicsWorld ..> Body : method param
+PhysicsWorld ..> BodyType : method param
+PhysicsWorld ..> ContactListener : method param
+PhysicsWorld ..> Object : method param
+Scene --> CollisionManager : field
+Scene --> EntityManager : field
+Scene --> IOManager : field
+Scene --> MovementManager : field
+Scene --> OrthographicCamera : field
+Scene --> SceneManager : field
+Scene --> Viewport : field
+Scene ..> CollisionManager : method param
+Scene ..> EntityManager : method param
+Scene ..> MovementManager : method param
+Scene ..> OrthographicCamera : method param
+SceneManager --> IOManager : field
+SceneManager ..> Scene : method param
+SoundEffect --> Sound : field
+SoundManager ..|> SoundDevice : implements
+CollisionEntityUtils ..> Entity : method param
+CollisionEntityUtils ..> PhysicsBody : method param
+GameCollisionHandler ..|> ICollisionListener : implements
+GameCollisionHandler ..> Entity : method param
+GameCollisionHandler ..> PhysicsBody : method param
+GameCollisionHandler ..> PickupListener : method param
+GameCollisionHandler ..> TrafficViolationListener : method param
+BoundaryCollisionHandler ..> Entity : method param
+CrosswalkCollisionHandler --> TrafficViolationListener : field
+CrosswalkCollisionHandler ..> Entity : method param
+CrosswalkCollisionHandler ..> TrafficViolationListener : method param
+NPCCarCollisionHandler --> TrafficViolationListener : field
+NPCCarCollisionHandler ..> Entity : method param
+NPCCarCollisionHandler ..> TrafficViolationListener : method param
+NPCPedestrianCollisionHandler ..> Entity : method param
+PedestrianCollisionHandler --> TrafficViolationListener : field
+PedestrianCollisionHandler ..> Entity : method param
+PedestrianCollisionHandler ..> TrafficViolationListener : method param
+PickupCollisionHandler --> PickupListener : field
+PickupCollisionHandler ..> Entity : method param
+PickupCollisionHandler ..> PickupListener : method param
+ZoneCollisionHandler ..> Entity : method param
+ZoneCollisionHandler ..> MovableEntity : method param
+ZoneCollisionHandler ..> Object : method param
+Level1TrafficListener ..|> TrafficViolationListener : implements
+Level1TrafficListener ..> Pedestrian : method param
+Level2TrafficListener ..|> TrafficViolationListener : implements
+PedestrianHitReaction ..> Pedestrian : method param
+ExplosionOverlay --|> TextureObject : extends
+ExplosionOverlay ..|> IExpirable : implements
+Particle --|> TextureObject : extends
+Particle ..|> IExpirable : implements
+Particle ..> EntityManager : method param
+Pedestrian --|> TextureObject : extends
+Pedestrian ..|> IExpirable : implements
+Pedestrian ..|> IPerceivable : implements
+Pickupable --|> TextureObject : extends
+Pickupable ..|> IExpirable : implements
+StopSign --|> TextureObject : extends
+StopSign ..|> IExpirable : implements
+StopSign ..|> IPerceivable : implements
+Tree --|> TextureObject : extends
+Trees ..> EntityManager : method param
+NPCCar --|> MovableEntity : extends
+NPCCar ..|> IExpirable : implements
+NPCCar ..|> IPerceivable : implements
+PlayerCar --|> MovableEntity : extends
+PlayerCar ..|> IFlashable : implements
+PoliceCar --|> TextureObject : extends
+PoliceCar ..|> IChaseEntity : implements
+FuelDepletedEvent ..|> GameEvent : implements
+InstantFailEvent ..|> GameEvent : implements
+PickupCollectedEvent ..|> GameEvent : implements
+ScoreChangedEvent ..|> GameEvent : implements
+BoundaryFactory ..> PhysicsWorld : method param
+CrosswalkFactory ..> PhysicsWorld : method param
+NPCCarSpawner ..|> ILaneOccupancy : implements
+NPCCarSpawner --> ILaneOccupancy : field
+NPCCarSpawner ..> ILaneOccupancy : method param
+PlayerFactory ..> ControlSource : method param
+PlayerFactory ..> EntityManager : method param
+PlayerFactory ..> PhysicsWorld : method param
+RoadHazardSpawner ..|> ILaneOccupancy : implements
+Keyboard ..|> InputDevice : implements
+Keyboard ..|> ActionInput : implements
+Keyboard ..> Runnable : method param
+PlayerInputBinder ..> Keyboard : method param
+SystemInputBinder ..> Keyboard : method param
+SystemInputBinder ..> Runnable : method param
+AIPerceptionService ..> Entity : method param
+AIPerceptionService ..> SensorComponent : method param
+CarMovementModel ..|> MovementModel : implements
+CarMovementModel --> SurfaceEffect : field
+CarMovementModel ..> Object : method param
+CarMovementModel ..> PhysicsBody : method param
+NpcDrivingStrategy ..|> MovementStrategy : implements
+NpcDrivingStrategy --> AIPerceptionService : field
+NpcDrivingStrategy --> SensorComponent : field
+NpcDrivingStrategy ..> MovableEntity : method param
+NpcDrivingStrategy ..> PerceptionSnapshot : method param
+PedestrianMovement --> CrossingState : field
+PedestrianMovement ..> Pedestrian : method param
+PlayerMovementStrategy ..|> MovementStrategy : implements
+PlayerMovementStrategy ..> MovableEntity : method param
+BreakRuleCommand ..|> ICommand : implements
+PedestrianHitCommand ..|> ICommand : implements
+BaseGameScene --|> Scene : extends
+BaseGameScene --> AudioController : field
+BaseGameScene --> CommandHistory : field
+BaseGameScene --> DashboardUI : field
+BaseGameScene --> EventBus : field
+BaseGameScene --> FuelController : field
+BaseGameScene --> GameCollisionHandler : field
+BaseGameScene --> MatchDirector : field
+BaseGameScene --> PhysicsWorld : field
+BaseGameScene --> PlayerCar : field
+BaseGameScene --> RoadRenderer : field
+BaseGameScene --> RuleManager : field
+BaseGameScene --> ShapeRenderer : field
+BaseGameScene --> SoundDevice : field
+BaseGameScene --> SpeedScrollController : field
+BaseGameScene --> Trees : field
+BaseGameScene ..> ILevelEndCondition : method param
+BaseGameScene ..> OrthographicCamera : method param
+BaseGameScene ..> ShapeRenderer : method param
+ChaseDirector --> IChaseEntity : field
+ChaseDirector ..> DashboardUI : method param
+ChaseDirector ..> PlayerCar : method param
+ChaseDirector ..> PoliceLightSystem : method param
+CrosswalkEncounterSystem ..|> IGameSystem : implements
+CrosswalkEncounterSystem ..> Iterator : method param
+CrosswalkEncounterSystem ..> Pedestrian : method param
+CrosswalkEncounterSystem ..> PedestrianEncounter : method param
+CrosswalkRenderer ..> ShapeRenderer : method param
+ExplosionSystem ..> EntityManager : method param
+ExplosionSystem ..> SoundDevice : method param
+HazardEffectSystem ..> SurfaceEffect : method param
+Level1Scene --|> BaseGameScene : extends
+Level1Scene --> CrosswalkEncounterSystem : field
+Level1Scene --> CrosswalkRenderer : field
+Level1Scene --> TrafficSpawningSystem : field
+Level1Scene ..> ShapeRenderer : method param
+Level2Scene --|> BaseGameScene : extends
+Level2Scene --> ChaseDirector : field
+Level2Scene --> HazardEffectSystem : field
+Level2Scene --> PlayerController : field
+Level2Scene --> PoliceCarFactory : field
+Level2Scene --> PoliceLightSystem : field
+Level2Scene --> RainEffectSystem : field
+Level2Scene --> TrafficSpawningSystem : field
+Level2Scene ..> ShapeRenderer : method param
+LevelSelectScene --|> Scene : extends
+LevelSelectScene --> BitmapFont : field
+LevelSelectScene --> SoundDevice : field
+LevelSelectScene --> Stage : field
+LevelSelectScene ..> InputEvent : method param
+PauseScene --|> Scene : extends
+PauseScene --> BitmapFont : field
+PauseScene --> SoundDevice : field
+PauseScene --> Stage : field
+PoliceLightSystem ..|> IGameSystem : implements
+PoliceLightSystem ..> ShapeRenderer : method param
+RainEffectSystem ..> ShapeRenderer : method param
+ResultsScene --|> Scene : extends
+ResultsScene --> BitmapFont : field
+ResultsScene --> SoundDevice : field
+ResultsScene --> Stage : field
+ResultsScene ..> InputEvent : method param
+RoadRenderer ..> ShapeRenderer : method param
+StartScene --|> Scene : extends
+StartScene --> BitmapFont : field
+StartScene --> SoundDevice : field
+StartScene --> Stage : field
+StartScene ..> InputEvent : method param
+SurfaceParticleDispatcher ..> Entity : method param
+SurfaceParticleDispatcher ..> EntityManager : method param
+SurfaceParticleDispatcher ..> ParticleSpawner : method param
+SurfaceParticleDispatcher ..> SurfaceEffect : method param
+SurfaceParticleDispatcher ..> SurfaceParticleEffect : method param
+TrafficSpawningSystem ..|> IGameSystem : implements
+AudioController ..|> IGameSystem : implements
+AudioController --> Music : field
+DashboardUI ..|> IDashboardObserver : implements
+DashboardUI ..|> Disposable : implements
+FuelController ..|> IGameSystem : implements
+GameOverDelayController --> LevelResult : field
+GameOverDelayController ..> LevelResult : method param
+MatchDirector --> LevelResult : field
+MatchDirector --> Supplier : field
+MatchDirector ..> ILevelEndCondition : method param
+MatchDirector ..> Supplier : method param
+ScorePopupManager ..|> Disposable : implements
+SpeedScrollController ..|> IGameSystem : implements
+SpeedScrollController --> Keyboard : field
+SpeedScrollController ..> Keyboard : method param
+CrosswalkZone --|> Shape : extends
+CrosswalkZone ..|> IExpirable : implements
+CrosswalkZone ..> ShapeRenderer : method param
+MotionZone --|> Shape : extends
+MotionZone --> PhysicsBody : field
+MotionZone --> SurfaceEffect : field
+MotionZone ..> ShapeRenderer : method param
+RoadHazard --|> MotionZone : extends
+RoadHazard ..|> IExpirable : implements
+RoadHazard ..> PhysicsWorld : method param
+RoadHazard ..> ShapeRenderer : method param
