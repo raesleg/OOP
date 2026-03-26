@@ -241,6 +241,10 @@ public abstract class Scene {
         return movementManager;
     }
 
+    protected CollisionManager getCollisionManager() {
+        return collisionManager;
+    }
+
     /*
      * ── Protected Setters — Subclasses own their managers (Scene Sovereignty) ──
      */

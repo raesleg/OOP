@@ -5,43 +5,51 @@ import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.game.entities.misc.Pedestrian;
 import io.github.raesleg.game.scene.RoadRenderer;
 
-/**
- * Scene-owned pedestrian movement state and execution.
- * Not part of the entity itself.
- */
+// Movement state and logic for pedestrians crossing the road
+// Controlled by the scene, not the entity
+// Scene can create different movement instances (e.g. for jaywalking) without modifying the Pedestrian class
 public class PedestrianMovement {
 
+    public enum CrossingState {
+        WAITING,
+        CROSSING,
+        SUCCESS,
+        FAILED
+    }
+
     private final float walkingSpeed;
-    private final float leftFinishX;
-    private final float rightFinishX;
+    private final float direction; // -1 or +1, set at intent creation
+    private final float crossedFromLeft;
+    private final float crossedFromRight;
 
-    private boolean active;
-    private boolean finished;
-    private boolean crossedSuccessfully;
+    private CrossingState state;
 
-    public PedestrianMovement(float walkingSpeed, float spriteWidth) {
+    public PedestrianMovement(float walkingSpeed, float spriteWidth, float direction) {
         this.walkingSpeed = walkingSpeed;
-        this.leftFinishX = RoadRenderer.ROAD_LEFT - spriteWidth * 2f;
-        this.rightFinishX = RoadRenderer.ROAD_RIGHT + spriteWidth * 2f;
-        this.active = false;
-        this.finished = false;
-        this.crossedSuccessfully = false;
+        this.direction = direction < 0f ? -1f : 1f;
+        this.crossedFromLeft = RoadRenderer.ROAD_LEFT - spriteWidth * 2f;
+        this.crossedFromRight = RoadRenderer.ROAD_RIGHT + spriteWidth * 2f;
+        this.state = CrossingState.WAITING;
     }
 
     public void activate() {
-        active = true;
+        if (state == CrossingState.WAITING) {
+            state = CrossingState.CROSSING;
+        }
     }
 
     public void deactivate() {
-        active = false;
+        if (state == CrossingState.CROSSING) {
+            state = CrossingState.WAITING;
+        }
     }
 
-    public void update(Pedestrian pedestrian, PedestrianIntent intent, float deltaTime) {
-        if (pedestrian == null || intent == null || !active || finished) {
+    public void update(Pedestrian pedestrian, float deltaTime) {
+        if (pedestrian == null || state != CrossingState.CROSSING) {
             return;
         }
 
-        float nextX = pedestrian.getX() + intent.getDirection() * walkingSpeed * deltaTime;
+        float nextX = pedestrian.getX() + direction * walkingSpeed * deltaTime;
         pedestrian.setX(nextX);
 
         PhysicsBody body = pedestrian.getPhysicsBody();
@@ -58,30 +66,34 @@ public class PedestrianMovement {
             return false;
         }
 
-        return pedestrian.getX() < leftFinishX || pedestrian.getX() > rightFinishX;
+        return pedestrian.getX() < crossedFromLeft || pedestrian.getX() > crossedFromRight;
     }
 
     public void markFinishedSuccessfully() {
-        finished = true;
-        crossedSuccessfully = true;
-        active = false;
+        state = CrossingState.SUCCESS;
     }
 
     public void markFinishedUnsuccessfully() {
-        finished = true;
-        crossedSuccessfully = false;
-        active = false;
+        state = CrossingState.FAILED;
     }
 
     public boolean isActive() {
-        return active;
+        return state == CrossingState.CROSSING;
     }
 
     public boolean isFinished() {
-        return finished;
+        return state == CrossingState.SUCCESS || state == CrossingState.FAILED;
     }
 
     public boolean hasCrossedSuccessfully() {
-        return crossedSuccessfully;
+        return state == CrossingState.SUCCESS;
+    }
+
+    public CrossingState getState() {
+        return state;
+    }
+
+    public float getDirection() {
+        return direction;
     }
 }

@@ -4,70 +4,75 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.physics.box2d.BodyDef;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.IExpirable;
+import io.github.raesleg.engine.entity.TextureObject;
+import io.github.raesleg.engine.physics.BodyType;
+import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.game.movement.SurfaceEffect;
 
 /**
  * RoadHazard — Generic scrollable MotionZone for surface hazards.
- * Replaces the old Puddle class. Both puddles and oil spills are
- * RoadHazard instances with different SurfaceEffect and textures —
- * no duplicated zone logic needed (Open/Closed Principle).
- *
- * Usage:
- *   new RoadHazard(world, x, y, w, h, SurfaceEffect.PUDDLE,   "puddle.png")
- *   new RoadHazard(world, x, y, w, h, SurfaceEffect.MUD, "mud.png")
  */
 public class RoadHazard extends MotionZone implements IExpirable {
 
-    private static Texture puddleTexture;
-    private static Texture oilTexture;
-
     private final float relativeY;
-    private final String texturePath;
     private Texture texture;
     private boolean expired;
 
     public RoadHazard(PhysicsWorld world, float centreXPx, float relativeY,
             float wPx, float hPx, SurfaceEffect effect, String texturePath) {
+
+        // Call super with inline body creation
         super(centreXPx - wPx / 2f, 0, wPx, hPx,
                 effect,
                 new Color(0.3f, 0.5f, 0.9f, 0.35f),
-                world.createBody(
-                        BodyDef.BodyType.KinematicBody,
-                        centreXPx / Constants.PPM,
-                        relativeY / Constants.PPM,
-                        (wPx / Constants.PPM) / 2f,
-                        (hPx / Constants.PPM) / 2f,
-                        0f, 0f, true, null));
+                createDynamicSensorBody(world, centreXPx, relativeY, wPx, hPx));
+
         this.relativeY = relativeY;
-        this.texturePath = texturePath;
         this.expired = false;
-        loadTexture();
+        this.texture = TextureObject.getOrLoadTexture(texturePath);
     }
 
-    private void loadTexture() {
-        // Cache per texture path to avoid reloading same texture repeatedly
-        if (texturePath.equals("puddle.png")) {
-            if (puddleTexture == null) puddleTexture = new Texture(texturePath);
-            texture = puddleTexture;
-        } else if (texturePath.equals("oilspill.png")) {
-            if (oilTexture == null) oilTexture = new Texture(texturePath);
-            texture = oilTexture;
-        } else {
-            texture = new Texture(texturePath);
-        }
+    /**
+     * Helper method to create dynamic sensor body.
+     * Called before super() - compatible with older Java versions.
+     */
+    private static PhysicsBody createDynamicSensorBody(PhysicsWorld world,
+            float centreXPx, float relativeY, float wPx, float hPx) {
+        PhysicsBody body = world.createBody(
+                BodyType.DYNAMIC, // Changed from KINEMATIC for reliable collision
+                centreXPx / Constants.PPM,
+                relativeY / Constants.PPM,
+                (wPx / Constants.PPM) / 2f,
+                (hPx / Constants.PPM) / 2f,
+                0.1f, // Density (very light)
+                0f, // Friction
+                true, // Sensor = true (pass through)
+                null);
+
+        // Set high damping to prevent drift, disable sleep for reliable collision
+        body.setLinearDamping(999f);
+        body.setSleepingAllowed(false);
+
+        return body;
     }
 
     public void updatePosition(float scrollOffset) {
         float screenY = relativeY + scrollOffset;
         setY(screenY);
+
+        // Update body position
         getBody().setPosition(
                 (getX() + getW() / 2f) / Constants.PPM,
                 (screenY + getH() / 2f) / Constants.PPM);
+
+        // Zero velocity and keep awake to prevent Box2D sleep
+        getBody().setVelocity(0f, 0f);
+        getBody().setAwake(true);
+
         if (screenY < -getH() * 3f) {
             expired = true;
         }
@@ -102,7 +107,7 @@ public class RoadHazard extends MotionZone implements IExpirable {
     @Override
     public void dispose() {
         getBody().destroy();
-        // Note: shared textures (puddle/oil) are intentionally not disposed here
+        // Note: shared textures (puddle/mud) are intentionally not disposed here
         // as other instances may still reference them
     }
 }

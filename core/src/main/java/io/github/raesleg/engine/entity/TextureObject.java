@@ -22,6 +22,15 @@ public abstract class TextureObject extends Entity {
         return texture;
     }
 
+    /**
+     * Returns a cached texture for the given filename, loading it if absent.
+     * Use this for textures that are not tied to a specific TextureObject
+     * instance (e.g. animation frames).
+     */
+    public static Texture getOrLoadTexture(String filename) {
+        return textureCache.computeIfAbsent(filename, Texture::new);
+    }
+
     @Override
     public void draw(SpriteBatch batch) {
         if (texture != null) {

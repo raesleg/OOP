@@ -9,12 +9,13 @@ import io.github.raesleg.engine.entity.IFlashable;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.physics.PhysicsBody;
-import io.github.raesleg.game.collision.GameCollisionHandler;
+import io.github.raesleg.game.collision.CollisionEntityUtils;
 import io.github.raesleg.game.scene.RoadRenderer;
 
 /**
  * Handles player collisions with road boundaries.
  */
+
 public class BoundaryCollisionHandler {
 
     private final SoundDevice soundManager;
@@ -27,16 +28,16 @@ public class BoundaryCollisionHandler {
     // Checks if this handler can process the collision.
     public boolean canHandle(Entity a, Entity b) {
         boolean oneIsNull = (a == null) != (b == null); // XOR: exactly one is null
-        MovableEntity player = GameCollisionHandler.getPlayerEntity(a, b);
+        MovableEntity player = CollisionEntityUtils.getPlayerEntity(a, b);
         // boolean hasNull = (a == null || b == null);
         return player != null && oneIsNull;
     }
 
-
     // Handles the boundary collision.
     public void handleBegin(Entity entityA, Entity entityB) {
-        MovableEntity player = GameCollisionHandler.getPlayerEntity(entityA, entityB);
-        if (player == null) return;
+        MovableEntity player = CollisionEntityUtils.getPlayerEntity(entityA, entityB);
+        if (player == null)
+            return;
 
         // Trigger flash effect
         if (player instanceof IFlashable flashable) {

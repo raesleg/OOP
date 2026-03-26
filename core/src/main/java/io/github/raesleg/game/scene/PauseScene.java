@@ -3,77 +3,109 @@ package io.github.raesleg.game.scene;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.scene.Scene;
 import io.github.raesleg.game.io.Keyboard;
 
-/*
- * PauseScene - The pause menu overlay. 
- * - Press ESC or "Resume" -> Calls sceneManager.pop() (Returns to GameScene)
- * - Press "Exit" -> Calls sceneManager.set(new StartScene()) (Returns to main
- * menu)
-*/
-
+/**
+ * PauseScene — Transparent overlay pause menu.
+ * <p>
+ * Uses Scene2D {@link Stage} and {@link Table} for layout, replacing
+ * the previous raw ShapeRenderer / GL implementation.
+ * Rendered on top of the frozen game scene via {@code setTransparent(true)}.
+ * <p>
+ * Controls: W/S navigate, A/D volume, Enter select, ESC resume, M mute.
+ */
 public class PauseScene extends Scene {
 
-    private ShapeRenderer shapeRenderer;
-    private BitmapFont font;
-    private GlyphLayout layout;
-
-    // Menu options
-    private String[] menuOptions;
-    private int selectedOption;
-
-    // Overlay styling
-    private Color overlayColor;
-    private Color selectedColor;
-    private Color unselectedColor;
-
-    // Screen-space projection — updated on resize
-    private Matrix4 screenProjection;
+    private Stage stage;
+    private BitmapFont titleFont;
+    private BitmapFont optionFont;
+    private BitmapFont instrFont;
+    private Texture pixelTexture;
 
     private SoundDevice sound;
 
-    /* Constructor */
+    private final String[] menuOptions = { "Resume", "Volume", "Exit to Main Menu" };
+    private final Label[] optionLabels = new Label[3];
+    private int selectedOption;
+
     public PauseScene() {
         super();
-        // Mark as transparent so GameScene renders behind this overlay
         setTransparent(true);
-
-        this.menuOptions = new String[] { "Resume", "Volume", "Exit to Main Menu" };
         this.selectedOption = 0;
-
-        // Styling
-        this.overlayColor = new Color(0f, 0f, 0f, 0.7f); // Semi-transparent black
-        this.selectedColor = Color.YELLOW;
-        this.unselectedColor = Color.WHITE;
     }
 
     @Override
     public void show() {
-        // Initialize rendering resources
-        shapeRenderer = new ShapeRenderer();
-        font = new BitmapFont();
-        layout = new GlyphLayout();
-
-        // Initialize screen-space projection matrix
-        screenProjection = new Matrix4().setToOrtho2D(0, 0,
-                Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-
-        // Retrieve shared sound device (UI sounds registered centrally)
         sound = getIOManager().getSound();
 
-        // Input Bindings
+        /* Fonts — separate instances per scale to avoid Scene2D re-measure issues */
+        titleFont = new BitmapFont();
+        titleFont.getData().setScale(3f);
+
+        optionFont = new BitmapFont();
+        optionFont.getData().setScale(2f);
+
+        instrFont = new BitmapFont();
+        instrFont.getData().setScale(1.2f);
+
+        /* 1×1 white pixel for tinting backgrounds */
+        Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pm.setColor(Color.WHITE);
+        pm.fill();
+        pixelTexture = new Texture(pm);
+        pm.dispose();
+
+        TextureRegionDrawable white = new TextureRegionDrawable(new TextureRegion(pixelTexture));
+
+        /* Stage — uses base-class UI viewport (1280×720 virtual coords) */
+        stage = new Stage(getUiViewport());
+
+        /* Overlay — semi-transparent black covers entire viewport */
+        Table overlay = new Table();
+        overlay.setFillParent(true);
+        overlay.setBackground(white.tint(new Color(0f, 0f, 0f, 0.7f)));
+
+        /* Inner panel — dark background with padding */
+        Table panel = new Table();
+        panel.setBackground(white.tint(new Color(0.2f, 0.2f, 0.3f, 0.95f)));
+        panel.pad(40f, 60f, 40f, 60f);
+
+        /* Title */
+        Label title = new Label("PAUSED", new Label.LabelStyle(titleFont, Color.WHITE));
+        panel.add(title).padBottom(50f);
+        panel.row();
+
+        /* Menu option labels — text + colour updated dynamically */
+        for (int i = 0; i < menuOptions.length; i++) {
+            optionLabels[i] = new Label("", new Label.LabelStyle(optionFont, Color.WHITE));
+            panel.add(optionLabels[i]).padBottom(20f);
+            panel.row();
+        }
+
+        /* Instructions */
+        Label instructions = new Label(
+                "W/S to navigate  |  A/D to adjust volume  |  Enter to select  |  Esc to resume",
+                new Label.LabelStyle(instrFont, Color.GRAY));
+        panel.add(instructions).padTop(30f);
+
+        overlay.add(panel);
+        stage.addActor(overlay);
+
+        /* Input bindings */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         if (kb != null) {
-            // Navigate Menu
             kb.addBind(Input.Keys.ESCAPE, this::resumeGame, true);
             kb.addBind(Input.Keys.W, this::moveUp, true);
             kb.addBind(Input.Keys.UP, this::moveUp, true);
@@ -88,143 +120,60 @@ public class PauseScene extends Scene {
             kb.addBind(Input.Keys.M, this::toggleMute, true);
         }
 
+        refreshLabels();
         Gdx.app.log("PauseScene", "Pause menu shown - ESC/Enter to resume, navigate with W/S or Up/Down");
     }
 
-    /* Executes the currently selected menu option */
-    private void executeSelectedOption() {
+    /** Updates label text and colours based on current selection and volume. */
+    private void refreshLabels() {
+        for (int i = 0; i < menuOptions.length; i++) {
+            String text = menuOptions[i];
 
-        switch (selectedOption) {
-            case 0: // Resume
-                // Pop this scene to return to the paused GameScene
-                getSceneManager().pop();
-                break;
+            if (i == 1) {
+                int volPercent = Math.round(sound.getMasterVolume() * 100f);
+                text = "< Volume: " + volPercent + "% >";
+            }
 
-            case 1: // Volume — left/right adjusts, enter does nothing
-                break;
-
-            case 2: // Exit to Main Menu
-                // Set new StartScene - clears entire stack including paused GameScene
-                getSceneManager().set(new StartScene());
-                break;
-
-            default:
-                break;
+            if (i == selectedOption) {
+                optionLabels[i].setText("> " + text + " <");
+                optionLabels[i].setColor(Color.YELLOW);
+            } else {
+                optionLabels[i].setText(text);
+                optionLabels[i].setColor(Color.WHITE);
+            }
         }
     }
 
     @Override
     public void update(float deltaTime) {
+        stage.act(deltaTime);
     }
 
-    /*
-     * Rendering strategy (Liskov-safe — uses the base-class uiViewport):
-     * 1. Screen-space overlay → covers the ENTIRE window (incl. letterbox bars)
-     * 2. UI-viewport box+text → all layout in 1280×720 virtual coords;
-     * FitViewport scales automatically so the menu always fits any window.
-     */
     @Override
     public void render(SpriteBatch batch) {
-        int screenWidth = Gdx.graphics.getWidth();
-        int screenHeight = Gdx.graphics.getHeight();
-
-        Gdx.gl.glViewport(0, 0, screenWidth, screenHeight);
-
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-
-        screenProjection.setToOrtho2D(0, 0, screenWidth, screenHeight);
-        shapeRenderer.setProjectionMatrix(screenProjection);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(overlayColor);
-        shapeRenderer.rect(0, 0, screenWidth, screenHeight);
-        shapeRenderer.end();
-
-        // ── 2. Switch to UI viewport (1280×720 virtual coords) ──
         getUiViewport().apply();
         getUiCamera().update();
-        shapeRenderer.setProjectionMatrix(getUiCamera().combined);
+        stage.draw();
+    }
 
-        // Menu box — proportional to virtual resolution, always centred
-        float boxWidth = VIRTUAL_WIDTH * 0.5f; // 640
-        float boxHeight = VIRTUAL_HEIGHT * 0.55f; // 396
-        float boxX = (VIRTUAL_WIDTH - boxWidth) / 2f;
-        float boxY = (VIRTUAL_HEIGHT - boxHeight) / 2f;
-
-        // Filled background
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(new Color(0.2f, 0.2f, 0.3f, 0.95f));
-        shapeRenderer.rect(boxX, boxY, boxWidth, boxHeight);
-        shapeRenderer.end();
-
-        // Border
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(Color.WHITE);
-        shapeRenderer.rect(boxX, boxY, boxWidth, boxHeight);
-        shapeRenderer.end();
-
-        Gdx.gl.glDisable(GL20.GL_BLEND);
-
-        // ── 3. Text — all in virtual coords (no manual scaleFactor) ──
-        batch.setProjectionMatrix(getUiCamera().combined);
-        batch.begin();
-
-        // Title
-        font.getData().setScale(3f);
-        font.setColor(Color.WHITE);
-        layout.setText(font, "PAUSED");
-        float titleX = (VIRTUAL_WIDTH - layout.width) / 2f;
-        float titleY = boxY + boxHeight - 40f;
-        font.draw(batch, "PAUSED", titleX, titleY);
-
-        // Menu options
-        font.getData().setScale(2f);
-        float optionStartY = boxY + boxHeight - 140f;
-        float optionSpacing = 60f;
-
-        for (int i = 0; i < menuOptions.length; i++) {
-            String label = menuOptions[i];
-
-            // Show volume percentage for the Volume option
-            if (i == 1) {
-                int volPercent = Math.round(sound.getMasterVolume() * 100f);
-                label = "< Volume: " + volPercent + "% >";
-            }
-
-            String text;
-            if (i == selectedOption) {
-                font.setColor(selectedColor);
-                text = "> " + label + " <";
-            } else {
-                font.setColor(unselectedColor);
-                text = label;
-            }
-            layout.setText(font, text);
-            float optionX = (VIRTUAL_WIDTH - layout.width) / 2f;
-            font.draw(batch, text, optionX, optionStartY - i * optionSpacing);
-        }
-
-        // Instructions
-        font.getData().setScale(1.2f);
-        font.setColor(Color.GRAY);
-        String instructions = "W/S to navigate  |  A/D to adjust volume  |  Enter to select  |  Esc to resume";
-        layout.setText(font, instructions);
-        float instrX = (VIRTUAL_WIDTH - layout.width) / 2f;
-        float instrY = boxY + 40f;
-        font.draw(batch, instructions, instrX, instrY);
-
-        batch.end();
+    @Override
+    public void resize(int width, int height) {
+        super.resize(width, height);
+        stage.getViewport().update(width, height, true);
     }
 
     @Override
     public void dispose() {
-        shapeRenderer.dispose();
-        font.dispose();
-
+        stage.dispose();
+        titleFont.dispose();
+        optionFont.dispose();
+        instrFont.dispose();
+        pixelTexture.dispose();
         Gdx.app.log("PauseScene", "Pause scene disposed");
     }
 
-    /* Private method for key bindings */
+    /* ── Menu actions ── */
+
     private void resumeGame() {
         sound.playSound("selected", 1.0f);
         getSceneManager().pop();
@@ -235,6 +184,7 @@ public class PauseScene extends Scene {
         if (selectedOption < 0)
             selectedOption = menuOptions.length - 1;
         sound.playSound("menu", 1.0f);
+        refreshLabels();
     }
 
     private void moveDown() {
@@ -242,27 +192,41 @@ public class PauseScene extends Scene {
         if (selectedOption >= menuOptions.length)
             selectedOption = 0;
         sound.playSound("menu", 1.0f);
+        refreshLabels();
     }
 
     private void confirm() {
         sound.playSound("selected", 1.0f);
-        executeSelectedOption();
+        switch (selectedOption) {
+            case 0:
+                getSceneManager().pop();
+                break;
+            case 1:
+                break; // Volume — A/D adjusts, Enter does nothing
+            case 2:
+                getSceneManager().set(new StartScene());
+                break;
+            default:
+                break;
+        }
     }
 
     private void volumeUp() {
         float vol = Math.min(1f, sound.getMasterVolume() + 0.1f);
         sound.setMasterVolume(vol);
         sound.playSound("menu", 1.0f);
+        refreshLabels();
     }
 
     private void volumeDown() {
         float vol = Math.max(0f, sound.getMasterVolume() - 0.1f);
         sound.setMasterVolume(vol);
         sound.playSound("menu", 1.0f);
+        refreshLabels();
     }
 
     private void toggleMute() {
         sound.toggleMute();
+        refreshLabels();
     }
-
 }

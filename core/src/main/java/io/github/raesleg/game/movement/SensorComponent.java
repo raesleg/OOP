@@ -1,9 +1,6 @@
 package io.github.raesleg.game.movement;
 
-/**
- * Simple sensor profile for NPC traffic AI.
- * Kept to avoid breaking NPCCar and spawner wiring.
- */
+// Sensor profile for NPC traffic AI to determine how far ahead to look for pedestrians, vehicles, and obstacles
 public class SensorComponent {
 
     private final float forwardRange;

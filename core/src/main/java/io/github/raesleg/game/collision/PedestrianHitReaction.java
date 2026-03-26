@@ -7,8 +7,8 @@ import io.github.raesleg.game.entities.misc.Pedestrian;
 
 /**
  * Collision aftermath behaviour for a pedestrian.
- * This is NOT part of the pedestrian entity itself.
  */
+
 public class PedestrianHitReaction {
 
     private boolean active;
@@ -26,6 +26,7 @@ public class PedestrianHitReaction {
         this.rotation = 0f;
     }
 
+    // Initiate hit reaction: apply knockback impulse and start spin animation for 2.5 seconds
     public void trigger(Pedestrian pedestrian, Vector2 knockbackDirection, float force) {
         if (active || finished || pedestrian == null) {
             return;
@@ -47,6 +48,7 @@ public class PedestrianHitReaction {
         }
     }
 
+    // Update spin rotation and countdown timer; finish reaction and mark pedestrian expired when complete
     public void update(Pedestrian pedestrian, float deltaTime) {
         if (!active || finished || pedestrian == null) {
             return;
@@ -69,10 +71,12 @@ public class PedestrianHitReaction {
         }
     }
 
+    // Check if hit reaction is currently playing
     public boolean isActive() {
         return active;
     }
 
+    // Check if hit reaction has completed and pedestrian has been marked for removal
     public boolean isFinished() {
         return finished;
     }

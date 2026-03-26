@@ -11,13 +11,15 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import io.github.raesleg.engine.entity.TextureObject;
 
 /**
  * DashboardUI — HUD with dashboard.png for speed, star.png for wanted,
  * and an optional police-distance progress bar for Level 2.
+ * <p>
+ * <b>SRP Composition:</b> Delegates score popup lifecycle to
+ * {@link ScorePopupManager}. This class is responsible only for
+ * HUD layout and rendering.
  */
 public class DashboardUI implements IDashboardObserver, Disposable {
 
@@ -33,7 +35,7 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     private final Label scoreLabel;
     private final Label progressLabel;
 
-    //start finish flags
+    // start finish flags
     private final Texture finishIcon;
     private final Texture startIcon;
 
@@ -55,29 +57,19 @@ public class DashboardUI implements IDashboardObserver, Disposable {
     private int targetScore;
     private static final float SCORE_LERP_SPEED = 200f;
 
-    /* ── Score popups ── */
-    private final List<ScorePopup> popups = new ArrayList<>();
-    private BitmapFont popupFont;
+    /* ── Score popups (SRP — delegated to ScorePopupManager) ── */
+    private final ScorePopupManager popupManager;
 
-    private static class ScorePopup {
-        float x, y;
-        String text;
-        Color color;
-        float alpha;
-        float lifetime;
-        static final float MAX_LIFETIME = 1.2f;
-    }
+    /* ── HUD rendering (SRP — delegated to HudRenderer) ── */
+    private final HudRenderer hudRenderer;
+
+    /* ── Fuel bar ── */
+    private float currentFuel;
+    private final Texture chargeTex;
 
     /* ── Police distance mode (Level 2) ── */
     private boolean policeDistanceMode;
     private float policeDistance; // 0.0 = caught, 1.0 = far away
-
-    /* ── Layout constants ── */
-    private static final float DASHBOARD_W = 280f;
-    private static final float DASHBOARD_H = 140f;
-    private static final float STAR_SIZE = 28f;
-    private static final float ICON_SIZE = 28f;
-    private static final float BAR_WIDTH = 300f;
 
     public DashboardUI(Viewport uiViewport) {
         font = new BitmapFont();
@@ -97,18 +89,16 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         policeDistance = 1f;
         displayScore = 0f;
         targetScore = 0;
+        currentFuel = 1f;
 
         // Load textures
-        dashboardTex = new Texture("dashboard.png");
-        starTex = new Texture("star.png");
-        carTex = new Texture("car.png");
-        policeTex = new Texture("policecar_noflash.png");
-        finishIcon = new Texture("finish_flag.png");
-        startIcon = new Texture("start_flag.png");
-
-        // Popup font
-        popupFont = new BitmapFont();
-        popupFont.getData().setScale(2.5f);
+        dashboardTex = TextureObject.getOrLoadTexture("dashboard.png");
+        starTex = TextureObject.getOrLoadTexture("star.png");
+        carTex = TextureObject.getOrLoadTexture("car.png");
+        policeTex = TextureObject.getOrLoadTexture("policecar_noflash.png");
+        finishIcon = TextureObject.getOrLoadTexture("finish_flag.png");
+        startIcon = TextureObject.getOrLoadTexture("start_flag.png");
+        chargeTex = TextureObject.getOrLoadTexture("charge.png");
 
         // 1x1 white pixel for drawing lines/bars
         Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -116,6 +106,14 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         pm.fill();
         pixelTex = new Texture(pm);
         pm.dispose();
+
+        // Score popup manager (SRP extraction)
+        popupManager = new ScorePopupManager();
+
+        // HUD renderer (SRP extraction)
+        hudRenderer = new HudRenderer(
+                dashboardTex, starTex, carTex, policeTex, pixelTex,
+                finishIcon, startIcon, chargeTex, font, speedFont);
 
         // Build Scene2D layout (score + progress text on top)
         stage = new Stage(uiViewport);
@@ -170,6 +168,11 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         // Speed drawn on dashboard.png, no label needed
     }
 
+    @Override
+    public void onFuelUpdated(float percentage) {
+        currentFuel = Math.max(0f, Math.min(1f, percentage));
+    }
+
     /* ── Lifecycle ── */
 
     public void act(float deltaTime) {
@@ -182,16 +185,8 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         currentScore = (int) displayScore;
         scoreLabel.setText("SCORE: " + currentScore);
 
-        // Update popups
-        Iterator<ScorePopup> it = popups.iterator();
-        while (it.hasNext()) {
-            ScorePopup p = it.next();
-            p.lifetime -= deltaTime;
-            p.y += 60f * deltaTime;
-            p.alpha = Math.max(0f, p.lifetime / ScorePopup.MAX_LIFETIME);
-            if (p.lifetime <= 0)
-                it.remove();
-        }
+        // Delegate popup animation to ScorePopupManager
+        popupManager.update(deltaTime);
 
         stage.act(deltaTime);
     }
@@ -213,21 +208,15 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         } else {
             drawProgressBar(batch);
         }
-        drawScorePopups(batch);
+        drawFuelBar(batch);
+        popupManager.render(batch);
 
         batch.end();
     }
 
     /** Spawns a floating score popup (e.g. "+50" or "-100"). */
     public void showScorePopup(int delta) {
-        ScorePopup p = new ScorePopup();
-        p.x = 120f;
-        p.y = 680f;
-        p.text = (delta > 0 ? "+" : "") + delta;
-        p.color = delta > 0 ? Color.GREEN : Color.RED;
-        p.alpha = 1f;
-        p.lifetime = ScorePopup.MAX_LIFETIME;
-        popups.add(p);
+        popupManager.show(delta);
     }
 
     public void resize(int width, int height) {
@@ -239,140 +228,36 @@ public class DashboardUI implements IDashboardObserver, Disposable {
         stage.dispose();
         font.dispose();
         speedFont.dispose();
-        popupFont.dispose();
-        dashboardTex.dispose();
-        starTex.dispose();
-        carTex.dispose();
-        policeTex.dispose();
+        popupManager.dispose();
+        // Only dispose locally-created textures. Shared Flyweight textures
+        // (dashboardTex, starTex, carTex, etc.) are owned by TextureObject's
+        // static cache and disposed at app shutdown via disposeAllTextures().
         pixelTex.dispose();
-        finishIcon.dispose();
-        startIcon.dispose();
-
     }
 
     /* ── Custom drawing ── */
 
     private void drawDashboardSpeed(SpriteBatch batch) {
-        // Dashboard.png at bottom-right
-        float dx = 1280f - DASHBOARD_W - 10f;
-        float dy = 5f;
-        batch.draw(dashboardTex, dx, dy, DASHBOARD_W, DASHBOARD_H);
-
-        // Speed number in the yellow box area (right portion of dashboard)
-        String speedText = currentSpeed + "";
-        speedFont.setColor(Color.WHITE);
-        speedFont.draw(batch, speedText,
-                dx + DASHBOARD_W * 0.62f,
-                dy + DASHBOARD_H * 0.58f);
-        // "KM/H" label below speed
-        font.setColor(Color.LIGHT_GRAY);
-        font.draw(batch, "KM/H",
-                dx + DASHBOARD_W * 0.60f,
-                dy + DASHBOARD_H * 0.30f);
-        font.setColor(Color.WHITE);
+        hudRenderer.drawDashboardSpeed(batch, currentSpeed);
     }
 
     private void drawWantedStars(SpriteBatch batch) {
-        // Position: top-right area
-        float startX = 1280f - 10f - (MAX_WANTED_STARS * (STAR_SIZE + 4f));
-        float y = 720f - 14f - STAR_SIZE;
-
-        // "WANTED:" text
-        font.draw(batch, "WANTED:", startX - 160f, y + STAR_SIZE - 2f);
-
-        for (int i = 0; i < MAX_WANTED_STARS; i++) {
-            float x = startX + i * (STAR_SIZE + 4f);
-            if (i < currentRulesBroken) {
-                // Filled star
-                batch.setColor(1f, 1f, 1f, 1f);
-            } else {
-                // Empty slot — dim star
-                batch.setColor(1f, 1f, 1f, 0.2f);
-            }
-            batch.draw(starTex, x, y, STAR_SIZE, STAR_SIZE);
-        }
-        batch.setColor(1f, 1f, 1f, 1f);
+        hudRenderer.drawWantedStars(batch, currentRulesBroken);
     }
 
     private void drawPoliceDistanceBar(SpriteBatch batch) {
-        // Centered at top, between score and wanted
-        float barX = (1280f - BAR_WIDTH) / 2f;
-        float barY = 720f - 30f;
-        float lineH = 6f;
-
-        // Draw bar track (dark background)
-        batch.setColor(0.3f, 0.3f, 0.3f, 0.6f);
-        batch.draw(pixelTex, barX, barY - lineH / 2f, BAR_WIDTH, lineH);
-
-        // Draw colored fill: green (safe) on the right, red (danger) on the left
-        // policeDistance: 1 = far (safe), 0 = caught (danger)
-        // Fill from left to (1 - policeDistance) to show danger zone
-        float dangerWidth = (1f - policeDistance) * BAR_WIDTH;
-        if (dangerWidth > 0) {
-            batch.setColor(0.9f, 0.2f, 0.2f, 0.7f);
-            batch.draw(pixelTex, barX, barY - lineH / 2f, dangerWidth, lineH);
-        }
-        batch.setColor(1f, 1f, 1f, 1f);
-
-        // Car icon on the right (player — fixed position)
-        float carX = barX + BAR_WIDTH - ICON_SIZE;
-        float carY = barY - ICON_SIZE / 2f;
-        batch.draw(carTex, carX, carY, ICON_SIZE, ICON_SIZE);
-
-        // Police icon position based on distance (left = far, right = close)
-        float policeX = barX + (1f - policeDistance) * (BAR_WIDTH - ICON_SIZE * 2f);
-        batch.draw(policeTex, policeX, carY, ICON_SIZE, ICON_SIZE);
-
-        // Labels
-        font.setColor(Color.LIGHT_GRAY);
-        font.getData().setScale(1.2f);
-        font.draw(batch, "POLICE", barX - 100f, barY + 8f);
-        font.getData().setScale(LABEL_SCALE);
-        font.setColor(Color.WHITE);
+        hudRenderer.drawPoliceDistanceBar(batch, policeDistance);
     }
 
     /**
      * Graphical progress bar — white line with car icon moving right towards GOAL.
      */
     private void drawProgressBar(SpriteBatch batch) {
-        float barX = (1280f - BAR_WIDTH) / 2f;
-        float barY = 720f - 22f;
-        float lineH = 3f;
-
-        // White line
-        batch.setColor(Color.WHITE);
-        batch.draw(pixelTex, barX, barY - lineH / 2f, BAR_WIDTH, lineH);
-
-        // "S" label at start
-        float sflagWidth = 50f;
-        float sflagheight = 30f;
-        float sflagX = barX  - 50f;
-        float sflagY = barY - sflagWidth / 2f + 10f;
-
-        batch.draw(startIcon, sflagX, sflagY, sflagWidth, sflagheight);
-
-        // "Finish_flag.png" picture at finish
-        float fflagSize = 28f;
-        float fflagX = barX + BAR_WIDTH + 6f;
-        float fflagY = barY - fflagSize / 2f - 6f;
-
-        batch.draw(finishIcon, fflagX, fflagY, fflagSize, fflagSize);
-
-        // Car icon moving right along the bar
-        float carW = 24f;
-        float carH = 24f;
-        float carX = barX + currentProgress * (BAR_WIDTH - carW);
-        float carY = barY - carH / 2f;
-        batch.setColor(Color.WHITE);
-        batch.draw(carTex, carX, carY, carW, carH);
+        hudRenderer.drawProgressBar(batch, currentProgress);
     }
 
-    private void drawScorePopups(SpriteBatch batch) {
-        for (ScorePopup p : popups) {
-            popupFont.setColor(p.color.r, p.color.g, p.color.b, p.alpha);
-            popupFont.draw(batch, p.text, p.x, p.y);
-        }
-        popupFont.setColor(Color.WHITE);
+    private void drawFuelBar(SpriteBatch batch) {
+        hudRenderer.drawFuelBar(batch, currentFuel);
     }
 
     private void refreshAllLabels() {

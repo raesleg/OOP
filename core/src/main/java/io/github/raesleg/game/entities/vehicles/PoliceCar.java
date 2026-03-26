@@ -6,57 +6,65 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.TextureObject;
 import io.github.raesleg.engine.physics.PhysicsBody;
-
+import io.github.raesleg.game.GameConstants;
+import io.github.raesleg.game.entities.IChaseEntity;
 import io.github.raesleg.game.movement.PoliceMovement;
 
-public class PoliceCar extends TextureObject {
+/**
+ * PoliceCar — A chase entity that spawns when the player accumulates
+ * too many rule violations (WANTED stars).
+ * 
+ * Chase algorithm is delegated to PoliceMovement
+ * Implements IChaseEntity so Level2Scene depends on the
+ * abstraction rather than this concrete class (DIP).
+ * 
+ * <b>Design Pattern:</b> Flyweight (TextureObject texture cache),
+ * Strategy (chase behaviour delegated to PoliceMovement).
+ */
+public class PoliceCar extends TextureObject implements IChaseEntity {
 
-    private static final float FLASH_INTERVAL = 0.15f;
+    /* ── Siren flash animation ── */
     private static final String[] FLASH_FRAMES = {
             "policecar_noflash.png",
             "policecar_leftflash.png",
             "policecar_noflash.png",
             "policecar_rightflash.png"
     };
-    private static Texture[] flashTextures;
     private float flashTimer;
     private int flashIndex;
 
     private final PhysicsBody body;
+    private final PoliceMovement movement;
     private float screenY;
     private boolean caught;
 
-    private final PoliceMovement movement = new PoliceMovement();
-
-    public PoliceCar(PhysicsBody body, float startY) {
-        super("policecar_noflash.png", 0, startY, 80f, 140f);
-        this.body   = body;
-        this.screenY = startY;
+    /**
+     * Creates a police car that will chase from below the screen.
+     *
+     * @param body kinematic PhysicsBody for collision detection
+     */
+    public PoliceCar(PhysicsBody body) {
+        super("policecar_noflash.png", 0, 0, 80f, 140f);
+        this.body = body;
+        this.screenY = GameConstants.POLICE_START_Y;
         this.caught = false;
+        this.flashTimer = 0f;
+        this.flashIndex = 0;
+        this.movement = new PoliceMovement(screenY);
 
-        if (body != null) body.setUserData(this);
-
-        if (flashTextures == null) {
-            flashTextures = new Texture[FLASH_FRAMES.length];
-            for (int i = 0; i < FLASH_FRAMES.length; i++) {
-                flashTextures[i] = new Texture(FLASH_FRAMES[i]);
-            }
+        if (body != null) {
+            body.setUserData(this);
         }
     }
 
-    /**
-     * Called every frame by Level2Scene.
-     * Delegates movement to PoliceMovement, then syncs sprite.
-     */
+    @Override
     public void updateChase(float deltaTime, float playerX, float playerY,
-            float playerSpeed, float maxSpeed,
-            float rulesBroken, float scrollSpeedPixelsPerSecond) {
+            int starCount, int maxStars, float playerSpeed, float maxSpeed) {
+        // Delegate chase algorithm to PoliceMovement
+        screenY = movement.advance(deltaTime, playerY, starCount, maxStars,
+                playerSpeed, maxSpeed);
 
-        screenY = movement.update(
-                deltaTime, playerX, screenY,
-                rulesBroken, scrollSpeedPixelsPerSecond);
-
-        float newX = getX() + (playerX - getX()) * 3.5f * deltaTime;
+        float newX = movement.lerpX(getX(), playerX, deltaTime);
         setX(newX);
         setY(screenY);
 
@@ -67,22 +75,31 @@ public class PoliceCar extends TextureObject {
                     (screenY + getH() / 2f) / Constants.PPM);
         }
 
-        caught = (screenY + getH() >= playerY);
+        caught = movement.hasCaught(screenY, getH(), playerY);
 
         flashTimer += deltaTime;
-        if (flashTimer >= FLASH_INTERVAL) {
-            flashTimer -= FLASH_INTERVAL;
+        if (flashTimer >= GameConstants.POLICE_FLASH_INTERVAL) {
+            flashTimer -= GameConstants.POLICE_FLASH_INTERVAL;
             flashIndex = (flashIndex + 1) % FLASH_FRAMES.length;
         }
     }
 
-    public boolean hasCaughtPlayer() { return caught; }
-    public float getScreenY()        { return screenY; }
+    @Override
+    public boolean hasCaughtPlayer() {
+        return caught;
+    }
+
+    @Override
+    public float getScreenY() {
+        return screenY;
+    }
 
     @Override
     public void draw(SpriteBatch batch) {
-        Texture frame = (flashTextures != null) ? flashTextures[flashIndex] : getTexture();
-        if (frame != null) batch.draw(frame, getX(), getY(), getW(), getH());
+        Texture frame = TextureObject.getOrLoadTexture(FLASH_FRAMES[flashIndex]);
+        if (frame != null) {
+            batch.draw(frame, getX(), getY(), getW(), getH());
+        }
     }
 
     @Override

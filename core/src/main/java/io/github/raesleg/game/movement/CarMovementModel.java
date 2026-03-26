@@ -5,24 +5,31 @@ import com.badlogic.gdx.math.Vector2;
 
 import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.physics.PhysicsBody;
+import io.github.raesleg.game.GameConstants;
 
-/**
- * Shared movement execution for both player and NPC cars.
- * Player and AI differ by their strategy/input source and VehicleProfile,
- * not by needing completely separate movement models.
- */
+// Shared movement execution for both player and NPC cars
+// Player and AI differ by their strategy/input source and VehicleProfilew
+// Exposes effect signals for scene layer, does not handle spawning of particles (HazardEffectSystem handles that)
 public class CarMovementModel implements MovementModel {
 
     private final VehicleProfile profile;
-    private SurfaceEffect surface = SurfaceEffect.DEFAULT;
-    private float currentForwardSpeed = 0f;
 
-    private boolean slideRecoveryActive = false;
-    private float slideRecoveryTimer = 0f;
+    // Current driving state
+    private SurfaceEffect currentSurface = SurfaceEffect.DEFAULT;
+    private float forwardSpeed = 0f;
 
-    // Slip state — used by all slippery surfaces, not just puddles
-    private boolean wasSlipping = false;
-    private float driftVx = 0f;
+    // Slip / recovery state
+    private boolean recoveringGrip = false;
+    private float recoveryTimer = 0f;
+    private boolean drifting = false;
+    private float driftLateralSpeed = 0f;
+
+    // Hazard effect signals used by HazardEffectSystem
+    private boolean insideHazard = false;
+    private float trailEffectTimer = 0f;
+    private boolean trailEffectThisStep = false;
+    private boolean entryEffectPending = false;
+    private boolean exitEffectPending = false;
 
     public CarMovementModel(VehicleProfile profile) {
         this.profile = profile;
@@ -34,126 +41,171 @@ public class CarMovementModel implements MovementModel {
             return;
         }
 
-        float steerInput = MathUtils.clamp(x, -1f, 1f);
-        float throttleInput = MathUtils.clamp(y, -1f, 1f);
+        trailEffectThisStep = false;
 
-        if (Math.abs(steerInput) < profile.getSteeringDeadzone()) {
-            steerInput = 0f;
-        }
+        float steerInput = MathUtils.clamp(x, -1f, 1f);
+        float throttleInput = MathUtils.clamp(y, 0f, 1f);
 
         Vector2 velocity = body.getVelocity().cpy();
-        float vx;
-        
-        if (surface.isSlippery()) {
-            if (!wasSlipping) {
-                if (surface.getStickyness() > 0f) {
-                    // Oil — seed from real velocity, no kick, just locks you in
-                    driftVx = velocity.x;
-                } else {
-                    // Puddle — random sideways kick for dramatic uncontrolled sway
-                    float kickDir = (Math.random() > 0.5f) ? 1f : -1f;
-                    driftVx = kickDir * profile.getMaxLateralSpeed() * 0.7f;
-                }
-            }
-            wasSlipping = true;
- 
-            // Unified slip calculation — same formula for all slippery surfaces
-            driftVx *= surface.getMomentumRetention();
-            float steerContrib = steerInput * profile.getMaxLateralSpeed()
-                    * surface.getSteerInfluence();
+        float sidewaysSpeed = calculateSidewaysSpeed(velocity, steerInput, dt);
+        float nextForwardSpeed = calculateForwardSpeed(throttleInput, dt);
 
-            // Oil: actively drag vx back toward zero each frame — feels like glue
-            // stickiness = 0 means no drag (puddle), > 0 means surface fights movement
-            float stuck = driftVx * surface.getStickyness();
-            vx = driftVx + steerContrib - stuck;
- 
-            vx = MathUtils.clamp(vx,
-                    -profile.getMaxLateralSpeed() * 0.75f,
-                     profile.getMaxLateralSpeed() * 0.75f);
+        updateHazardTrailTimer(dt);
 
-        } else {
-            wasSlipping = false;
-            driftVx = 0f;
-            float gripMultiplier   = getCurrentGripMultiplier(dt);
-            float steeringResponse = profile.getSteeringResponse() * gripMultiplier;
-            float targetVx         = steerInput * profile.getMaxLateralSpeed() * gripMultiplier;
-            vx = approach(velocity.x, targetVx, steeringResponse * dt);
-        }
-
-        float vy = computeForwardVelocity(throttleInput, dt);
-
-        body.setLinearDamping(profile.getLinearDamping() * surface.getDampingMultiplier());
+        body.setLinearDamping(profile.getLinearDamping() * currentSurface.getDampingMultiplier());
         body.setAngularVelocity(0f);
-        body.setVelocity(vx, vy);
+        body.setVelocity(sidewaysSpeed, nextForwardSpeed);
     }
 
-    private float computeForwardVelocity(float throttleInput, float dt) {
-        if (!profile.allowsForwardMotion()) {
-            return 0f;
+    private float calculateSidewaysSpeed(Vector2 velocity, float steerInput, float dt) {
+        if (currentSurface.isSlippery()) {
+            return calculateSlipperySidewaysSpeed(velocity, steerInput);
         }
 
-        float clampedThrottle = Math.max(0f, throttleInput);
-        float targetForwardSpeed = clampedThrottle
-                * profile.getMaxForwardSpeed()
-                * surface.getForwardSpeedMultiplier();
+        drifting = false;
+        driftLateralSpeed = 0f;
 
-        float acceleration = profile.getAcceleration() * surface.getAccelerationMultiplier();
-        float braking = profile.getBrakeStrength() * Math.max(0.6f, surface.getAccelerationMultiplier());
+        float gripMultiplier = calculateGripMultiplier(dt);
+        float steeringPower = profile.getSteeringResponse() * gripMultiplier;
+        float targetSidewaysSpeed = steerInput * profile.getMaxLateralSpeed() * gripMultiplier;
 
-        if (targetForwardSpeed > currentForwardSpeed) {
-            currentForwardSpeed = Math.min(currentForwardSpeed + acceleration * dt, targetForwardSpeed);
-        } else {
-            currentForwardSpeed = Math.max(currentForwardSpeed - braking * dt, targetForwardSpeed);
-        }
-
-        if (!profile.allowsReverseMotion() && currentForwardSpeed < 0f) {
-            currentForwardSpeed = 0f;
-        }
-
-        return currentForwardSpeed;
+        return moveTowards(velocity.x, targetSidewaysSpeed, steeringPower * dt);
     }
 
-    private float getCurrentGripMultiplier(float dt) {
-        if (!slideRecoveryActive) {
-            return surface.getLateralGripMultiplier();
+    private float calculateSlipperySidewaysSpeed(Vector2 velocity, float steerInput) {
+        if (!drifting) {
+            driftLateralSpeed = createSlipKick(velocity.x);
+        }
+        drifting = true;
+
+        driftLateralSpeed *= currentSurface.getMomentumRetention();
+
+        float steerContribution =
+                steerInput * profile.getMaxLateralSpeed() * currentSurface.getSteerInfluence();
+        float stickyLoss = driftLateralSpeed * currentSurface.getStickyness();
+
+        float sidewaysSpeed = driftLateralSpeed + steerContribution - stickyLoss;
+
+        return MathUtils.clamp(
+                sidewaysSpeed,
+                -profile.getMaxLateralSpeed() * 0.75f,
+                profile.getMaxLateralSpeed() * 0.75f
+        );
+    }
+
+    private float createSlipKick(float currentSidewaysSpeed) {
+        if (currentSurface.getStickyness() > 0f) {
+            return currentSidewaysSpeed;
         }
 
-        slideRecoveryTimer -= dt;
-        if (slideRecoveryTimer <= 0f) {
-            slideRecoveryActive = false;
-            slideRecoveryTimer = 0f;
-            return SurfaceEffect.DEFAULT.getLateralGripMultiplier();
+        float direction = Math.random() > 0.5f ? 1f : -1f;
+        return direction * profile.getMaxLateralSpeed() * 0.7f;
+    }
+
+    private float calculateForwardSpeed(float throttleInput, float dt) {
+        float targetForwardSpeed =
+                throttleInput
+                        * profile.getMaxForwardSpeed()
+                        * currentSurface.getForwardSpeedMultiplier();
+
+        float effectiveAcceleration =
+                profile.getAcceleration();
+
+        forwardSpeed = moveTowards(forwardSpeed, targetForwardSpeed, effectiveAcceleration * dt);
+        return forwardSpeed;
+    }
+
+    private float calculateGripMultiplier(float dt) {
+        if (!recoveringGrip) {
+            return currentSurface.getLateralMultiplier();
         }
 
-        float blend = slideRecoveryTimer / profile.getSlideRecoveryTime();
-        float lowGrip = SurfaceEffect.PUDDLE.getLateralGripMultiplier();
+        recoveryTimer -= dt;
+        if (recoveryTimer <= 0f) {
+            recoveringGrip = false;
+            recoveryTimer = 0f;
+            return SurfaceEffect.DEFAULT.getLateralMultiplier();
+        }
+
+        if (profile.getSlideRecoveryTime() <= 0f) {
+            return SurfaceEffect.DEFAULT.getLateralMultiplier();
+        }
+
+        float blend = recoveryTimer / profile.getSlideRecoveryTime();
+        float lowGrip = SurfaceEffect.LOW_FRICTION.getLateralMultiplier();
         return lowGrip + (1f - lowGrip) * (1f - blend);
+    }
+
+    private void updateHazardTrailTimer(float dt) {
+        if (!insideHazard) {
+            return;
+        }
+
+        trailEffectTimer += dt;
+        if (trailEffectTimer >= GameConstants.EFFECT_INTERVAL) {
+            trailEffectTimer = 0f;
+            trailEffectThisStep = true;
+        }
     }
 
     @Override
     public void onEnterZone(PhysicsBody body, Object zoneTuning) {
-        if (zoneTuning instanceof SurfaceEffect effect) {
-            surface = effect;
-            if (body != null) {
-                body.setLinearDamping(profile.getLinearDamping() * surface.getDampingMultiplier());
-            }
+        if (!(zoneTuning instanceof SurfaceEffect effect)) {
+            return;
+        }
+
+        currentSurface = effect;
+        insideHazard = true;
+        trailEffectTimer = 0f;
+        entryEffectPending = true;
+
+        if (body != null) {
+            body.setLinearDamping(profile.getLinearDamping() * currentSurface.getDampingMultiplier());
         }
     }
 
     @Override
     public void onExitZone(PhysicsBody body) {
-        if (profile.usesPuddleSlideRecovery() && surface.isSlippery()) {
-            slideRecoveryActive = true;
-            slideRecoveryTimer = profile.getSlideRecoveryTime();
+        if (currentSurface.isSlippery() && profile.getSlideRecoveryTime() > 0f) {
+            recoveringGrip = true;
+            recoveryTimer = profile.getSlideRecoveryTime();
         }
 
-        surface = SurfaceEffect.DEFAULT;
+        currentSurface = SurfaceEffect.DEFAULT;
+        insideHazard = false;
+        trailEffectTimer = 0f;
+        exitEffectPending = true;
+
         if (body != null) {
             body.setLinearDamping(profile.getLinearDamping());
         }
     }
 
-    private float approach(float current, float target, float amount) {
+    public boolean consumeEntryEffectSignal() {
+        boolean result = entryEffectPending;
+        entryEffectPending = false;
+        return result;
+    }
+
+    public boolean consumeExitEffectSignal() {
+        boolean result = exitEffectPending;
+        exitEffectPending = false;
+        return result;
+    }
+
+    public boolean didEmitTrailEffectThisStep() {
+        return trailEffectThisStep;
+    }
+
+    public boolean isInsideHazard() {
+        return insideHazard;
+    }
+
+    public SurfaceEffect getSurfaceEffect() {
+        return currentSurface;
+    }
+
+    private float moveTowards(float current, float target, float amount) {
         if (current < target) {
             return Math.min(current + amount, target);
         }

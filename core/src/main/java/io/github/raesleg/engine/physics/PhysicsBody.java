@@ -127,4 +127,28 @@ public class PhysicsBody {
             body.setBullet(bullet);
         }
     }
+
+    /**
+     * Wakes or puts the body to sleep.
+     * DYNAMIC bodies that remain still will be put to sleep by Box2D
+     * and stop participating in collision detection. Call
+     * {@code setAwake(true)} each frame on sensor bodies whose
+     * position is set manually to keep them in the broadphase.
+     */
+    public void setAwake(boolean awake) {
+        if (body != null) {
+            body.setAwake(awake);
+        }
+    }
+
+    /**
+     * Controls whether Box2D is allowed to deactivate (sleep) this body.
+     * Disabling sleep guarantees the body stays in the broadphase even
+     * when it has zero velocity.
+     */
+    public void setSleepingAllowed(boolean allowed) {
+        if (body != null) {
+            body.setSleepingAllowed(allowed);
+        }
+    }
 }

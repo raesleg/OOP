@@ -2,14 +2,18 @@ package io.github.raesleg.game.movement;
 
 import io.github.raesleg.engine.movement.MovableEntity;
 import io.github.raesleg.engine.movement.MovementStrategy;
-import io.github.raesleg.game.entities.vehicles.NPCCar;
+import io.github.raesleg.game.GameConstants;
 
+// converts AI perception into simple throttle/steering commands for NPC vehicles
+// normalized forward throttle (0 to 1) and steering (-1 to 1)
 public class NpcDrivingStrategy implements MovementStrategy {
 
-    private final AIPerceptionService perceptionService;
+    private AIPerceptionService perceptionService;
+    private SensorComponent sensor;
 
-    public NpcDrivingStrategy(AIPerceptionService perceptionService) {
+    public NpcDrivingStrategy(AIPerceptionService perceptionService, SensorComponent sensor) {
         this.perceptionService = perceptionService;
+        this.sensor = sensor;
     }
 
     @Override
@@ -19,31 +23,37 @@ public class NpcDrivingStrategy implements MovementStrategy {
 
     @Override
     public float getY(MovableEntity entity, float dt) {
-        if (!(entity instanceof NPCCar npc)) {
-            return 0f;
-        }
-
-        PerceptionSnapshot snapshot = perceptionService.scan(npc);
+        PerceptionSnapshot snapshot = perceptionService.scan(entity, sensor);
 
         if (snapshot == null) {
             return 0f;
         }
-
-        // Stop for pedestrians
-        if (snapshot.pedestrianAhead() && snapshot.nearestPedestrianDistance() < 90f) {
+        if (shouldStopForPedestrian(snapshot)) {
             return 0f;
         }
-
-        // Slow down if another vehicle is too close ahead
-        if (snapshot.vehicleAhead() && snapshot.nearestVehicleDistance() < 110f) {
-            return 0.25f;
+        if (shouldFollowVehicleSlowly(snapshot)) {
+            return GameConstants.NPC_SLOW_SPEED;
+        }
+        if (shouldSlowForObstacle(snapshot)) {
+            return GameConstants.NPC_OBSTACLE_SPEED;
         }
 
-        // Slow down for general obstacles ahead
-        if (snapshot.obstacleAhead() && snapshot.nearestObstacleDistance() < 85f) {
-            return 0.3f;
-        }
-
-        return 0.45f; // slower than player, straight line
+        return GameConstants.NPC_DEFAULT_SPEED;
     }
+
+    private boolean shouldStopForPedestrian(PerceptionSnapshot snapshot) {
+        return snapshot.pedestrianAhead()
+                && snapshot.nearestPedestrianDistance() < sensor.getStopDistance();
+    }
+
+    private boolean shouldFollowVehicleSlowly(PerceptionSnapshot snapshot) {
+        return snapshot.vehicleAhead()
+                && snapshot.nearestVehicleDistance() < sensor.getFollowDistance();
+    }
+
+    private boolean shouldSlowForObstacle(PerceptionSnapshot snapshot) {
+        return snapshot.obstacleAhead()
+                && snapshot.nearestObstacleDistance() < sensor.getFollowDistance();
+    }
+
 }

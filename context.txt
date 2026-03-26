@@ -12,7 +12,7 @@ You are being graded on code quality, appropriate use of OOP concepts (polymorph
 
 THE "DO NOT DO THIS" LIST (HARD FAIL CONDITIONS)
 Under no circumstances may you violate the following rules:
-1. Engine Contamination: NEVER import any class, interface, enum, or constant from the `demo/` package (or any game-specific package) into the `engine/` package. Engine classes must be 100% context-free (no mention of cars, pedestrians, scores, etc.).
+1. Engine Contamination: NEVER import any class, interface, enum, or constant from the `game/` package (or any game-specific package) into the `engine/` package. Engine classes must be 100% context-free (no mention of cars, pedestrians, scores, etc.).
 2. Dependency Inversion Violation: NEVER make high-level engine modules depend on concrete game classes. The dependency arrow is strictly one-way: `demo` → `engine`.
 3. Box2D Leakage: NEVER import `com.badlogic.gdx.physics.box2d.*` directly into game-layer code. All physics operations MUST go through the `PhysicsWorld` and `PhysicsBody` facades.
 4. Scene State Leakage: NEVER allow scenes to manage other scenes directly or hold cross-references. Transitions must be handled via `SceneManager.set()` or `push()`.

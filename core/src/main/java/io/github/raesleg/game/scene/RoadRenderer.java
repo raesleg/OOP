@@ -2,6 +2,9 @@ package io.github.raesleg.game.scene;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+
+import io.github.raesleg.game.GameConstants;
+
 /**
  * RoadRenderer — Draws the lane-dodger road background using ShapeRenderer.
  * <p>
@@ -14,10 +17,10 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
  */
 public class RoadRenderer {
 
-    /* ── Road geometry (pixels, 1280×720 virtual coords) ── */
-    public static final float ROAD_LEFT = 340f;
-    public static final float ROAD_RIGHT = 940f;
-    public static final float ROAD_WIDTH = ROAD_RIGHT - ROAD_LEFT; // 600
+    /* ── Road geometry — delegated to GameConstants ── */
+    public static final float ROAD_LEFT = GameConstants.ROAD_LEFT;
+    public static final float ROAD_RIGHT = GameConstants.ROAD_RIGHT;
+    public static final float ROAD_WIDTH = GameConstants.ROAD_WIDTH;
     static final int LANE_COUNT = 3;
     static final float LANE_WIDTH = ROAD_WIDTH / LANE_COUNT; // 200
 
@@ -33,44 +36,44 @@ public class RoadRenderer {
     private static final Color EDGE_COLOR = Color.WHITE;
     private static final Color DASH_COLOR = Color.WHITE;
 
-    private final float screenWidth;
-    private final float screenHeight;
-
-    public RoadRenderer(float screenWidth, float screenHeight) {
-        this.screenWidth = screenWidth;
-        this.screenHeight = screenHeight;
-    }
-
     /**
-     * Draws the full road background (grass → asphalt → shoulders → lane dashes).
+     * Draws the full road background (grass → asphalt → shoulders → lane dashes)
+     * covering the entire visible camera region.
      *
      * @param sr           an un-begun ShapeRenderer (this method calls begin/end)
      * @param scrollOffset cumulative downward scroll in pixels — drives the
      *                     animated dashes so the road appears to move
+     * @param visMinX      left edge of the visible area (world coords)
+     * @param visMinY      bottom edge of the visible area (world coords)
+     * @param visMaxX      right edge of the visible area (world coords)
+     * @param visMaxY      top edge of the visible area (world coords)
      */
-    public void draw(ShapeRenderer sr, float scrollOffset) {
+    public void draw(ShapeRenderer sr, float scrollOffset,
+            float visMinX, float visMinY, float visMaxX, float visMaxY) {
+        float visH = visMaxY - visMinY;
+
         sr.begin(ShapeRenderer.ShapeType.Filled);
 
-        // ── Grass (left & right of road) ──
+        // ── Grass (fills entire visible area outside road) ──
         sr.setColor(GRASS_COLOR);
-        sr.rect(0, 0, ROAD_LEFT, screenHeight);
-        sr.rect(ROAD_RIGHT, 0, screenWidth - ROAD_RIGHT, screenHeight);
+        sr.rect(visMinX, visMinY, ROAD_LEFT - visMinX, visH);
+        sr.rect(ROAD_RIGHT, visMinY, visMaxX - ROAD_RIGHT, visH);
 
         // ── Asphalt ──
         sr.setColor(ROAD_COLOR);
-        sr.rect(ROAD_LEFT, 0, ROAD_WIDTH, screenHeight);
+        sr.rect(ROAD_LEFT, visMinY, ROAD_WIDTH, visH);
 
         // ── Road shoulders (thin edge strips) ──
         float shoulderW = 6f;
         sr.setColor(SHOULDER_COLOR);
-        sr.rect(ROAD_LEFT, 0, shoulderW, screenHeight);
-        sr.rect(ROAD_RIGHT - shoulderW, 0, shoulderW, screenHeight);
+        sr.rect(ROAD_LEFT, visMinY, shoulderW, visH);
+        sr.rect(ROAD_RIGHT - shoulderW, visMinY, shoulderW, visH);
 
         // ── Solid edge lines ──
         float edgeW = 3f;
         sr.setColor(EDGE_COLOR);
-        sr.rect(ROAD_LEFT + shoulderW, 0, edgeW, screenHeight);
-        sr.rect(ROAD_RIGHT - shoulderW - edgeW, 0, edgeW, screenHeight);
+        sr.rect(ROAD_LEFT + shoulderW, visMinY, edgeW, visH);
+        sr.rect(ROAD_RIGHT - shoulderW - edgeW, visMinY, edgeW, visH);
 
         // ── Scrolling lane divider dashes ──
         sr.setColor(DASH_COLOR);
@@ -80,7 +83,7 @@ public class RoadRenderer {
         for (int lane = 1; lane < LANE_COUNT; lane++) {
             float dividerX = ROAD_LEFT + lane * LANE_WIDTH - DASH_WIDTH / 2f;
 
-            for (float y = -DASH_LENGTH + offset; y < screenHeight + cycle; y += cycle) {
+            for (float y = visMinY - DASH_LENGTH + offset; y < visMaxY + cycle; y += cycle) {
                 sr.rect(dividerX, y, DASH_WIDTH, DASH_LENGTH);
             }
         }

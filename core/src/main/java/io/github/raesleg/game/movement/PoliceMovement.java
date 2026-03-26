@@ -1,31 +1,50 @@
 package io.github.raesleg.game.movement;
 
-/**
- * PoliceMovement — screen-space chase logic for the police car.
- *
- * Does NOT implement MovementModel because police movement is
- * screen-space, not physics-space. MovementManager must not touch it.
- *
- * Net screen Y movement per frame = approachSpeed - scrollSpeed
- *   0 violations + fast player  → police falls behind (negative net, capped at MIN)
- *   more violations             → approachSpeed climbs → gap closes
- *   player stopped              → scrollSpeed = 0 → closes at full approachSpeed
-*/
+import io.github.raesleg.game.GameConstants;
+
+// Movement logic for the police car during a chase sequence
+// Vertical position is determined by the player's wanted-star count and speed
+// Horizontal position tracks the player's lane
 public class PoliceMovement {
 
-    private static final float BASE_APPROACH_SPEED = 5f;
-    private static final float SPEED_PER_VIOLATION = 5f;
-    private static final float MIN_APPROACH_SPEED  = 5f;
+    private float screenY;
 
-    public float update(float dt, float playerX, float currentScreenY,
-            float rulesBroken, float scrollSpeed) {
+    public PoliceMovement(float startY) {
+        this.screenY = startY;
+    }
 
-        float approachSpeed = BASE_APPROACH_SPEED + rulesBroken * SPEED_PER_VIOLATION;
+    // Advances the chase vertically based on star count and player speed
+    public float advance(float dt, float playerY, int starCount, int maxStars, float playerSpeed, float maxSpeed) {
+        float targetY = computeTargetY(playerY, starCount, maxStars, playerSpeed, maxSpeed);
+        screenY += (targetY - screenY) * GameConstants.POLICE_LERP_SPEED * dt;
+        return screenY;
+    }
 
-        // Net = police gains on player this much per second
-        // Clamped so police always creeps forward even at max player speed
-        float netYSpeed = Math.max(MIN_APPROACH_SPEED, approachSpeed - scrollSpeed);
+    public float computeTargetY(float playerY, int starCount, int maxStars, float playerSpeed, float maxSpeed) {
+        float starRatio = maxStars > 0 ? (float) starCount / maxStars : 0f;
+        float speedRatio = maxSpeed > 0f ? clamp(playerSpeed / maxSpeed, 0f, 1f) : 0f;
+        // When slow, reduce effective distance (police gets closer)
+        float speedModifier = GameConstants.POLICE_SPEED_FACTOR
+                + (1f - GameConstants.POLICE_SPEED_FACTOR) * speedRatio;
+        float effectiveDistance = GameConstants.POLICE_STAR_MAX_DISTANCE
+                * (1f - starRatio)
+                * speedModifier;
+        return playerY - effectiveDistance;
+    }
 
-        return currentScreenY + netYSpeed * dt;
+    public float lerpX(float currentX, float targetX, float dt) {
+        return currentX + (targetX - currentX) * GameConstants.POLICE_LANE_TRACK_SPEED * dt;
+    }
+
+    public float getScreenY() {
+        return screenY;
+    }
+
+    public boolean hasCaught(float policeBottom, float policeHeight, float playerY) {
+        return policeBottom + policeHeight >= playerY;
+    }
+
+    private float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

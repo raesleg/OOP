@@ -10,17 +10,16 @@ import io.github.raesleg.engine.movement.MovementModel;
 import io.github.raesleg.engine.movement.MovementStrategy;
 import io.github.raesleg.engine.physics.PhysicsBody;
 
-/**
- * PlayerCar is only the player-car entity plus flash effect.
- * It does not decide which movement classes to use.
- */
+import io.github.raesleg.game.movement.CarMovementModel;
+
+// Player vehicle with damage flash effect - delegates movement strategy to injected dependencies (SRP)
 public class PlayerCar extends MovableEntity implements IFlashable {
 
-    private static final float FLASH_DURATION = 0.8f;
-    private static final float FLASH_FREQUENCY = 8f;
+    private static final float FLASH_DURATION = 0.8f; // How long damage flash persists
+    private static final float FLASH_FREQUENCY = 8f; // Blink cycles per second during flash
 
-    private float flashTimer;
-    private boolean isFlashing;
+    private float flashTimer; // Countdown for active flash effect
+    private boolean isFlashing; // Whether damage flash is currently visible
 
     public PlayerCar(
             String filename,
@@ -39,12 +38,14 @@ public class PlayerCar extends MovableEntity implements IFlashable {
     }
 
     @Override
+    // Start damage flash effect when player collides with hazard
     public void triggerDamageFlash() {
         flashTimer = FLASH_DURATION;
         isFlashing = true;
     }
 
     @Override
+    // Check if damage flash effect is currently active
     public boolean isFlashing() {
         return isFlashing;
     }
@@ -54,6 +55,7 @@ public class PlayerCar extends MovableEntity implements IFlashable {
         super.update(deltaTime);
 
         if (isFlashing) {
+            // Countdown flash timer and stop flashing when duration expires
             flashTimer -= deltaTime;
             if (flashTimer <= 0f) {
                 flashTimer = 0f;
@@ -63,6 +65,7 @@ public class PlayerCar extends MovableEntity implements IFlashable {
     }
 
     @Override
+    // Render with dynamic alpha blending to create damage blink effect during collision feedback
     public void draw(SpriteBatch batch) {
         if (getTexture() == null) {
             return;
@@ -70,6 +73,7 @@ public class PlayerCar extends MovableEntity implements IFlashable {
 
         float alpha = 1.0f;
 
+        // Calculate alpha based on sinusoidal wave for smooth blinking during flash
         if (isFlashing) {
             float phase = flashTimer * FLASH_FREQUENCY * (float) Math.PI * 2f;
             float blink = (float) Math.sin(phase);
@@ -82,5 +86,10 @@ public class PlayerCar extends MovableEntity implements IFlashable {
         batch.draw(getTexture(), getX(), getY(), getW(), getH());
 
         batch.setColor(oldColor);
+    }
+
+    // Access to underlying movement model for physics queries (e.g., speed, traction)
+    public CarMovementModel getCarMovementModel() {
+        return (CarMovementModel) getMovementModel();
     }
 }

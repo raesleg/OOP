@@ -3,13 +3,21 @@ package io.github.raesleg.game.entities.misc;
 import com.badlogic.gdx.utils.Array;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.entity.TextureObject;
+import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.scene.RoadRenderer;
 
 import static io.github.raesleg.engine.scene.Scene.VIRTUAL_HEIGHT;
 import static io.github.raesleg.engine.scene.Scene.VIRTUAL_WIDTH;
 
-
 public class Trees {
+
+    /**
+     * Extra vertical padding so trees spawn/despawn outside the zoomed camera view.
+     * Derived from CAMERA_ZOOM and CAMERA_LOOK_AHEAD to avoid pop-in.
+     */
+    private static final float SPAWN_PADDING = VIRTUAL_HEIGHT
+            * (Math.max(GameConstants.CAMERA_ZOOM, GameConstants.L2_CAMERA_ZOOM) - 1f)
+            + GameConstants.CAMERA_LOOK_AHEAD + 50f;
 
     private final Array<Tree> trees;
     private final int count;
@@ -30,15 +38,15 @@ public class Trees {
             if (Math.random() < 0.5f) {
                 // left side
                 x = (float) Math.random() *
-                    (RoadRenderer.ROAD_LEFT - width);
+                        (RoadRenderer.ROAD_LEFT - width);
             } else {
                 // right side
                 x = RoadRenderer.ROAD_RIGHT +
-                    (float) Math.random() *
-                        (VIRTUAL_WIDTH - RoadRenderer.ROAD_RIGHT - width);
+                        (float) Math.random() *
+                                (VIRTUAL_WIDTH - RoadRenderer.ROAD_RIGHT - width);
             }
 
-            float y = (float) Math.random() * VIRTUAL_HEIGHT;
+            float y = -SPAWN_PADDING + (float) Math.random() * (VIRTUAL_HEIGHT + 2 * SPAWN_PADDING);
 
             Tree tree = new Tree(x, y, width, height);
             trees.add(tree);
@@ -51,9 +59,9 @@ public class Trees {
 
             float newY = tree.getY() - speed * 14.0f * deltaTime;
 
-            // Wrap to top
-            if (newY + tree.getH() < 0) {
-                newY = VIRTUAL_HEIGHT;
+            // Wrap to top when tree scrolls below visible area
+            if (newY + tree.getH() < -SPAWN_PADDING) {
+                newY = VIRTUAL_HEIGHT + SPAWN_PADDING;
 
                 float treeWidth = tree.getW();
                 float x;
@@ -61,12 +69,12 @@ public class Trees {
                 if (Math.random() < 0.5f) {
                     // left side
                     x = (float) Math.random() *
-                        (RoadRenderer.ROAD_LEFT - treeWidth);
+                            (RoadRenderer.ROAD_LEFT - treeWidth);
                 } else {
                     // right side
                     x = RoadRenderer.ROAD_RIGHT +
-                        (float) Math.random() *
-                            (VIRTUAL_WIDTH - RoadRenderer.ROAD_RIGHT - treeWidth);
+                            (float) Math.random() *
+                                    (VIRTUAL_WIDTH - RoadRenderer.ROAD_RIGHT - treeWidth);
                 }
 
                 tree.setX(x);

@@ -11,19 +11,19 @@ import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.game.collision.handlers.BoundaryCollisionHandler;
 import io.github.raesleg.game.collision.handlers.CrosswalkCollisionHandler;
 import io.github.raesleg.game.collision.handlers.NPCCarCollisionHandler;
+import io.github.raesleg.game.collision.handlers.NPCPedestrianCollisionHandler;
 import io.github.raesleg.game.collision.handlers.PedestrianCollisionHandler;
 import io.github.raesleg.game.collision.handlers.PickupCollisionHandler;
 import io.github.raesleg.game.collision.handlers.ZoneCollisionHandler;
-import io.github.raesleg.game.collision.handlers.ExplosionCollisionHandler;
+import io.github.raesleg.game.collision.listeners.PickupListener;
 import io.github.raesleg.game.collision.listeners.TrafficViolationListener;
-import io.github.raesleg.game.entities.misc.Pedestrian;
-
 
 /**
  * GameCollisionHandler — Coordinator for game-specific collision logic.
  * 
- * This class delegates collision handling to specialised handler classes 
- * Each handler is responsible for one type of collision (Single Responsibility Principle).
+ * This class delegates collision handling to specialised handler classes
+ * Each handler is responsible for one type of collision (Single Responsibility
+ * Principle).
  * 
  * Design Patterns:
  * Facade: Provides a simple interface to the complex collision subsystem
@@ -34,7 +34,8 @@ import io.github.raesleg.game.entities.misc.Pedestrian;
  *
  * SOLID Compliance:
  * Single Responsibility: Only coordinates between handlers
- * Open/Closed: Add new collision types by adding handlers, instead of modifying class
+ * Open/Closed: Add new collision types by adding handlers, instead of modifying
+ * class
  * Liskov Substitution: All handlers can be swapped with implementations
  * Interface Segregation: Each handler has a focused interface
  * Dependency Inversion: Depends on abstractions (handler interfaces)
@@ -49,13 +50,9 @@ public class GameCollisionHandler implements ICollisionListener {
     private final PedestrianCollisionHandler pedestrianHandler;
     private final PickupCollisionHandler pickupHandler;
     private final NPCCarCollisionHandler npcCarHandler;
-    private final ExplosionCollisionHandler explosionHandler;
-
-    /* Shared sound device */
-    private final SoundDevice soundManager;
+    private final NPCPedestrianCollisionHandler npcPedestrianHandler;
 
     /* Observer for traffic violations */
-    private TrafficViolationListener violationListener;
 
     /**
      * Creates the collision handler with all specialized handlers.
@@ -70,13 +67,12 @@ public class GameCollisionHandler implements ICollisionListener {
     /**
      * Creates the collision handler with custom explosion threshold.
      * 
-     * @param entityManager          EntityManager for accessing all entities
-     * @param soundManager           SoundDevice for playing collision sounds
+     * @param entityManager           EntityManager for accessing all entities
+     * @param soundManager            SoundDevice for playing collision sounds
      * @param explosionForceThreshold Minimum force to trigger explosions
      */
     public GameCollisionHandler(EntityManager entityManager, SoundDevice soundManager,
             float explosionForceThreshold) {
-        this.soundManager = soundManager;
         // Instantiate all specialized handlers (Dependency Injection)
         this.zoneHandler = new ZoneCollisionHandler();
         this.boundaryHandler = new BoundaryCollisionHandler(soundManager);
@@ -84,19 +80,25 @@ public class GameCollisionHandler implements ICollisionListener {
         this.pedestrianHandler = new PedestrianCollisionHandler(soundManager);
         this.pickupHandler = new PickupCollisionHandler();
         this.npcCarHandler = new NPCCarCollisionHandler(soundManager);
-        this.explosionHandler = new ExplosionCollisionHandler(entityManager, soundManager, explosionForceThreshold);
+        this.npcPedestrianHandler = new NPCPedestrianCollisionHandler(soundManager);
     }
 
     /**
      * Sets the listener notified on traffic violations (Observer Pattern).
      */
     public void setTrafficViolationListener(TrafficViolationListener listener) {
-        this.violationListener = listener;
         // Propagate to handlers that need it
         crosswalkHandler.setViolationListener(listener);
         pedestrianHandler.setViolationListener(listener);
-        pickupHandler.setViolationListener(listener);
         npcCarHandler.setViolationListener(listener);
+    }
+
+    /**
+     * Sets the listener notified on pickup collection (ISP — separate from
+     * violations).
+     */
+    public void setPickupListener(PickupListener listener) {
+        pickupHandler.setPickupListener(listener);
     }
 
     @Override
@@ -125,16 +127,9 @@ public class GameCollisionHandler implements ICollisionListener {
             return;
         }
 
-        // 4b. NPC car hits pedestrian — expire pedestrian silently (no game-over)
-        Pedestrian ped = extractEntity(entityA, entityB, Pedestrian.class);
-        if (ped != null && !ped.isExpired()) {
-            MovableEntity mover = extractEntity(entityA, entityB, MovableEntity.class);
-            if (mover != null && mover.isAIControlled()) {
-                ped.markExpired();
-                if (soundManager != null) {
-                    soundManager.playSound("scream", 1.0f);
-                }
-            }
+        // 4b. NPC car hits pedestrian
+        if (npcPedestrianHandler.canHandle(entityA, entityB)) {
+            npcPedestrianHandler.handleBegin(entityA, entityB);
         }
 
         // 5. Pickupables
@@ -168,50 +163,27 @@ public class GameCollisionHandler implements ICollisionListener {
             return; // NPC collisions don't trigger explosions
         }
 
-        // 2. Explosion effects (legacy AI entities)
-        if (explosionHandler.canHandle(entityA, entityB)) {
-            explosionHandler.handleImpact(entityA, entityB, impactForce, impactPoint);
-        }
     }
 
     // ═══════════════════════════════════════════════════════════
-    // Helper Methods for Entity Type Detection
+    // Deprecated helpers — delegate to CollisionEntityUtils
     // ═══════════════════════════════════════════════════════════
 
-    /**
-     * Helper: Returns user-controlled MovableEntity from pair, or null.
-     * Used by multiple handlers (DRY principle).
-     */
+    /** @deprecated Use {@link CollisionEntityUtils#getPlayerEntity} directly. */
+    @Deprecated
     public static MovableEntity getPlayerEntity(Entity a, Entity b) {
-        if (a instanceof MovableEntity ma && !ma.isAIControlled()) {
-            return ma;
-        }
-        if (b instanceof MovableEntity mb && !mb.isAIControlled()) {
-            return mb;
-        }
-        return null;
+        return CollisionEntityUtils.getPlayerEntity(a, b);
     }
 
-    /**
-     * Helper: Extracts specific entity type from collision pair.
-     */
+    /** @deprecated Use {@link CollisionEntityUtils#extractEntity} directly. */
+    @Deprecated
     public static <T> T extractEntity(Entity a, Entity b, Class<T> type) {
-        if (type.isInstance(a)) return type.cast(a);
-        if (type.isInstance(b)) return type.cast(b);
-        return null;
+        return CollisionEntityUtils.extractEntity(a, b, type);
     }
 
-    /**
-     * Helper: Clamps velocity to prevent excessive speed.
-     * Shared utility for collision handlers (DRY principle).
-     */
+    /** @deprecated Use {@link CollisionEntityUtils#clampVelocity} directly. */
+    @Deprecated
     public static void clampVelocity(PhysicsBody body, float maxSpeed) {
-        Vector2 vel = body.getVelocity();
-        float currentSpeed = vel.len();
-
-        if (currentSpeed > maxSpeed) {
-            vel.nor().scl(maxSpeed);
-            body.setVelocity(vel.x, vel.y);
-        }
+        CollisionEntityUtils.clampVelocity(body, maxSpeed);
     }
 }

@@ -4,13 +4,10 @@ import java.util.List;
 
 import io.github.raesleg.engine.entity.Entity;
 import io.github.raesleg.engine.entity.EntityManager;
-import io.github.raesleg.game.entities.misc.Pedestrian;
-import io.github.raesleg.game.entities.misc.StopSign;
-import io.github.raesleg.game.entities.vehicles.NPCCar;
 
-/**
- * Reads nearby entities and builds a lightweight perception snapshot for NPC AI.
- */
+import io.github.raesleg.game.entities.IPerceivable;
+
+// Look at nearby entities and extract summarised information for NpcDrivingStrategy to use for decision making
 public class AIPerceptionService {
 
     private final EntityManager entityManager;
@@ -19,10 +16,12 @@ public class AIPerceptionService {
         this.entityManager = entityManager;
     }
 
-    public PerceptionSnapshot scan(NPCCar self) {
-        SensorComponent sensor = self.getSensor();
-        float defaultDistance = sensor.getForwardRange();
+    public PerceptionSnapshot scan(Entity self, SensorComponent sensor) {
+        if (self == null || sensor == null) {
+            return PerceptionSnapshot.clear(0f);
+        }
 
+        float defaultDistance = sensor.getForwardRange();
         float nearestPedestrianDistance = defaultDistance;
         float nearestVehicleDistance = defaultDistance;
         float nearestObstacleDistance = defaultDistance;
@@ -30,39 +29,26 @@ public class AIPerceptionService {
         Entity nearestEntity = null;
 
         List<Entity> entities = entityManager.getSnapshot();
-
         float selfCenterX = self.getX() + self.getW() * 0.5f;
-        // NPCs move downward on screen, so "ahead" = lower Y
-        float selfFrontY = self.getY(); // bottom edge of sprite is in front
+        float selfFrontY = self.getY();
 
         for (Entity entity : entities) {
-            if (entity == self) {
+            if (!isRelevantTarget(self, entity, selfCenterX, selfFrontY, sensor)) {
                 continue;
             }
 
-            float otherCenterX = entity.getX() + entity.getW() * 0.5f;
-            float dx = Math.abs(otherCenterX - selfCenterX);
-            if (dx > sensor.getSideRange()) {
-                continue;
-            }
-
-            // "ahead" = lower Y; dy is positive when entity is below (in front of) NPC
             float dy = selfFrontY - entity.getY();
-            if (dy < 0f || dy > sensor.getForwardRange()) {
-                continue;
-            }
-
             if (dy < nearestDistance) {
                 nearestDistance = dy;
                 nearestEntity = entity;
             }
 
-            if (entity instanceof Pedestrian && dy < nearestPedestrianDistance) {
-                nearestPedestrianDistance = dy;
-            } else if (entity instanceof NPCCar && dy < nearestVehicleDistance) {
-                nearestVehicleDistance = dy;
-            } else if (entity instanceof StopSign && dy < nearestObstacleDistance) {
-                nearestObstacleDistance = dy;
+            if (entity instanceof IPerceivable perceivable) {
+                switch (perceivable.getPerceptionCategory()) {
+                    case PEDESTRIAN -> nearestPedestrianDistance = Math.min(nearestPedestrianDistance, dy);
+                    case VEHICLE -> nearestVehicleDistance = Math.min(nearestVehicleDistance, dy);
+                    case OBSTACLE -> nearestObstacleDistance = Math.min(nearestObstacleDistance, dy);
+                }
             }
         }
 
@@ -74,7 +60,26 @@ public class AIPerceptionService {
                 nearestEntity,
                 nearestPedestrianDistance,
                 nearestVehicleDistance,
-                nearestObstacleDistance
-        );
+                nearestObstacleDistance);
+    }
+
+    private boolean isRelevantTarget(
+            Entity self,
+            Entity candidate,
+            float selfCenterX,
+            float selfFrontY,
+            SensorComponent sensor) {
+        if (candidate == null || candidate == self) {
+            return false;
+        }
+
+        float otherCenterX = candidate.getX() + candidate.getW() * 0.5f;
+        float dx = Math.abs(otherCenterX - selfCenterX);
+        if (dx > sensor.getSideRange()) {
+            return false;
+        }
+
+        float dy = selfFrontY - candidate.getY();
+        return dy >= 0f && dy <= sensor.getForwardRange();
     }
 }

@@ -1,6 +1,9 @@
 // Package: io.github.raesleg.game.scene
 package io.github.raesleg.game.scene;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * LevelResult — Immutable value object carrying the outcome of a completed
  * or failed level (Template Method data transfer).
@@ -21,15 +24,23 @@ public final class LevelResult {
     private final String levelName;
     private final boolean completed;
     private final String lossReason;
+    private final List<String> violations;
 
     public LevelResult(int score, float time, int rulesBroken,
             String levelName, boolean completed, String lossReason) {
+        this(score, time, rulesBroken, levelName, completed, lossReason, List.of());
+    }
+
+    public LevelResult(int score, float time, int rulesBroken,
+            String levelName, boolean completed, String lossReason,
+            List<String> violations) {
         this.score = score;
         this.time = time;
         this.rulesBroken = rulesBroken;
         this.levelName = levelName;
         this.completed = completed;
         this.lossReason = (lossReason != null) ? lossReason : "";
+        this.violations = Collections.unmodifiableList(violations);
     }
 
     public int getScore() {
@@ -54,5 +65,9 @@ public final class LevelResult {
 
     public String getLossReason() {
         return lossReason;
+    }
+
+    public List<String> getViolations() {
+        return violations;
     }
 }

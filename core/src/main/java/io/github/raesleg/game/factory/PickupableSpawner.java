@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import com.badlogic.gdx.physics.box2d.BodyDef;
+import io.github.raesleg.engine.physics.BodyType;
 
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.EntityManager;
@@ -24,6 +24,7 @@ public class PickupableSpawner {
     private final PhysicsWorld world;
     private final float screenHeight;
     private final NPCCarSpawner npcCarSpawner;
+    private final List<float[]> crosswalkExclusions;
 
     private float spawnTimer;
     private final float spawnInterval;
@@ -34,12 +35,19 @@ public class PickupableSpawner {
     public PickupableSpawner(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float spawnInterval,
             NPCCarSpawner npcCarSpawner) {
+        this(entityManager, world, screenHeight, spawnInterval, npcCarSpawner, List.of());
+    }
+
+    public PickupableSpawner(EntityManager entityManager, PhysicsWorld world,
+            float screenHeight, float spawnInterval,
+            NPCCarSpawner npcCarSpawner, List<float[]> crosswalkExclusions) {
         this.entityManager = entityManager;
         this.world = world;
         this.screenHeight = screenHeight;
         this.spawnInterval = spawnInterval;
         this.spawnTimer = 0f;
         this.npcCarSpawner = npcCarSpawner;
+        this.crosswalkExclusions = (crosswalkExclusions != null) ? crosswalkExclusions : List.of();
     }
 
     public void update(float deltaTime, float scrollOffset) {
@@ -63,6 +71,13 @@ public class PickupableSpawner {
     private void spawnPickup(float scrollOffset) {
         float relativeY = -scrollOffset + screenHeight + 400f;
 
+        // Skip if spawn position is inside a crosswalk exclusion zone
+        for (float[] zone : crosswalkExclusions) {
+            if (relativeY >= zone[0] && relativeY <= zone[1]) {
+                return;
+            }
+        }
+
         // Pick a lane not currently occupied by NPC
         Set<Integer> blocked = (npcCarSpawner != null)
                 ? npcCarSpawner.getOccupiedLanesNear(relativeY, 300f)
@@ -83,19 +98,22 @@ public class PickupableSpawner {
 
         // CHANGED: DynamicBody with sensor=true instead of KinematicBody
         // This ensures collision detection works from ALL angles
+        // Body is 1.5× sprite size for a generous pickup zone
+        float bodyHalf = (PICKUP_SIZE / Constants.PPM) / 2f * 1.5f;
         PhysicsBody body = world.createBody(
-                BodyDef.BodyType.DynamicBody, // Changed from KinematicBody
+                BodyType.DYNAMIC, // Changed from KinematicBody
                 laneX / Constants.PPM,
                 relativeY / Constants.PPM,
-                (PICKUP_SIZE / Constants.PPM) / 2f,
-                (PICKUP_SIZE / Constants.PPM) / 2f,
-                0.1f,  // Small density (very light)
-                0f,    // No friction
-                true,  // Sensor = true (no physical collision response)
+                bodyHalf,
+                bodyHalf,
+                0.1f, // Small density (very light)
+                0f, // No friction
+                true, // Sensor = true (no physical collision response)
                 null);
 
         // Very high damping so it doesn't drift or move
         body.setLinearDamping(999f);
+        body.setSleepingAllowed(false);
 
         Pickupable pickup = new Pickupable(body, laneX, relativeY,
                 PICKUP_SIZE, PICKUP_SIZE);

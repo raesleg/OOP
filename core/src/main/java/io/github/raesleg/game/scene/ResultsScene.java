@@ -24,7 +24,6 @@ import io.github.raesleg.engine.scene.Scene;
 import io.github.raesleg.game.io.Keyboard;
 import io.github.raesleg.engine.io.SoundDevice;
 
-
 /**
  * ResultsScene — Win/Lose screen displayed after a level ends
  * (State Pattern — scene transition via SceneManager).
@@ -55,6 +54,7 @@ public class ResultsScene extends Scene {
     private BitmapFont titleFont;
     private BitmapFont bodyFont;
     private BitmapFont buttonFont;
+    private BitmapFont smallFont;
     private Texture pixelTexture;
 
     private SoundDevice sound;
@@ -75,7 +75,7 @@ public class ResultsScene extends Scene {
     @Override
     public void show() {
         sound = getIOManager().getSound();
-        
+
         if (result.isCompleted()) {
             sound.playSound("win", 1.0f);
         } else {
@@ -153,6 +153,24 @@ public class ResultsScene extends Scene {
             root.row();
         }
 
+        /* Violation breakdown (only shown on game over when there are violations) */
+        if (!result.isCompleted() && !result.getViolations().isEmpty()) {
+            Label.LabelStyle violationHeaderStyle = new Label.LabelStyle(bodyFont, Color.YELLOW);
+            root.add(new Label("Violations:", violationHeaderStyle))
+                    .padBottom(6f).colspan(2);
+            root.row();
+
+            smallFont = new BitmapFont();
+            smallFont.getData().setScale(1.6f);
+            Label.LabelStyle violationStyle = new Label.LabelStyle(smallFont, Color.SALMON);
+
+            for (String v : result.getViolations()) {
+                root.add(new Label("- " + v, violationStyle))
+                        .padBottom(4f).colspan(2);
+                root.row();
+            }
+        }
+
         /* Spacer before buttons */
         root.add().padBottom(30f).colspan(2);
         root.row();
@@ -226,6 +244,8 @@ public class ResultsScene extends Scene {
         titleFont.dispose();
         bodyFont.dispose();
         buttonFont.dispose();
+        if (smallFont != null)
+            smallFont.dispose();
         pixelTexture.dispose();
         Gdx.app.log("ResultsScene", "Scene disposed");
     }
