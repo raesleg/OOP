@@ -126,7 +126,6 @@ RoadHazardSpawner ..|> ILaneOccupancy : implements
 Keyboard ..|> InputDevice : implements
 Keyboard ..|> ActionInput : implements
 Keyboard ..> Runnable : method param
-PlayerInputBinder ..> Keyboard : method param
 SystemInputBinder ..> Keyboard : method param
 SystemInputBinder ..> Runnable : method param
 AIPerceptionService ..> Entity : method param
@@ -225,8 +224,6 @@ AudioController --> Music : field
 DashboardUI ..|> IDashboardObserver : implements
 DashboardUI ..|> Disposable : implements
 FuelController ..|> IGameSystem : implements
-GameOverDelayController --> LevelResult : field
-GameOverDelayController ..> LevelResult : method param
 MatchDirector --> LevelResult : field
 MatchDirector --> Supplier : field
 MatchDirector ..> ILevelEndCondition : method param
