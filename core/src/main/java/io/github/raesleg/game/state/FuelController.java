@@ -30,7 +30,7 @@ public final class FuelController implements IGameSystem {
         this.eventBus = eventBus;
         this.depletedFired = false;
 
-        eventBus.subscribe(PickupCollectedEvent.class, e -> fuelSystem.recharge());
+        // eventBus.subscribe(PickupCollectedEvent.class, e -> fuelSystem.recharge());
     }
 
     /** Called by the scene each frame before update() to supply current speed. */

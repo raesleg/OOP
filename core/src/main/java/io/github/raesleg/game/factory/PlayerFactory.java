@@ -3,6 +3,7 @@ package io.github.raesleg.game.factory;
 import io.github.raesleg.engine.Constants;
 import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.io.ControlSource;
+import io.github.raesleg.engine.movement.MovementStrategy;
 import io.github.raesleg.engine.physics.BodyType;
 import io.github.raesleg.engine.physics.PhysicsBody;
 import io.github.raesleg.engine.physics.PhysicsWorld;
@@ -10,7 +11,6 @@ import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.game.GameConstants;
 import io.github.raesleg.game.entities.vehicles.PlayerCar;
 import io.github.raesleg.game.movement.CarMovementModel;
-import io.github.raesleg.game.movement.PlayerMovementStrategy;
 import io.github.raesleg.game.movement.VehicleProfile;
 import io.github.raesleg.game.scene.RoadRenderer;
 
@@ -29,7 +29,7 @@ public final class PlayerFactory {
         @return the spawned PlayerCar
      */
     public static PlayerCar create(PhysicsWorld world, EntityManager entityManager,
-            ControlSource controls) {
+            ControlSource controls, MovementStrategy movementStrategy) {
         float carPixelX = RoadRenderer.ROAD_LEFT + RoadRenderer.ROAD_WIDTH / 2f;
         float carPixelY = GameConstants.PLAYER_CAR_START_Y;
         float carW = GameConstants.PLAYER_CAR_WIDTH;
@@ -49,7 +49,7 @@ public final class PlayerFactory {
                 carPixelX - carW / 2f, carPixelY,
                 carW, carH,
                 controls,
-                new PlayerMovementStrategy(),
+                movementStrategy,
                 new CarMovementModel(VehicleProfile.playerArcade()),
                 carBody);
 

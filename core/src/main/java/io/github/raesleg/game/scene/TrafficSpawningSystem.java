@@ -5,12 +5,11 @@ import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.system.IGameSystem;
 import io.github.raesleg.game.factory.NPCCarSpawner;
 import io.github.raesleg.game.factory.PickupableSpawner;
-import io.github.raesleg.game.factory.TreeSpawner;
 
 import java.util.List;
 
 /**
- * TrafficSpawningSystem — Coordinates NPC car, pickup, and tree spawning.
+ * TrafficSpawningSystem — Coordinates NPC car, pickup spawning.
  * Extracted from Level1Scene/Level2Scene to satisfy SRP: spawn lifecycle
  * management is one responsibility, independent of crosswalk encounters,
  * scoring, or audio.
@@ -20,7 +19,6 @@ public final class TrafficSpawningSystem implements IGameSystem {
 
     private final NPCCarSpawner npcSpawner;
     private final PickupableSpawner pickupSpawner;
-    private final TreeSpawner treeSpawner;
 
     // Frame-scoped values supplied by the owning scene
     private float npcScrollSpeed;
@@ -30,21 +28,20 @@ public final class TrafficSpawningSystem implements IGameSystem {
 
     public TrafficSpawningSystem(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float npcSpawnInterval,
-            float pickupSpawnInterval, float treeSpawnInterval,
+            float pickupSpawnInterval,
             List<float[]> crosswalkExclusions) {
         this.npcSpawner = new NPCCarSpawner(entityManager, world, screenHeight,
                 npcSpawnInterval, crosswalkExclusions);
         this.pickupSpawner = new PickupableSpawner(entityManager, world, screenHeight,
                 pickupSpawnInterval, npcSpawner, crosswalkExclusions);
-        this.treeSpawner = new TreeSpawner(entityManager, screenHeight, treeSpawnInterval);
     }
 
     // Alternative constructor without crosswalk exclusions (Level 2)
     public TrafficSpawningSystem(EntityManager entityManager, PhysicsWorld world,
             float screenHeight, float npcSpawnInterval,
-            float pickupSpawnInterval, float treeSpawnInterval) {
+            float pickupSpawnInterval) {
         this(entityManager, world, screenHeight, npcSpawnInterval,
-                pickupSpawnInterval, treeSpawnInterval, List.of());
+                pickupSpawnInterval, List.of());
     }
 
     // Called by the scene each frame before update()
@@ -70,14 +67,12 @@ public final class TrafficSpawningSystem implements IGameSystem {
         npcSpawner.setPlayerX(playerX);  // Pass player X for lane exclusion
         npcSpawner.update(deltaTime, npcScrollSpeed);
         pickupSpawner.update(deltaTime, scrollOffset);
-        treeSpawner.update(deltaTime, scrollOffset);
     }
 
     @Override
     public void dispose() {
         npcSpawner.clearAll();
         pickupSpawner.clearAll();
-        treeSpawner.clearAll();
     }
 
     public NPCCarSpawner getNpcSpawner() {

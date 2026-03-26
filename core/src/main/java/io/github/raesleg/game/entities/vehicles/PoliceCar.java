@@ -68,16 +68,15 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
         setX(newX);
         setY(screenY);
 
-        // Sync kinematic body
+        // Sync physics body for collision detection
         if (body != null) {
-            float bodyX = (getX() + getW() / 2f) / Constants.PPM;
-            float bodyY = (screenY + getH() / 2f) / Constants.PPM;
-            body.setPosition(bodyX, bodyY);
+            body.setPosition(
+                    (newX + getW() / 2f) / Constants.PPM,
+                    (screenY + getH() / 2f) / Constants.PPM);
         }
 
         caught = movement.hasCaught(screenY, getH(), playerY);
 
-        // Advance siren flash animation
         flashTimer += deltaTime;
         if (flashTimer >= GameConstants.POLICE_FLASH_INTERVAL) {
             flashTimer -= GameConstants.POLICE_FLASH_INTERVAL;
@@ -105,8 +104,6 @@ public class PoliceCar extends TextureObject implements IChaseEntity {
 
     @Override
     public void dispose() {
-        if (body != null) {
-            body.destroy();
-        }
+        if (body != null) body.destroy();
     }
 }

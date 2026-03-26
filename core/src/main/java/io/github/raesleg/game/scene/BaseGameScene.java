@@ -16,6 +16,7 @@ import io.github.raesleg.engine.entity.EntityManager;
 import io.github.raesleg.engine.event.EventBus;
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.movement.MovementManager;
+import io.github.raesleg.engine.movement.MovementStrategy;
 import io.github.raesleg.engine.movement.UserControlled;
 import io.github.raesleg.engine.physics.PhysicsWorld;
 import io.github.raesleg.engine.scene.Scene;
@@ -30,6 +31,7 @@ import io.github.raesleg.game.event.PickupCollectedEvent;
 import io.github.raesleg.game.event.ScoreChangedEvent;
 import io.github.raesleg.game.io.Keyboard;
 import io.github.raesleg.game.io.SystemInputBinder;
+import io.github.raesleg.game.movement.PlayerMovementStrategy;
 import io.github.raesleg.game.rules.RuleManager;
 import io.github.raesleg.game.state.AudioController;
 import io.github.raesleg.game.state.DashboardUI;
@@ -142,6 +144,11 @@ public abstract class BaseGameScene extends Scene {
 
     protected abstract float getMaxScrollPixelsPerSecond();
 
+    /** Player movement strategy — subclasses may override for level-specific behavior. */
+    protected MovementStrategy getPlayerMovementStrategy() {
+        return new PlayerMovementStrategy();
+    }
+
     /** Optional Hooks */
 
     protected void renderLevelEffects(ShapeRenderer sr, SpriteBatch batch) {
@@ -221,7 +228,7 @@ public abstract class BaseGameScene extends Scene {
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         UserControlled user = new UserControlled(kb);
 
-        playerCar = PlayerFactory.create(world, getEntityManager(), user);
+        playerCar = PlayerFactory.create(world, getEntityManager(), user, getPlayerMovementStrategy());
 
         SystemInputBinder.bindMovementKeys(kb);
         SystemInputBinder.bindSystemKeys(kb, this::openPause, () -> audioController.toggleMute());
