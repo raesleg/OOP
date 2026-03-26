@@ -7,124 +7,132 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
 import io.github.raesleg.engine.io.SoundDevice;
 import io.github.raesleg.engine.scene.Scene;
+
 import io.github.raesleg.game.io.Keyboard;
 
-/**
- * LevelSelectScene — Level selection menu.
- * <p>
- * Presents Scene2D buttons for each available level. Selecting a level
- * instantiates the corresponding concrete {@link BaseGameScene} subclass
- * and transitions via {@code SceneManager.set()}.
- * <p>
- * A "Back" button returns to {@link StartScene}.
- */
 public class LevelSelectScene extends Scene {
 
     private Stage stage;
-    private BitmapFont titleFont;
-    private BitmapFont buttonFont;
-    private BitmapFont subFont;
-    private Texture pixelTexture;
     private SoundDevice sound;
 
-    public LevelSelectScene() {
-        super();
-    }
+    private Texture bgTexture;
+    private Texture redButtonUpTexture;
+    private Texture redButtonDownTexture;
+    private Texture panelTexture;
+
+    private BitmapFont titleFont;
+    private BitmapFont levelFont;
+    private BitmapFont subtitleFont;
+    private BitmapFont descFont;
+    private BitmapFont backFont;
+
+    private ImageButton level1Card;
+    private ImageButton level2Card;
+    private ImageButton backBtn;
+
+    private static final float CARD_W = 360f;
+    private static final float CARD_H = 215f;
+    private static final float CARD_Y = 80f;
+    private static final float CARD_GAP = 44f;
+
+    private static final float BANNER_W = 270f;
+    private static final float BANNER_H = 62f;
+
+    private static final float BACK_W = 210f;
+    private static final float BACK_H = 72f;
+    private static final float BACK_Y = 18f;
 
     @Override
     public void show() {
         sound = getIOManager().getSound();
-
-        /* Fonts */
-        titleFont = new BitmapFont();
-        titleFont.getData().setScale(4f);
-
-        buttonFont = new BitmapFont();
-        buttonFont.getData().setScale(2f);
-
-        /* 1×1 white pixel for button backgrounds */
-        Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pm.setColor(Color.WHITE);
-        pm.fill();
-        pixelTexture = new Texture(pm);
-        pm.dispose();
-
-        TextureRegionDrawable white = new TextureRegionDrawable(new TextureRegion(pixelTexture));
-
-        /* Button style */
-        TextButton.TextButtonStyle btnStyle = new TextButton.TextButtonStyle();
-        btnStyle.up = white.tint(new Color(0.25f, 0.25f, 0.35f, 1f));
-        btnStyle.over = white.tint(new Color(0.35f, 0.35f, 0.5f, 1f));
-        btnStyle.down = white.tint(new Color(0.15f, 0.15f, 0.25f, 1f));
-        btnStyle.font = buttonFont;
-        btnStyle.fontColor = Color.WHITE;
-        btnStyle.overFontColor = Color.YELLOW;
-
-        /* Back button style (smaller, dimmer) */
-        TextButton.TextButtonStyle backStyle = new TextButton.TextButtonStyle();
-        backStyle.up = white.tint(new Color(0.2f, 0.2f, 0.25f, 1f));
-        backStyle.over = white.tint(new Color(0.3f, 0.3f, 0.4f, 1f));
-        backStyle.down = white.tint(new Color(0.12f, 0.12f, 0.18f, 1f));
-        backStyle.font = buttonFont;
-        backStyle.fontColor = Color.LIGHT_GRAY;
-        backStyle.overFontColor = Color.WHITE;
-
-        /* Title label style */
-        Label.LabelStyle titleStyle = new Label.LabelStyle(titleFont, Color.WHITE);
-
-        /* Subtitle label style */
-        subFont = new BitmapFont();
-        subFont.getData().setScale(1.5f);
-        Label.LabelStyle subStyle = new Label.LabelStyle(subFont, Color.LIGHT_GRAY);
-
-        /* Stage + Table layout */
         stage = new Stage(getUiViewport());
 
-        Table root = new Table();
-        root.setFillParent(true);
+        bgTexture = new Texture("menu/start_bg.png");
+        redButtonUpTexture = new Texture("menu/ButtonLargeRed.png");
+        redButtonDownTexture = new Texture("menu/ButtonLargeRedActive.png");
 
-        /* Title */
-        Label title = new Label("SELECT LEVEL", titleStyle);
+        panelTexture = makePanelTexture(
+                600, 340,
+                new Color(1f, 0.97f, 0.87f, 0.92f),
+                new Color(0.70f, 0.55f, 0.28f, 1f)
+        );
 
-        /* Level 1 button */
-        TextButton lvl1Btn = new TextButton("Level 1 — Sunny Road", btnStyle);
-        lvl1Btn.pad(15f, 40f, 15f, 40f);
-        lvl1Btn.addListener(new ClickListener() {
+        titleFont = makeFont("fonts/BubblegumSans-Regular.ttf", 58, Color.WHITE, 3);
+        levelFont = makeFont("fonts/BubblegumSans-Regular.ttf", 30, Color.WHITE, 2);
+        subtitleFont = makeFont("fonts/BubblegumSans-Regular.ttf", 26, new Color(0.12f, 0.12f, 0.12f, 1f), 0);
+        descFont = makeFont("fonts/BubblegumSans-Regular.ttf", 18, new Color(0.10f, 0.10f, 0.10f, 1f), 0);
+        backFont = makeFont("fonts/BubblegumSans-Regular.ttf", 34, Color.WHITE, 2);
+
+        Image background = new Image(new TextureRegionDrawable(new TextureRegion(bgTexture)));
+        background.setFillParent(true);
+        stage.addActor(background);
+
+        ImageButton.ImageButtonStyle cardStyle = new ImageButton.ImageButtonStyle();
+        cardStyle.imageUp = new TextureRegionDrawable(new TextureRegion(panelTexture));
+        cardStyle.imageOver = new TextureRegionDrawable(new TextureRegion(panelTexture));
+        cardStyle.imageDown = new TextureRegionDrawable(new TextureRegion(panelTexture));
+
+        ImageButton.ImageButtonStyle redStyle = new ImageButton.ImageButtonStyle();
+        redStyle.imageUp = new TextureRegionDrawable(new TextureRegion(redButtonUpTexture));
+        redStyle.imageOver = new TextureRegionDrawable(new TextureRegion(redButtonDownTexture));
+        redStyle.imageDown = new TextureRegionDrawable(new TextureRegion(redButtonDownTexture));
+
+        level1Card = new ImageButton(cardStyle);
+        level2Card = new ImageButton(cardStyle);
+        backBtn = new ImageButton(redStyle);
+
+        float worldW = getUiViewport().getWorldWidth();
+        float centerX = worldW / 2f;
+
+        float totalWidth = CARD_W * 2f + CARD_GAP;
+        float leftX = centerX - totalWidth / 2f;
+        float rightX = leftX + CARD_W + CARD_GAP;
+
+        level1Card.setSize(CARD_W, CARD_H);
+        level2Card.setSize(CARD_W, CARD_H);
+        backBtn.setSize(BACK_W, BACK_H);
+
+        level1Card.setPosition(leftX, CARD_Y / 0.95f);
+        level2Card.setPosition(rightX, CARD_Y / 0.95f);
+        backBtn.setPosition(centerX - BACK_W / 2f, BACK_Y);
+
+        addHoverScale(level1Card, 1.02f);
+        addHoverScale(level2Card, 1.02f);
+        addHoverScale(backBtn, 1.03f);
+
+        level1Card.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                selectLevel1();
+                if (sound != null) {
+                    sound.playSound("selected", 1.0f);
+                }
+                getSceneManager().set(new Level1Scene());
             }
         });
 
-        Label lvl1Desc = new Label("Normal traffic, no police", subStyle);
-
-        /* Level 2 button */
-        TextButton lvl2Btn = new TextButton("Level 2 — Rain Expressway", btnStyle);
-        lvl2Btn.pad(15f, 40f, 15f, 40f);
-        lvl2Btn.addListener(new ClickListener() {
+        level2Card.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                selectLevel2();
+                if (sound != null) {
+                    sound.playSound("selected", 1.0f);
+                }
+                getSceneManager().set(new Level2Scene());
             }
         });
 
-        Label lvl2Desc = new Label("Wet road, police chase at 3 rule breaks", subStyle);
-
-        /* Back button */
-        TextButton backBtn = new TextButton("Back", backStyle);
-        backBtn.pad(10f, 30f, 10f, 30f);
         backBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -132,32 +140,66 @@ public class LevelSelectScene extends Scene {
             }
         });
 
-        /* Assemble layout */
-        root.add(title).padBottom(60f);
-        root.row();
-        root.add(lvl1Btn).padBottom(8f);
-        root.row();
-        root.add(lvl1Desc).padBottom(30f);
-        root.row();
-        root.add(lvl2Btn).padBottom(8f);
-        root.row();
-        root.add(lvl2Desc).padBottom(50f);
-        root.row();
-        root.add(backBtn);
+        stage.addActor(level1Card);
+        stage.addActor(level2Card);
+        stage.addActor(backBtn);
 
-        stage.addActor(root);
         Gdx.input.setInputProcessor(stage);
 
-        /* Keyboard shortcuts */
         Keyboard kb = getIOManager().getInputs(Keyboard.class);
         if (kb != null) {
-            kb.addBind(Input.Keys.NUM_1, this::selectLevel1, true);
-            kb.addBind(Input.Keys.NUM_2, this::selectLevel2, true);
             kb.addBind(Input.Keys.ESCAPE, this::goBack, true);
             kb.addBind(Input.Keys.BACKSPACE, this::goBack, true);
         }
+    }
 
-        Gdx.app.log("LevelSelectScene", "Level select shown — pick a level or press 1/2");
+    private BitmapFont makeFont(String path, int size, Color color, int borderWidth) {
+        FreeTypeFontGenerator generator =
+                new FreeTypeFontGenerator(Gdx.files.internal(path));
+
+        FreeTypeFontGenerator.FreeTypeFontParameter param =
+                new FreeTypeFontGenerator.FreeTypeFontParameter();
+        param.size = size;
+        param.color = color;
+        param.borderWidth = borderWidth;
+        param.borderColor = Color.BLACK;
+
+        BitmapFont font = generator.generateFont(param);
+        generator.dispose();
+        return font;
+    }
+
+    private Texture makePanelTexture(int width, int height, Color fill, Color border) {
+        Pixmap pm = new Pixmap(width, height, Pixmap.Format.RGBA8888);
+
+        pm.setColor(fill);
+        pm.fill();
+
+        pm.setColor(border);
+        pm.drawRectangle(0, 0, width, height);
+        pm.drawRectangle(1, 1, width - 2, height - 2);
+        pm.drawRectangle(2, 2, width - 4, height - 4);
+
+        Texture texture = new Texture(pm);
+        pm.dispose();
+        return texture;
+    }
+
+    private void addHoverScale(ImageButton btn, float scale) {
+        btn.setTransform(true);
+        btn.addListener(new ClickListener() {
+            @Override
+            public void enter(InputEvent event, float x, float y, int pointer,
+                              com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
+                btn.setScale(scale);
+            }
+
+            @Override
+            public void exit(InputEvent event, float x, float y, int pointer,
+                             com.badlogic.gdx.scenes.scene2d.Actor toActor) {
+                btn.setScale(1f);
+            }
+        });
     }
 
     @Override
@@ -167,12 +209,92 @@ public class LevelSelectScene extends Scene {
 
     @Override
     public void render(SpriteBatch batch) {
-        Gdx.gl.glClearColor(0.08f, 0.08f, 0.12f, 1f);
+        Gdx.gl.glClearColor(0.1f, 0.1f, 0.15f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         getUiViewport().apply();
         getUiCamera().update();
+
         stage.draw();
+
+        batch.setProjectionMatrix(getUiCamera().combined);
+        batch.begin();
+
+        drawCentered(batch, titleFont, "LEVEL SELECT",
+                getUiViewport().getWorldWidth() / 2f, 390f);
+
+        drawLevelCard(batch, level1Card,
+                "LEVEL 1",
+                "Sunny Road",
+                "Normal traffic, no police.");
+
+        drawLevelCard(batch, level2Card,
+                "LEVEL 2",
+                "Rain Expressway",
+                "Wet road, police chase.");
+
+        drawButtonText(batch, backFont, "BACK", backBtn, 0f, 1.2f);
+
+        batch.end();
+    }
+
+    private void drawLevelCard(SpriteBatch batch, ImageButton card,
+                           String levelText, String subtitle, String desc) {
+
+        float cardX = card.getX();
+        float cardY = card.getY();
+        float cardW = card.getWidth();
+        float cardH = card.getHeight();
+
+        float bannerX = cardX + (cardW - BANNER_W) / 2f;
+        float bannerY = cardY + cardH - 78f;
+
+        batch.draw(redButtonUpTexture, bannerX, bannerY, BANNER_W, BANNER_H);
+
+        drawTextCenteredInRect(batch, levelFont, levelText,
+                bannerX, bannerY, BANNER_W, BANNER_H, 0f, 1.5f);
+
+        drawCentered(batch, subtitleFont, subtitle, cardX + cardW / 2f, cardY + 98f);
+
+        drawWrappedCentered(batch, descFont, desc, cardX + 28f, cardY + 34f, cardW - 56f);
+    }
+
+    private void drawCentered(SpriteBatch batch, BitmapFont font, String text, float centerX, float y) {
+        GlyphLayout layout = new GlyphLayout(font, text);
+        font.draw(batch, layout, centerX - layout.width / 2f, y);
+    }
+
+    private void drawWrappedCentered(SpriteBatch batch, BitmapFont font,
+                                     String text, float x, float y, float width) {
+        GlyphLayout layout = new GlyphLayout();
+        layout.setText(font, text, Color.BLACK, width, 1, true);
+        font.draw(batch, layout, x, y + layout.height);
+    }
+
+    private void drawTextCenteredInRect(SpriteBatch batch, BitmapFont font, String text,
+                                        float x, float y, float w, float h,
+                                        float offsetX, float offsetY) {
+        GlyphLayout layout = new GlyphLayout(font, text);
+        float textX = x + (w - layout.width) / 2f + offsetX + 1f;
+        float textY = y + (h + layout.height) / 2f + offsetY - 3f;
+        font.draw(batch, layout, textX, textY);
+    }
+
+    private void drawButtonText(SpriteBatch batch, BitmapFont font, String text,
+                            ImageButton btn, float offsetX, float offsetY) {
+        GlyphLayout layout = new GlyphLayout(font, text);
+
+        float x = btn.getX() + (btn.getWidth() - layout.width) / 2f + offsetX;
+        float y = btn.getY() + (btn.getHeight() + layout.height) / 2f + offsetY;
+
+        font.draw(batch, layout, x, y);
+    }
+
+    private void goBack() {
+        if (sound != null) {
+            sound.playSound("selected", 1.0f);
+        }
+        getSceneManager().set(new StartScene());
     }
 
     @Override
@@ -184,27 +306,14 @@ public class LevelSelectScene extends Scene {
     @Override
     public void dispose() {
         stage.dispose();
+        bgTexture.dispose();
+        redButtonUpTexture.dispose();
+        redButtonDownTexture.dispose();
+        panelTexture.dispose();
         titleFont.dispose();
-        buttonFont.dispose();
-        subFont.dispose();
-        pixelTexture.dispose();
-        Gdx.app.log("LevelSelectScene", "Scene disposed");
-    }
-
-    /* ── Transition helpers ── */
-
-    private void selectLevel1() {
-        sound.playSound("selected", 1.0f);
-        getSceneManager().set(new Level1Scene());
-    }
-
-    private void selectLevel2() {
-        sound.playSound("selected", 1.0f);
-        getSceneManager().set(new Level2Scene());
-    }
-
-    private void goBack() {
-        sound.playSound("menu", 1.0f);
-        getSceneManager().set(new StartScene());
+        levelFont.dispose();
+        subtitleFont.dispose();
+        descFont.dispose();
+        backFont.dispose();
     }
 }

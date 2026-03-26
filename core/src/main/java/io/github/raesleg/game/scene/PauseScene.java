@@ -36,7 +36,7 @@ public class PauseScene extends Scene {
 
     private SoundDevice sound;
 
-    private final String[] menuOptions = { "Resume", "Volume", "Exit to Main Menu" };
+    private final String[] menuOptions = { "Resume", "Volume", "Exit to Level Select" };
     private final Label[] optionLabels = new Label[3];
     private int selectedOption;
 
@@ -204,7 +204,7 @@ public class PauseScene extends Scene {
             case 1:
                 break; // Volume — A/D adjusts, Enter does nothing
             case 2:
-                getSceneManager().set(new StartScene());
+                getSceneManager().set(new LevelSelectScene());
                 break;
             default:
                 break;
