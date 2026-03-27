@@ -1091,6 +1091,38 @@ class PauseScene extends Scene {
 }
 
 // Package: io.github.raesleg.game.scene
+final class RulesPopupScene extends Scene {
+ - levelLabel:String
+ - rules:List<String>
+ - stage:Stage
+ - overlayTexture:Texture
+ - outerPanelTexture:Texture
+ - innerPanelTexture:Texture
+ - hintPanelTexture:Texture
+ - redButtonUpTexture:Texture
+ - redButtonDownTexture:Texture
+ - titleFont:BitmapFont
+ - bodyFont:BitmapFont
+ - hintFont:BitmapFont
+ - buttonFont:BitmapFont
+ - continueBtn:ImageButton
+ - OUTER_W:float
+ - OUTER_H:float
+ - INNER_W:float
+ - INNER_H:float
+ - TITLE_BANNER_W:float
+ - TITLE_BANNER_H:float
+ - CONTINUE_W:float
+ + RulesPopupScene(levelLabel:String, rules:List<String>)
+ + show(): void
+ + update(deltaTime:float): void
+ + render(batch:SpriteBatch): void
+ + resize(width:int, height:int): void
+ + dispose(): void
+ - closePopup(): void
+}
+
+// Package: io.github.raesleg.game.scene
 final class PlayerController {
 - keyboard:Keyboard
 - playerCar:PlayerCar

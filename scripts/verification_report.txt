@@ -1,0 +1,528 @@
+OK: CollisionManager o-- ICollisionListener : aggregation
+    - field or local var of ICollisionListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\collision\CollisionManager.java
+    - method parameter of ICollisionListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\collision\CollisionManager.java
+OK: EntityManager ..> Entity : method param
+    - field or local var of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\entity\EntityManager.java
+    - method parameter of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\entity\EntityManager.java
+OK: Shape --|> Entity : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\entity\Shape.java
+OK: TextureObject --|> Entity : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\entity\TextureObject.java
+OK: GameMaster *-- IOManager : composition
+    - field or local var of IOManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\GameMaster.java
+    - instantiation of IOManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\GameMaster.java
+OK: GameMaster o-- InputDevice : aggregation
+    - field or local var of InputDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\GameMaster.java
+    - method parameter of InputDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\GameMaster.java
+OK: GameMaster *-- SceneManager : composition
+    - field or local var of SceneManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\GameMaster.java
+    - instantiation of SceneManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\GameMaster.java
+OK: GameMaster o-- SoundDevice : aggregation
+    - field or local var of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\GameMaster.java
+    - method parameter of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\GameMaster.java
+OK: CommandHistory ..> ICommand : method param
+    - field or local var of ICommand in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\io\CommandHistory.java
+    - method parameter of ICommand in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\io\CommandHistory.java
+OK: IOManager o-- SoundDevice : aggregation
+    - field or local var of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\io\IOManager.java
+    - method parameter of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\io\IOManager.java
+OK: IOManager o-- InputDevice : aggregation
+    - field or local var of InputDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\io\IOManager.java
+    - method parameter of InputDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\io\IOManager.java
+OK: AIControlled ..|> ControlSource : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\AIControlled.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\AIControlled.java
+OK: MovableEntity --|> TextureObject : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+OK: MovableEntity ..|> IMovable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+OK: MovableEntity o-- ControlSource : aggregation
+    - field or local var of ControlSource in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+    - method parameter of ControlSource in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+OK: MovableEntity o-- MovementModel : aggregation
+    - field or local var of MovementModel in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+    - method parameter of MovementModel in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+OK: MovableEntity o-- MovementStrategy : aggregation
+    - field or local var of MovementStrategy in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+    - method parameter of MovementStrategy in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+OK: MovableEntity o-- PhysicsBody : aggregation
+    - field or local var of PhysicsBody in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+    - method parameter of PhysicsBody in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+OK: MovableEntity ..> MovementStrategy : method param
+    - field or local var of MovementStrategy in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+    - method parameter of MovementStrategy in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovableEntity.java
+OK: MovementManager o-- EntityManager : aggregation
+    - field or local var of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovementManager.java
+    - method parameter of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovementManager.java
+OK: MovementManager o-- PhysicsWorld : aggregation
+    - field or local var of PhysicsWorld in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovementManager.java
+    - method parameter of PhysicsWorld in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\MovementManager.java
+OK: UserControlled ..|> ControlSource : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\UserControlled.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\UserControlled.java
+OK: UserControlled o-- ActionInput : aggregation
+    - field or local var of ActionInput in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\UserControlled.java
+    - method parameter of ActionInput in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\movement\UserControlled.java
+OK: PhysicsWorld ..> BodyType : method param
+    - field or local var of BodyType in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\physics\PhysicsWorld.java
+    - method parameter of BodyType in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\physics\PhysicsWorld.java
+OK: Scene o-- CollisionManager : aggregation
+    - field or local var of CollisionManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+    - method parameter of CollisionManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+OK: Scene o-- EntityManager : aggregation
+    - field or local var of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+    - method parameter of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+OK: Scene o-- IOManager : aggregation
+    - field or local var of IOManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+    - method parameter of IOManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+OK: Scene o-- MovementManager : aggregation
+    - field or local var of MovementManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+    - method parameter of MovementManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+OK: Scene o-- SceneManager : aggregation
+    - field or local var of SceneManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+    - method parameter of SceneManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+OK: Scene ..> CollisionManager : method param
+    - field or local var of CollisionManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+    - method parameter of CollisionManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+OK: Scene ..> EntityManager : method param
+    - field or local var of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+    - method parameter of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+OK: Scene ..> MovementManager : method param
+    - field or local var of MovementManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+    - method parameter of MovementManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\Scene.java
+OK: SceneManager o-- IOManager : aggregation
+    - field or local var of IOManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\SceneManager.java
+    - method parameter of IOManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\SceneManager.java
+OK: SceneManager ..> Scene : method param
+    - field or local var of Scene in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\SceneManager.java
+    - method parameter of Scene in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\scene\SceneManager.java
+OK: SoundManager ..|> SoundDevice : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\sound\SoundManager.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\engine\sound\SoundManager.java
+OK: CollisionEntityUtils ..> Entity : method param
+    - field or local var of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\CollisionEntityUtils.java
+    - method parameter of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\CollisionEntityUtils.java
+OK: CollisionEntityUtils ..> PhysicsBody : method param
+    - method parameter of PhysicsBody in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\CollisionEntityUtils.java
+OK: GameCollisionHandler ..|> ICollisionListener : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\GameCollisionHandler.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\GameCollisionHandler.java
+OK: GameCollisionHandler ..> Entity : method param
+    - field or local var of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\GameCollisionHandler.java
+    - method parameter of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\GameCollisionHandler.java
+OK: GameCollisionHandler ..> PickupListener : method param
+    - field or local var of PickupListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\GameCollisionHandler.java
+    - method parameter of PickupListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\GameCollisionHandler.java
+OK: GameCollisionHandler ..> TrafficViolationListener : method param
+    - field or local var of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\GameCollisionHandler.java
+    - method parameter of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\GameCollisionHandler.java
+OK: BoundaryCollisionHandler ..> Entity : method param
+    - field or local var of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\BoundaryCollisionHandler.java
+    - method parameter of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\BoundaryCollisionHandler.java
+OK: CrosswalkCollisionHandler o-- TrafficViolationListener : aggregation
+    - field or local var of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\CrosswalkCollisionHandler.java
+    - method parameter of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\CrosswalkCollisionHandler.java
+OK: CrosswalkCollisionHandler ..> Entity : method param
+    - field or local var of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\CrosswalkCollisionHandler.java
+    - method parameter of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\CrosswalkCollisionHandler.java
+OK: CrosswalkCollisionHandler ..> TrafficViolationListener : method param
+    - field or local var of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\CrosswalkCollisionHandler.java
+    - method parameter of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\CrosswalkCollisionHandler.java
+OK: NPCCarCollisionHandler o-- TrafficViolationListener : aggregation
+    - field or local var of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\NPCCarCollisionHandler.java
+    - method parameter of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\NPCCarCollisionHandler.java
+OK: NPCCarCollisionHandler ..> Entity : method param
+    - field or local var of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\NPCCarCollisionHandler.java
+    - method parameter of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\NPCCarCollisionHandler.java
+OK: NPCCarCollisionHandler ..> TrafficViolationListener : method param
+    - field or local var of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\NPCCarCollisionHandler.java
+    - method parameter of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\NPCCarCollisionHandler.java
+OK: NPCPedestrianCollisionHandler ..> Entity : method param
+    - field or local var of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\NPCPedestrianCollisionHandler.java
+    - method parameter of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\NPCPedestrianCollisionHandler.java
+OK: PedestrianCollisionHandler o-- TrafficViolationListener : aggregation
+    - field or local var of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PedestrianCollisionHandler.java
+    - method parameter of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PedestrianCollisionHandler.java
+OK: PedestrianCollisionHandler ..> Entity : method param
+    - field or local var of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PedestrianCollisionHandler.java
+    - method parameter of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PedestrianCollisionHandler.java
+OK: PedestrianCollisionHandler ..> TrafficViolationListener : method param
+    - field or local var of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PedestrianCollisionHandler.java
+    - method parameter of TrafficViolationListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PedestrianCollisionHandler.java
+OK: PickupCollisionHandler o-- PickupListener : aggregation
+    - field or local var of PickupListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PickupCollisionHandler.java
+    - method parameter of PickupListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PickupCollisionHandler.java
+OK: PickupCollisionHandler ..> Entity : method param
+    - field or local var of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PickupCollisionHandler.java
+    - method parameter of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PickupCollisionHandler.java
+OK: PickupCollisionHandler ..> PickupListener : method param
+    - field or local var of PickupListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PickupCollisionHandler.java
+    - method parameter of PickupListener in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\PickupCollisionHandler.java
+OK: ZoneCollisionHandler ..> Entity : method param
+    - field or local var of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\ZoneCollisionHandler.java
+    - method parameter of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\ZoneCollisionHandler.java
+OK: ZoneCollisionHandler ..> MovableEntity : instanceof cast
+    - method parameter of MovableEntity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\ZoneCollisionHandler.java
+    - instanceof MovableEntity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\handlers\ZoneCollisionHandler.java
+OK: Level1TrafficListener ..|> TrafficViolationListener : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\listeners\Level1TrafficListener.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\listeners\Level1TrafficListener.java
+OK: Level1TrafficListener ..> Pedestrian : method param
+    - method parameter of Pedestrian in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\listeners\Level1TrafficListener.java
+OK: Level1TrafficListener o-- RuleManager : aggregation
+    - field or local var of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\listeners\Level1TrafficListener.java
+    - method parameter of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\listeners\Level1TrafficListener.java
+OK: Level2TrafficListener ..|> TrafficViolationListener : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\listeners\Level2TrafficListener.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\listeners\Level2TrafficListener.java
+OK: Level2TrafficListener o-- RuleManager : aggregation
+    - field or local var of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\listeners\Level2TrafficListener.java
+    - method parameter of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\listeners\Level2TrafficListener.java
+OK: PedestrianHitReaction ..> Pedestrian : method param
+    - method parameter of Pedestrian in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\collision\PedestrianHitReaction.java
+OK: ExplosionOverlay --|> TextureObject : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\ExplosionOverlay.java
+OK: ExplosionOverlay ..|> IExpirable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\ExplosionOverlay.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\ExplosionOverlay.java
+OK: Particle --|> TextureObject : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Particle.java
+OK: Particle ..|> IExpirable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Particle.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Particle.java
+OK: Particle ..> EntityManager : method param
+    - method parameter of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Particle.java
+OK: Pedestrian --|> TextureObject : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Pedestrian.java
+OK: Pedestrian ..|> IExpirable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Pedestrian.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Pedestrian.java
+OK: Pedestrian ..|> IPerceivable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Pedestrian.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Pedestrian.java
+OK: Pickupable --|> TextureObject : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Pickupable.java
+OK: Pickupable ..|> IExpirable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Pickupable.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Pickupable.java
+OK: StopSign --|> TextureObject : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\StopSign.java
+OK: StopSign ..|> IExpirable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\StopSign.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\StopSign.java
+OK: StopSign ..|> IPerceivable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\StopSign.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\StopSign.java
+OK: Trees ..> EntityManager : method param
+    - field or local var of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Trees.java
+    - method parameter of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\misc\Trees.java
+OK: NPCCar --|> MovableEntity : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\vehicles\NPCCar.java
+OK: NPCCar ..|> IExpirable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\vehicles\NPCCar.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\vehicles\NPCCar.java
+OK: NPCCar ..|> IPerceivable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\vehicles\NPCCar.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\vehicles\NPCCar.java
+OK: PlayerCar --|> MovableEntity : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\vehicles\PlayerCar.java
+OK: PlayerCar ..|> IFlashable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\vehicles\PlayerCar.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\vehicles\PlayerCar.java
+OK: PoliceCar --|> TextureObject : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\vehicles\PoliceCar.java
+OK: PoliceCar ..|> IChaseEntity : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\vehicles\PoliceCar.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\entities\vehicles\PoliceCar.java
+OK: FuelDepletedEvent ..|> GameEvent : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\event\FuelDepletedEvent.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\event\FuelDepletedEvent.java
+OK: InstantFailEvent ..|> GameEvent : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\event\InstantFailEvent.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\event\InstantFailEvent.java
+OK: PickupCollectedEvent ..|> GameEvent : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\event\PickupCollectedEvent.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\event\PickupCollectedEvent.java
+OK: ScoreChangedEvent ..|> GameEvent : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\event\ScoreChangedEvent.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\event\ScoreChangedEvent.java
+OK: BoundaryFactory ..> PhysicsWorld : method param
+    - method parameter of PhysicsWorld in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\BoundaryFactory.java
+OK: CrosswalkFactory ..> PhysicsWorld : method param
+    - method parameter of PhysicsWorld in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\CrosswalkFactory.java
+OK: NPCCarSpawner ..|> ILaneOccupancy : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\NPCCarSpawner.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\NPCCarSpawner.java
+OK: NPCCarSpawner o-- ILaneOccupancy : aggregation
+    - field or local var of ILaneOccupancy in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\NPCCarSpawner.java
+    - method parameter of ILaneOccupancy in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\NPCCarSpawner.java
+OK: NPCCarSpawner ..> ILaneOccupancy : method param
+    - field or local var of ILaneOccupancy in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\NPCCarSpawner.java
+    - method parameter of ILaneOccupancy in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\NPCCarSpawner.java
+OK: PlayerFactory ..> ControlSource : method param
+    - method parameter of ControlSource in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\PlayerFactory.java
+OK: PlayerFactory ..> EntityManager : method param
+    - method parameter of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\PlayerFactory.java
+OK: PlayerFactory ..> MovementStrategy : method param
+    - field or local var of MovementStrategy in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\PlayerFactory.java
+    - method parameter of MovementStrategy in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\PlayerFactory.java
+OK: PlayerFactory ..> PhysicsWorld : method param
+    - method parameter of PhysicsWorld in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\PlayerFactory.java
+OK: RoadHazardSpawner ..|> ILaneOccupancy : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\RoadHazardSpawner.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\factory\RoadHazardSpawner.java
+OK: Keyboard ..|> InputDevice : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\io\Keyboard.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\io\Keyboard.java
+OK: Keyboard ..|> ActionInput : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\io\Keyboard.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\io\Keyboard.java
+OK: SystemInputBinder ..> Keyboard : method param
+    - field or local var of Keyboard in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\io\SystemInputBinder.java
+    - method parameter of Keyboard in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\io\SystemInputBinder.java
+OK: AIPerceptionService o-- EntityManager : aggregation
+    - field or local var of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\AIPerceptionService.java
+    - method parameter of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\AIPerceptionService.java
+OK: AIPerceptionService ..> Entity : method param
+    - field or local var of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\AIPerceptionService.java
+    - method parameter of Entity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\AIPerceptionService.java
+OK: AIPerceptionService ..> SensorComponent : method param
+    - field or local var of SensorComponent in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\AIPerceptionService.java
+    - method parameter of SensorComponent in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\AIPerceptionService.java
+OK: CarMovementModel ..|> MovementModel : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\CarMovementModel.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\CarMovementModel.java
+OK: CarMovementModel --> SurfaceEffect : field
+    - field or local var of SurfaceEffect in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\CarMovementModel.java
+    - method parameter of SurfaceEffect in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\CarMovementModel.java
+    - instanceof SurfaceEffect in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\CarMovementModel.java
+OK: CarMovementModel ..> PhysicsBody : method param
+    - field or local var of PhysicsBody in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\CarMovementModel.java
+    - method parameter of PhysicsBody in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\CarMovementModel.java
+OK: NpcDrivingStrategy ..|> MovementStrategy : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\NpcDrivingStrategy.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\NpcDrivingStrategy.java
+OK: NpcDrivingStrategy o-- AIPerceptionService : aggregation
+    - field or local var of AIPerceptionService in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\NpcDrivingStrategy.java
+    - method parameter of AIPerceptionService in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\NpcDrivingStrategy.java
+OK: NpcDrivingStrategy o-- SensorComponent : aggregation
+    - field or local var of SensorComponent in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\NpcDrivingStrategy.java
+    - method parameter of SensorComponent in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\NpcDrivingStrategy.java
+OK: NpcDrivingStrategy ..> MovableEntity : method param
+    - method parameter of MovableEntity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\NpcDrivingStrategy.java
+OK: NpcDrivingStrategy ..> PerceptionSnapshot : method param
+    - field or local var of PerceptionSnapshot in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\NpcDrivingStrategy.java
+    - method parameter of PerceptionSnapshot in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\NpcDrivingStrategy.java
+OK: PedestrianMovement --> CrossingState : field
+    - field or local var of CrossingState in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\PedestrianMovement.java
+OK: PedestrianMovement ..> Pedestrian : method param
+    - field or local var of Pedestrian in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\PedestrianMovement.java
+    - method parameter of Pedestrian in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\PedestrianMovement.java
+OK: PlayerMovementStrategy ..|> MovementStrategy : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\PlayerMovementStrategy.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\PlayerMovementStrategy.java
+OK: PlayerMovementStrategy ..> MovableEntity : method param
+    - method parameter of MovableEntity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\movement\PlayerMovementStrategy.java
+OK: BreakRuleCommand ..|> ICommand : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\rules\BreakRuleCommand.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\rules\BreakRuleCommand.java
+OK: PedestrianHitCommand ..|> ICommand : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\rules\PedestrianHitCommand.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\rules\PedestrianHitCommand.java
+OK: BreakRuleCommand o-- RuleManager : aggregation
+    - field or local var of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\rules\BreakRuleCommand.java
+    - method parameter of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\rules\BreakRuleCommand.java
+OK: PedestrianHitCommand o-- RuleManager : aggregation
+    - field or local var of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\rules\PedestrianHitCommand.java
+    - method parameter of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\rules\PedestrianHitCommand.java
+OK: BaseGameScene --|> Scene : extends done
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- AudioController : composition done
+    - field or local var of AudioController in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - instantiation of AudioController in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- CommandHistory : composition done
+    - field or local var of CommandHistory in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- DashboardUI : composition
+    - field or local var of DashboardUI in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - instantiation of DashboardUI in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- EventBus : composition
+    - field or local var of EventBus in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - instantiation of EventBus in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- FuelController : composition
+    - field or local var of FuelController in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - instantiation of FuelController in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- GameCollisionHandler : composition
+    - field or local var of GameCollisionHandler in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - instantiation of GameCollisionHandler in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- MatchDirector : composition
+    - field or local var of MatchDirector in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - instantiation of MatchDirector in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- PhysicsWorld : composition
+    - field or local var of PhysicsWorld in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - instantiation of PhysicsWorld in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- PlayerCar : composition
+    - field or local var of PlayerCar in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- RoadRenderer : composition
+    - field or local var of RoadRenderer in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - instantiation of RoadRenderer in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- RuleManager : composition
+    - field or local var of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - instantiation of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene o-- SoundDevice : aggregation
+    - field or local var of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- SpeedScrollController : composition
+    - field or local var of SpeedScrollController in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - instantiation of SpeedScrollController in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene *-- Trees : composition
+    - field or local var of Trees in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - instantiation of Trees in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: BaseGameScene ..> ILevelEndCondition : method param
+    - field or local var of ILevelEndCondition in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+    - method parameter of ILevelEndCondition in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\BaseGameScene.java
+OK: ChaseDirector o-- IChaseEntity : aggregation
+    - field or local var of IChaseEntity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ChaseDirector.java
+    - field or local var of IChaseEntity in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\ChaseDirector.java
+OK: ChaseDirector o-- PoliceCarFactory : aggregation
+    - field or local var of PoliceCarFactory in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ChaseDirector.java
+    - method parameter of PoliceCarFactory in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ChaseDirector.java
+    - field or local var of PoliceCarFactory in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\ChaseDirector.java
+    - method parameter of PoliceCarFactory in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\ChaseDirector.java
+OK: ChaseDirector o-- RuleManager : aggregation
+    - method parameter of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ChaseDirector.java
+    - field or local var of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\ChaseDirector.java
+    - method parameter of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\ChaseDirector.java
+OK: ChaseDirector o-- SoundDevice : aggregation
+    - field or local var of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ChaseDirector.java
+    - method parameter of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ChaseDirector.java
+    - field or local var of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\ChaseDirector.java
+    - method parameter of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\ChaseDirector.java
+OK: ChaseDirector ..> DashboardUI : method param
+    - field or local var of DashboardUI in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ChaseDirector.java
+    - method parameter of DashboardUI in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ChaseDirector.java
+    - method parameter of DashboardUI in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\ChaseDirector.java
+OK: ChaseDirector ..> PlayerCar : method param
+    - method parameter of PlayerCar in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ChaseDirector.java
+    - method parameter of PlayerCar in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\ChaseDirector.java
+OK: ChaseDirector ..> PoliceLightSystem : method param
+    - field or local var of PoliceLightSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ChaseDirector.java
+    - method parameter of PoliceLightSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ChaseDirector.java
+    - field or local var of PoliceLightSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\ChaseDirector.java
+    - method parameter of PoliceLightSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\ChaseDirector.java
+OK: CrosswalkEncounterSystem ..|> IGameSystem : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\CrosswalkEncounterSystem.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\CrosswalkEncounterSystem.java
+OK: CrosswalkEncounterSystem ..> Pedestrian : method param
+    - field or local var of Pedestrian in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\CrosswalkEncounterSystem.java
+    - method parameter of Pedestrian in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\CrosswalkEncounterSystem.java
+OK: CrosswalkEncounterSystem o-- RuleManager : aggregation
+    - field or local var of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\CrosswalkEncounterSystem.java
+    - method parameter of RuleManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\CrosswalkEncounterSystem.java
+OK: ExplosionSystem ..> EntityManager : method param
+    - method parameter of EntityManager in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ExplosionSystem.java
+OK: ExplosionSystem ..> SoundDevice : method param
+    - method parameter of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ExplosionSystem.java
+OK: HazardEffectSystem ..> SurfaceEffect : method param
+    - field or local var of SurfaceEffect in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\HazardEffectSystem.java
+    - method parameter of SurfaceEffect in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\HazardEffectSystem.java
+OK: Level1Scene --|> BaseGameScene : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level1Scene.java
+OK: Level1Scene *-- CrosswalkEncounterSystem : composition
+    - field or local var of CrosswalkEncounterSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level1Scene.java
+    - instantiation of CrosswalkEncounterSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level1Scene.java
+OK: Level1Scene *-- CrosswalkRenderer : composition
+    - field or local var of CrosswalkRenderer in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level1Scene.java
+    - instantiation of CrosswalkRenderer in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level1Scene.java
+OK: Level1Scene *-- TrafficSpawningSystem : composition
+    - field or local var of TrafficSpawningSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level1Scene.java
+    - instantiation of TrafficSpawningSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level1Scene.java
+OK: Level2Scene --|> BaseGameScene : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+OK: Level2Scene *-- ChaseDirector : composition
+    - field or local var of ChaseDirector in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+    - instantiation of ChaseDirector in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+OK: Level2Scene *-- HazardEffectSystem : composition
+    - field or local var of HazardEffectSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+    - instantiation of HazardEffectSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+OK: Level2Scene *-- PoliceCarFactory : composition
+    - field or local var of PoliceCarFactory in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+    - instantiation of PoliceCarFactory in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+OK: Level2Scene *-- RoadHazardSpawner : composition
+    - instantiation of RoadHazardSpawner in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+OK: Level2Scene *-- PoliceLightSystem : composition
+    - field or local var of PoliceLightSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+    - instantiation of PoliceLightSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+OK: Level2Scene *-- RainEffectSystem : composition
+    - field or local var of RainEffectSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+    - instantiation of RainEffectSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+OK: Level2Scene *-- TrafficSpawningSystem : composition
+    - field or local var of TrafficSpawningSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+    - instantiation of TrafficSpawningSystem in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\Level2Scene.java
+OK: LevelSelectScene --|> Scene : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\LevelSelectScene.java
+OK: LevelSelectScene o-- SoundDevice : aggregation
+    - field or local var of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\LevelSelectScene.java
+OK: PauseScene --|> Scene : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\PauseScene.java
+OK: PauseScene o-- SoundDevice : aggregation
+    - field or local var of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\PauseScene.java
+OK: PoliceLightSystem ..|> IGameSystem : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\PoliceLightSystem.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\PoliceLightSystem.java
+OK: ResultsScene --|> Scene : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ResultsScene.java
+OK: ResultsScene o-- SoundDevice : aggregation
+    - field or local var of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\ResultsScene.java
+OK: StartScene --|> Scene : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\StartScene.java
+OK: StartScene o-- SoundDevice : aggregation
+    - field or local var of SoundDevice in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\StartScene.java
+OK: TrafficSpawningSystem ..|> IGameSystem : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\TrafficSpawningSystem.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\TrafficSpawningSystem.java
+OK: AudioController ..|> IGameSystem : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\AudioController.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\AudioController.java
+OK: DashboardUI ..|> IDashboardObserver : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\DashboardUI.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\DashboardUI.java
+OK: FuelController ..|> IGameSystem : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\FuelController.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\FuelController.java
+OK: MatchDirector *-- LevelResult : composition
+    - field or local var of LevelResult in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\MatchDirector.java
+    - instantiation of LevelResult in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\MatchDirector.java
+OK: MatchDirector ..> ILevelEndCondition : method param
+    - field or local var of ILevelEndCondition in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\MatchDirector.java
+    - method parameter of ILevelEndCondition in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\MatchDirector.java
+OK: SpeedScrollController ..|> IGameSystem : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\SpeedScrollController.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\SpeedScrollController.java
+OK: SpeedScrollController o-- Keyboard : aggregation
+    - field or local var of Keyboard in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\SpeedScrollController.java
+    - method parameter of Keyboard in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\SpeedScrollController.java
+OK: SpeedScrollController ..> Keyboard : method param
+    - field or local var of Keyboard in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\SpeedScrollController.java
+    - method parameter of Keyboard in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\state\SpeedScrollController.java
+OK: CrosswalkZone --|> Shape : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\CrosswalkZone.java
+OK: CrosswalkZone ..|> IExpirable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\CrosswalkZone.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\CrosswalkZone.java
+OK: MotionZone --|> Shape : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\MotionZone.java
+OK: MotionZone o-- PhysicsBody : aggregation
+    - field or local var of PhysicsBody in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\MotionZone.java
+    - method parameter of PhysicsBody in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\MotionZone.java
+OK: MotionZone --> SurfaceEffect : association
+    - field or local var of SurfaceEffect in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\MotionZone.java
+    - method parameter of SurfaceEffect in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\MotionZone.java
+OK: RoadHazard --|> MotionZone : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\RoadHazard.java
+OK: RoadHazard ..|> IExpirable : implements
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\RoadHazard.java
+    - implements found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\RoadHazard.java
+OK: RoadHazard ..> PhysicsWorld : method param
+    - method parameter of PhysicsWorld in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\zone\RoadHazard.java
+OK: RulesPopupScene --|> Scene : extends
+    - extends found in D:\Year 1\Sem 2\OOP\Libgdk Projects\Project Work\OOP\core\src\main\java\io\github\raesleg\game\scene\RulesPopupScene.java
