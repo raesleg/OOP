@@ -19,33 +19,33 @@ ScorePopupManager ..|> Disposable : implements done
 
 Relationships (project-internal):
 CollisionManager o-- ICollisionListener : aggregation done
-EntityManager ..> Entity : method param
-Shape --|> Entity : extends
-TextureObject --|> Entity : extends
-GameMaster *-- IOManager : composition
-GameMaster o-- InputDevice : aggregation
-GameMaster *-- SceneManager : composition
-GameMaster o-- SoundDevice : aggregation
-CommandHistory ..> ICommand : method param
+EntityManager ..> Entity : method param done
+Shape --|> Entity : extends done
+TextureObject --|> Entity : extends done
+GameMaster *-- IOManager : composition done
+GameMaster o-- InputDevice : aggregation done
+GameMaster *-- SceneManager : composition done
+GameMaster o-- SoundDevice : aggregation done
+CommandHistory ..> ICommand : method param done
 IOManager o-- SoundDevice : aggregation
 IOManager o-- InputDevice : aggregation
 AIControlled ..|> ControlSource : implements
 MovableEntity --|> TextureObject : extends
 MovableEntity ..|> IMovable : implements
 MovableEntity o-- ControlSource : aggregation
-MovableEntity o-- MovementModel : aggregation
-MovableEntity o-- MovementStrategy : aggregation
-MovableEntity o-- PhysicsBody : aggregation
-MovableEntity ..> MovementStrategy : method param
+MovableEntity o-- MovementModel : aggregation done
+MovableEntity o-- MovementStrategy : aggregation done
+MovableEntity o-- PhysicsBody : aggregation done
+MovableEntity ..> MovementStrategy : method param done
 MovementManager o-- EntityManager : aggregation
 MovementManager o-- PhysicsWorld : aggregation
-UserControlled ..|> ControlSource : implements
-UserControlled o-- ActionInput : aggregation
-PhysicsWorld ..> BodyType : method param
+UserControlled ..|> ControlSource : implements done
+UserControlled o-- ActionInput : aggregation done
+PhysicsWorld ..> BodyType : method param done
 Scene o-- CollisionManager : aggregation
-Scene o-- EntityManager : aggregation
+Scene o-- EntityManager : aggregation done
 Scene o-- IOManager : aggregation
-Scene o-- MovementManager : aggregation
+Scene o-- MovementManager : aggregation done
 Scene o-- SceneManager : aggregation
 Scene ..> CollisionManager : method param
 Scene ..> EntityManager : method param
@@ -80,7 +80,7 @@ Level1TrafficListener ..> Pedestrian : method param
 Level1TrafficListener o-- RuleManager : aggregation
 Level2TrafficListener ..|> TrafficViolationListener : implements done
 Level2TrafficListener o-- RuleManager : aggregation
-PedestrianHitReaction ..> Pedestrian : method param
+PedestrianHitReaction ..> Pedestrian : method param done
 ExplosionOverlay --|> TextureObject : extends
 ExplosionOverlay ..|> IExpirable : implements
 Particle --|> TextureObject : extends
@@ -91,14 +91,14 @@ Pedestrian ..|> IExpirable : implements
 Pedestrian ..|> IPerceivable : implements
 Pickupable --|> TextureObject : extends
 Pickupable ..|> IExpirable : implements
-StopSign --|> TextureObject : extends
-StopSign ..|> IExpirable : implements
-StopSign ..|> IPerceivable : implements
-Trees ..> EntityManager : method param
-NPCCar --|> MovableEntity : extends
-NPCCar ..|> IExpirable : implements
-NPCCar ..|> IPerceivable : implements
-PlayerCar --|> MovableEntity : extends
+StopSign --|> TextureObject : extends done
+StopSign ..|> IExpirable : implements done
+StopSign ..|> IPerceivable : implements done
+Trees ..> EntityManager : method param done
+NPCCar --|> MovableEntity : extends done
+NPCCar ..|> IExpirable : implements done
+NPCCar ..|> IPerceivable : implements done
+PlayerCar --|> MovableEntity : extends done
 PlayerCar ..|> IFlashable : implements
 PoliceCar --|> TextureObject : extends
 PoliceCar ..|> IChaseEntity : implements
@@ -111,10 +111,10 @@ BoundaryFactory ..> PhysicsWorld : method param done
 CrosswalkFactory ..> PhysicsWorld : method param done
 CrosswalkFactory *-- EncounterComponents : composition done
 NPCCarSpawner ..|> ILaneOccupancy : implements done
-PlayerFactory ..> ControlSource : method param
-PlayerFactory ..> EntityManager : method param
-PlayerFactory ..> MovementStrategy : method param
-PlayerFactory ..> PhysicsWorld : method param
+PlayerFactory ..> ControlSource : method param done
+PlayerFactory ..> EntityManager : method param done
+PlayerFactory ..> MovementStrategy : method param done
+PlayerFactory ..> PhysicsWorld : method param done
 RoadHazardSpawner ..|> ILaneOccupancy : implements done
 Keyboard ..|> InputDevice : implements
 Keyboard ..|> ActionInput : implements
@@ -201,10 +201,10 @@ SpeedScrollController o-- Keyboard : aggregation done
 CrosswalkZone --|> Shape : extends done 
 CrosswalkZone ..|> IExpirable : implements done
 CrosswalkZone *-- CrosswalkZoneState : composition done
-MotionZone --|> Shape : extends done
-MotionZone o-- PhysicsBody : aggregation done
-MotionZone --> SurfaceEffect : association done
-RoadHazard --|> MotionZone : extends done
-RoadHazard ..|> IExpirable : implements done
-RoadHazard ..> PhysicsWorld : method param done
-RulesPopupScene --|> Scene : extends done
+MotionZone --|> Shape : extends
+MotionZone o-- PhysicsBody : aggregation
+MotionZone --> SurfaceEffect : association
+RoadHazard --|> MotionZone : extends
+RoadHazard ..|> IExpirable : implements
+RoadHazard ..> PhysicsWorld : method param
+RulesPopupScene --|> Scene : extends
