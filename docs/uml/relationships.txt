@@ -53,12 +53,12 @@ Scene ..> MovementManager : method param
 SceneManager o-- IOManager : aggregation
 SceneManager ..> Scene : method param
 SoundManager ..|> SoundDevice : implements
-CollisionEntityUtils ..> Entity : method param
-CollisionEntityUtils ..> PhysicsBody : method param
-GameCollisionHandler ..|> ICollisionListener : implements
-GameCollisionHandler ..> Entity : method param
-GameCollisionHandler ..> PickupListener : method param
-GameCollisionHandler ..> TrafficViolationListener : method param
+CollisionEntityUtils ..> Entity : method param done
+CollisionEntityUtils ..> PhysicsBody : method param done
+GameCollisionHandler ..|> ICollisionListener : implements done
+GameCollisionHandler ..> Entity : method param done
+GameCollisionHandler ..> PickupListener : method param done
+GameCollisionHandler ..> TrafficViolationListener : method param done
 BoundaryCollisionHandler ..> Entity : method param
 CrosswalkCollisionHandler o-- TrafficViolationListener : aggregation
 CrosswalkCollisionHandler ..> Entity : method param
@@ -165,9 +165,9 @@ CrosswalkEncounterSystem ..|> IGameSystem : implements done
 CrosswalkEncounterSystem ..> Pedestrian : method param done
 CrosswalkEncounterSystem *-- PedestrianEncounter : composition done
 CrosswalkEncounterSystem o-- RuleManager : aggregation done
-ExplosionSystem ..> EntityManager : method param
-ExplosionSystem ..> SoundDevice : method param
-HazardEffectSystem ..> SurfaceEffect : method param
+ExplosionSystem ..> EntityManager : method param done
+ExplosionSystem ..> SoundDevice : method param done
+HazardEffectSystem ..> SurfaceEffect : method param done
 Level1Scene --|> BaseGameScene : extends done
 Level1Scene *-- CrosswalkEncounterSystem : composition done
 Level1Scene *-- CrosswalkRenderer : composition done
@@ -180,32 +180,31 @@ Level2Scene *-- RoadHazardSpawner : composition done
 Level2Scene *-- PoliceLightSystem : composition done
 Level2Scene *-- RainEffectSystem : composition done
 Level2Scene *-- TrafficSpawningSystem : composition done
-LevelSelectScene --|> Scene : extends
-LevelSelectScene o-- SoundDevice : aggregation
-PauseScene --|> Scene : extends
-PauseScene o-- SoundDevice : aggregation
+LevelSelectScene --|> Scene : extends done
+LevelSelectScene o-- SoundDevice : aggregation done
+PauseScene --|> Scene : extends done
+PauseScene o-- SoundDevice : aggregation done
 PoliceLightSystem ..|> IGameSystem : implements done
-ResultsScene --|> Scene : extends
-ResultsScene o-- SoundDevice : aggregation
-StartScene --|> Scene : extends
-StartScene o-- SoundDevice : aggregation
-TrafficSpawningSystem ..|> IGameSystem : implements
-AudioController ..|> IGameSystem : implements
+ResultsScene --|> Scene : extends done
+ResultsScene o-- SoundDevice : aggregation done
+StartScene --|> Scene : extends done
+StartScene o-- SoundDevice : aggregation done
+TrafficSpawningSystem ..|> IGameSystem : implements done
+AudioController ..|> IGameSystem : implements done
 DashboardUI ..|> IDashboardObserver : implements done
 DashboardUI *-- HudRenderer : composition done
-FuelController ..|> IGameSystem : implements
-MatchDirector *-- LevelResult : composition
-MatchDirector ..> ILevelEndCondition : method param
-SpeedScrollController ..|> IGameSystem : implements
-SpeedScrollController o-- Keyboard : aggregation
-SpeedScrollController ..> Keyboard : method param
+FuelController ..|> IGameSystem : implements done
+MatchDirector *-- LevelResult : composition done
+MatchDirector ..> ILevelEndCondition : method param done
+SpeedScrollController ..|> IGameSystem : implements done
+SpeedScrollController o-- Keyboard : aggregation done
 CrosswalkZone --|> Shape : extends done 
 CrosswalkZone ..|> IExpirable : implements done
 CrosswalkZone *-- CrosswalkZoneState : composition done
-MotionZone --|> Shape : extends
-MotionZone o-- PhysicsBody : aggregation
-MotionZone --> SurfaceEffect : association
-RoadHazard --|> MotionZone : extends
-RoadHazard ..|> IExpirable : implements
-RoadHazard ..> PhysicsWorld : method param
-RulesPopupScene --|> Scene : extends
+MotionZone --|> Shape : extends done
+MotionZone o-- PhysicsBody : aggregation done
+MotionZone --> SurfaceEffect : association done
+RoadHazard --|> MotionZone : extends done
+RoadHazard ..|> IExpirable : implements done
+RoadHazard ..> PhysicsWorld : method param done
+RulesPopupScene --|> Scene : extends done
