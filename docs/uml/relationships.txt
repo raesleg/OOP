@@ -27,10 +27,10 @@ GameMaster o-- InputDevice : aggregation done
 GameMaster *-- SceneManager : composition done
 GameMaster o-- SoundDevice : aggregation done
 CommandHistory ..> ICommand : method param done
-IOManager o-- SoundDevice : aggregation
-IOManager o-- InputDevice : aggregation
+IOManager o-- SoundDevice : aggregation done
+IOManager o-- InputDevice : aggregation done
 AIControlled ..|> ControlSource : implements
-MovableEntity --|> TextureObject : extends
+MovableEntity --|> TextureObject : extends done
 MovableEntity ..|> IMovable : implements
 MovableEntity o-- ControlSource : aggregation
 MovableEntity o-- MovementModel : aggregation done
@@ -52,6 +52,7 @@ Scene ..> EntityManager : method param
 Scene ..> MovementManager : method param
 SceneManager o-- IOManager : aggregation
 SceneManager ..> Scene : method param
+<<<<<<< HEAD
 SoundManager ..|> SoundDevice : implements
 CollisionEntityUtils ..> Entity : method param done
 CollisionEntityUtils ..> PhysicsBody : method param done
@@ -59,6 +60,15 @@ GameCollisionHandler ..|> ICollisionListener : implements done
 GameCollisionHandler ..> Entity : method param done
 GameCollisionHandler ..> PickupListener : method param done
 GameCollisionHandler ..> TrafficViolationListener : method param done
+=======
+SoundManager ..|> SoundDevice : implements done
+CollisionEntityUtils ..> Entity : method param
+CollisionEntityUtils ..> PhysicsBody : method param
+GameCollisionHandler ..|> ICollisionListener : implements
+GameCollisionHandler ..> Entity : method param
+GameCollisionHandler ..> PickupListener : method param
+GameCollisionHandler ..> TrafficViolationListener : method param
+>>>>>>> 73ac4b74ad13dfd17e2762fcbdc51e75a428d860
 BoundaryCollisionHandler ..> Entity : method param
 CrosswalkCollisionHandler o-- TrafficViolationListener : aggregation
 CrosswalkCollisionHandler ..> Entity : method param
