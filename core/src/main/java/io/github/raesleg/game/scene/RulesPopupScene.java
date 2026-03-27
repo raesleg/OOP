@@ -35,13 +35,11 @@ public final class RulesPopupScene extends Scene {
     private Texture overlayTexture;
     private Texture outerPanelTexture;
     private Texture innerPanelTexture;
-    private Texture hintPanelTexture;
     private Texture redButtonUpTexture;
     private Texture redButtonDownTexture;
 
     private BitmapFont titleFont;
     private BitmapFont bodyFont;
-    private BitmapFont hintFont;
     private BitmapFont buttonFont;
 
     private ImageButton continueBtn;
@@ -83,18 +81,11 @@ public final class RulesPopupScene extends Scene {
                 new Color(0.48f, 0.45f, 0.40f, 1f)
         );
 
-        hintPanelTexture = makePanelTexture(
-                700, 120,
-                new Color(0.93f, 0.91f, 0.82f, 1f),
-                new Color(0.45f, 0.45f, 0.45f, 1f)
-        );
-
         redButtonUpTexture = new Texture("menu/ButtonLargeRed.png");
         redButtonDownTexture = new Texture("menu/ButtonLargeRedActive.png");
 
         titleFont = makeFont("fonts/BubblegumSans-Regular.ttf", 30, Color.WHITE, 2);
         bodyFont = makeFont("fonts/BubblegumSans-Regular.ttf", 20, new Color(0.12f, 0.10f, 0.08f, 1f), 0);
-        hintFont = makeFont("fonts/BubblegumSans-Regular.ttf", 16, new Color(0.22f, 0.20f, 0.18f, 1f), 0);
         buttonFont = makeFont("fonts/BubblegumSans-Regular.ttf", 28, Color.WHITE, 2);
 
         ImageButton.ImageButtonStyle redStyle = new ImageButton.ImageButtonStyle();
@@ -265,12 +256,10 @@ public final class RulesPopupScene extends Scene {
         overlayTexture.dispose();
         outerPanelTexture.dispose();
         innerPanelTexture.dispose();
-        hintPanelTexture.dispose();
         redButtonUpTexture.dispose();
         redButtonDownTexture.dispose();
         titleFont.dispose();
         bodyFont.dispose();
-        hintFont.dispose();
         buttonFont.dispose();
     }
 
