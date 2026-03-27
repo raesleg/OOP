@@ -27,10 +27,10 @@ GameMaster o-- InputDevice : aggregation done
 GameMaster *-- SceneManager : composition done
 GameMaster o-- SoundDevice : aggregation done
 CommandHistory ..> ICommand : method param done
-IOManager o-- SoundDevice : aggregation
-IOManager o-- InputDevice : aggregation
+IOManager o-- SoundDevice : aggregation done
+IOManager o-- InputDevice : aggregation done
 AIControlled ..|> ControlSource : implements
-MovableEntity --|> TextureObject : extends
+MovableEntity --|> TextureObject : extends done
 MovableEntity ..|> IMovable : implements
 MovableEntity o-- ControlSource : aggregation
 MovableEntity o-- MovementModel : aggregation done
@@ -52,7 +52,7 @@ Scene ..> EntityManager : method param
 Scene ..> MovementManager : method param
 SceneManager o-- IOManager : aggregation
 SceneManager ..> Scene : method param
-SoundManager ..|> SoundDevice : implements
+SoundManager ..|> SoundDevice : implements done
 CollisionEntityUtils ..> Entity : method param
 CollisionEntityUtils ..> PhysicsBody : method param
 GameCollisionHandler ..|> ICollisionListener : implements
